@@ -30,7 +30,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     review = sub.add_parser("review", help="review a pull request (fixture or GitHub)")
     review.add_argument("--fixture", type=Path, help="local PR fixture JSON (no network)")
-    review.add_argument("--config", type=Path, help="config file (default: built-in defaults)")
+    review.add_argument("--repo", help="owner/name of a GitHub repository (uses GITHUB_TOKEN)")
+    review.add_argument("--pr", type=int, help="pull request number (with --repo)")
+    review.add_argument("--responses", type=Path, help="canned LLM responses for --mock-llm")
+    review.add_argument(
+        "--config",
+        type=Path,
+        help="local config file (default: built-in defaults for --fixture, base branch for --repo)",
+    )
     review.add_argument("--dry-run", action="store_true", help="print the report, publish nothing")
     _add_llm_arguments(review)
 

@@ -20,7 +20,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 01 Foundation | DONE_LOCAL | see log below |
 | 02 GitHub + diff | DONE_LOCAL | client, diff map, scope, fixtures |
 | 03 LLM + review engine | DONE_LOCAL | live provider path NOT_VERIFIED (no paid calls authorised) |
-| 04 Publish reviews | NOT_STARTED | |
+| 04 Publish reviews | DONE_LOCAL | real GitHub publish NOT_VERIFIED_REMOTELY |
 | 05 Actions + commands | NOT_STARTED | |
 | 06 Apply + commits | NOT_STARTED | |
 | 07 Evaluation | NOT_STARTED | |
@@ -47,6 +47,11 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D15 | Structured output via LiteLLM `response_format: json_schema (strict)` when `supports_response_schema`, automatic fallback to JSON-in-text with the same strict validation on schema rejection | portable across providers; fallback never trusted more | provider-specific tool calling |
 | D16 | Untrusted data wrapped in markers that embed a hash of the content | content cannot contain its own closing marker | fixed delimiters |
 | D17 | Budget: per-call upper-bound estimate (prompt tokens + full output budget) from the bundled LiteLLM cost map; unknown pricing ⇒ allowed with an explicit warning | the plan forbids promising a hard cap; blocking unknown models would block valid setups | refusing unknown-price models |
+| D18 | State in GitHub only: base64 JSON marker at the end of the review body (`<!-- pullbeacon:review:v1 … -->`), trusted only if author is the bot login with `type: Bot` and `marker.head_sha == review.commit_id` | no DB; spoofed/copied markers from users are ignored | external store |
+| D19 | Markers store ids, fingerprints, location, title, fix (≤600) and explanation (≤800) but **no evidence/code**; bounded to 24 KB | plan forbids storing private code in markers | storing full findings |
+| D20 | All model text rendered through `sanitize` (no `@` pings, no HTML comments, no `javascript:`), code in dynamic-length fences | model output is untrusted and must not forge markers or notify people | raw Markdown |
+| D21 | On 422 the whole review is re-posted without inline comments, listing them as `not_posted_inline` | GitHub rejects the whole review on one bad line; never claim inline that did not happen | per-comment bisection (more API calls) |
+| D22 | Idempotency: automatic = `sha256(head|config_hash|prompt_version|automatic)` checked **before** the LLM call; manual = trigger `comment:<id>` in the marker; replies carry `reply:v1 trigger=<id>` | saves cost on redeliveries and repeated events | Actions cache / artifacts |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -107,6 +112,20 @@ Commands executed (all passed): ruff check/format, `mypy src`, `pytest -q` (157 
 Not verified: real Anthropic/OpenAI/Gemini calls (`LiteLLMClient` is tested with an injected
 `completion` function and real LiteLLM exception classes only). Requires authorisation to spend.
 
+### Phase 04 — Publishing reviews (2026-10-28) — DONE_LOCAL
+
+Created: `core/markers.py`, `core/render.py`, `core/explain.py`, `adapters/publisher.py`,
+`orchestration/flows.py` (`run_review`, `run_explain`, trusted base-branch config,
+fork/bot/closed checks before any LLM call), `commands_github.py` (`review --repo --pr`),
+`tests/integration/test_publish.py`, `tests/helpers.py`.
+
+Commands executed (all passed): ruff, mypy, `pytest -q` (175 passed). Covered: `line`/`side`
+payload without `position`, stale head ⇒ no publish, 422 ⇒ explicit degraded summary, automatic
+idempotency per SHA, manual re-review and redelivery idempotency, spoofed/tampered/other-SHA markers
+ignored, 403/429/5xx surfaced, explain via comment only (LLM or deterministic fallback).
+
+Not verified remotely: publishing to a real PR (no remote/authorisation yet).
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
@@ -118,6 +137,9 @@ Not verified: real Anthropic/OpenAI/Gemini calls (`LiteLLMClient` is tested with
 | T05 | PASS (local) | `test_review_engine.py::test_invalid_json_*` |
 | T06 | PASS (local, engine) | `test_findings.py` invented path / line outside diff |
 | T07 | PASS (local, mock) | `test_review_engine.py::test_clean_pr_yields_zero_findings` |
+| T08 | PASS (local, fake GitHub) | `test_publish.py::test_automatic_review_is_idempotent_per_sha` |
+| T09 | PASS (local, fake GitHub) | `test_manual_commands_review_again_but_redelivery_is_idempotent` |
+| T10 | PASS (local, fake GitHub) | `test_explain_posts_comment_without_code_changes` |
 | T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
 | T24 | IN_PROGRESS | local-only repo |
 | others | NOT_RUN | later phases |
