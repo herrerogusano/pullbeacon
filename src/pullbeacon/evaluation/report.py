@@ -18,12 +18,12 @@ def _fmt(value: object, digits: int = 3) -> str:
 
 def to_markdown(run: EvalRun) -> str:
     lines = [
-        f"# PullBeacon evaluation — {run.mode}",
+        f"# PullBeacon evaluation â€” {run.mode}",
         "",
         f"- Date (UTC): {run.started_at}",
         f"- PullBeacon {run.pullbeacon_version}, commit `{run.git_commit}`",
         f"- Prompts: {', '.join(f'{k}={v}' for k, v in sorted(run.prompt_versions.items()))}",
-        f"- Dataset sha256: `{run.dataset_sha256[:16]}…`, config hash `{run.config_hash}`",
+        f"- Dataset sha256: `{run.dataset_sha256[:16]}â€¦`, config hash `{run.config_hash}`",
         f"- Temperature: {_fmt(run.temperature, 1)}",
         "",
         *[f"> {note}" for note in run.notes],
@@ -43,7 +43,7 @@ def to_markdown(run: EvalRun) -> str:
         )
     lines += [
         "",
-        "Matching rule: inline finding on the labelled path, within ±3 lines, with an accepted "
+        "Matching rule: inline finding on the labelled path, within Â±3 lines, with an accepted "
         "category. Unlocated findings count as false positives. Review disagreements manually.",
         "",
         "## Per case",
@@ -65,7 +65,7 @@ def to_csv(run: EvalRun) -> str:
     fields = [
         "model", "case_id", "kind", "tp", "fp", "fn", "findings", "unlocated", "discarded",
         "duplicates", "trap_hits", "latency_s", "input_tokens", "output_tokens", "cost_usd",
-        "cost_source", "apply_attempted", "apply_valid", "apply_exact", "error",
+        "cost_source", "apply_attempted", "apply_valid", "apply_exact", "apply_reason", "error",
     ]  # fmt: skip
     writer = csv.DictWriter(buffer, fieldnames=fields, lineterminator="\n")
     writer.writeheader()

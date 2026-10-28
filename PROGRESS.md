@@ -23,7 +23,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 04 Publish reviews | DONE_LOCAL | real GitHub publish NOT_VERIFIED_REMOTELY |
 | 05 Actions + commands | DONE_LOCAL | workflows `NOT_VERIFIED_REMOTELY` |
 | 06 Apply + commits | DONE_LOCAL | real commit on GitHub NOT_VERIFIED_REMOTELY |
-| 07 Evaluation | DONE_LOCAL | live benchmark BLOCKED_BY_AUTH (API key not yet available to the agent) |
+| 07 Evaluation | DONE_REMOTE | live benchmark run 2026-10-28 (Claude Haiku/Sonnet 5.5), report in `docs/benchmarks/` |
 | 08 Hardening + release | DONE_LOCAL | release candidate; live/apply remote acceptance pending the API key; tag `v0.1.0` needs approval |
 | 09 GitHub App (optional) | NOT_STARTED | requires explicit approval after MVP |
 
@@ -69,6 +69,8 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D37 | Concurrency group per comment for `issue_comment`, per PR for PR events (#9) | GitHub keeps one pending run per group and cancels older pending ones even with `cancel-in-progress: false`; found in the remote smoke test | per-PR group |
 | D38 | filelock<4 advisories (3 IDs) accepted and ignored explicitly in `uv audit`; any other advisory fails CI | litellm pins `filelock<4.0`; issues need a second local user and affect classes only used by litellm's proxy CLI | overriding litellm's constraint |
 | D39 | gitleaks downloaded in CI by exact version and verified against a SHA256 recorded on 2026-10-28 | no third-party action with repo write scope needed | gitleaks-action |
+| D40 | Evaluation stores per-finding summaries (no code) and apply rejection reasons; apply-call cost counts against the total budget | the plan requires manual review of disagreements, impossible with counts only; first live run showed it | re-running blind |
+| D41 | Dogfood uses `anthropic/claude-haiku-5-5` | same recall as Sonnet on the benchmark, ~13× cheaper per review | Sonnet 5.5 (better precision, higher recurring cost) |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -210,7 +212,9 @@ apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
 | 2026-10-28 | PR #8: `@pullbeacon review` | PASS — second review posted |
 | 2026-10-28 | PR #8: quoted `> @pullbeacon apply` | PASS — ignored |
 | 2026-10-28 | PR #8: burst `explain`/help | FAIL → fixed in #9 → PASS (help and explain replies posted) |
-| — | Live LLM review, explain with findings, `apply` commit on a real PR | NOT_RUN — waiting for `ANTHROPIC_API_KEY` |
+| 2026-10-28 | `ANTHROPIC_API_KEY` stored as repo secret + user env var by the user (hidden prompt); 22-token check call to `claude-haiku-5-5` | PASS (0.000004 USD) |
+| 2026-10-28 | Live benchmark, 2 models × 16 cases (`docs/benchmarks/2026-10-28-claude.md`) | PASS — recall 1.0 both; precision 0.571 / 0.632 by rule, 0 unsupported claims after manual review; 0 FP on clean PRs; ≈0.28 USD total |
+| — | Live LLM review, explain with findings, `apply` commit on a real PR | IN_PROGRESS |
 | — | Read-only user denied, fork PR skipped | NOT_RUN remotely (needs a second account / fork); PASS locally |
 
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
@@ -244,9 +248,7 @@ apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
 
 ## Human actions pending
 
-1. Provide `ANTHROPIC_API_KEY` securely: `gh secret set ANTHROPIC_API_KEY -R herrerogusano/pullbeacon`
-   (remote tests) and/or `setx ANTHROPIC_API_KEY ...` (local benchmark). Paid calls already
-   authorised by the user on 2026-10-28; planned spend ≤ 2 USD.
+1. Done 2026-10-28: `ANTHROPIC_API_KEY` configured (expires in 30 days — rotate with `%TEMP%\pullbeacon-set-anthropic-key.ps1` or `gh secret set`).
 2. Approve tag/release `v0.1.0` and decide repository visibility (currently private).
 3. Optional: a second GitHub account or a fork to verify permission denial and fork skip remotely.
 4. Phase 09 (GitHub App) only on explicit request.

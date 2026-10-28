@@ -184,3 +184,12 @@ def test_live_eval_requires_confirmation_and_never_runs_without_it(
     assert main([*args, "--models", "anthropic/claude-haiku-5-5", "--confirm-spend"]) == 1
     assert "ANTHROPIC_API_KEY" in capsys.readouterr().err
     assert not (tmp_path / "x.json").exists()
+
+
+def test_case_results_keep_finding_summaries_and_apply_reasons(cases: list[EvalCase]) -> None:
+    run = run_evaluation(cases, [mock_factory], dataset_sha256="x", mode="mock")
+    by_case = {r.case_id: r for r in run.cases["mock/deterministic"]}
+    summary = by_case["py_missing_authz"].finding_summaries[0]
+    assert summary.startswith("PB-001 critical/security app/invoices.py:")
+    assert by_case["py_unbounded_limit"].apply_valid
+    assert by_case["py_missing_authz"].apply_reason == ""

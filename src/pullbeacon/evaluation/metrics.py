@@ -47,6 +47,9 @@ class CaseResult(BaseModel):
     apply_attempted: bool = False
     apply_valid: bool = False
     apply_exact: bool = False
+    apply_reason: str = ""
+    # Location and labels only (no evidence/code), for manual review of disagreements.
+    finding_summaries: tuple[str, ...] = ()
 
 
 class ModelSummary(BaseModel):
@@ -124,6 +127,10 @@ def score_case(case: EvalCase, report: ReviewReport, *, latency_s: float) -> Cas
         duplicates=sum(1 for d in report.discarded if "duplicate" in d),
         trap_hits=trap_hits,
         matched_issue_ids=tuple(sorted(matched)),
+        finding_summaries=tuple(
+            f"{f.id} {f.severity.value}/{f.category.value} {f.path}:{f.line or '-'} {f.title[:120]}"
+            for f in report.findings
+        ),
         latency_s=round(latency_s, 3),
         input_tokens=report.usage.input_tokens,
         output_tokens=report.usage.output_tokens,

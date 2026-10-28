@@ -64,5 +64,4 @@ exercised; its numbers are asserted exactly in `tests/unit/test_evaluation.py`.
 
 ## Results
 
-See `docs/benchmarks/` for live runs that were actually executed (with their metadata). If no file
-is there, no live benchmark has been run.
+Live runs actually executed, with metadata and manual review: [`docs/benchmarks/`](../docs/benchmarks/).
