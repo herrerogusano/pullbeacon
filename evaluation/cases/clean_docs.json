@@ -1,0 +1,77 @@
+{
+  "case_id": "clean_docs",
+  "criticality": "none",
+  "expected_non_findings": [
+    {
+      "lines": [
+        3
+      ],
+      "path": "docs/config.md",
+      "rationale": "Documentation only, no secret."
+    }
+  ],
+  "fixture": {
+    "files": [
+      {
+        "additions": 3,
+        "changes": 3,
+        "deletions": 0,
+        "filename": "docs/config.md",
+        "patch": "@@ -1 +1,4 @@\n # Configuration\n+\n+Set `DATABASE_URL` to the connection string.\n+Never commit real credentials.",
+        "sha": "e0319ef6ea52133f31ede2a50c022f3591b2b8e7",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "f46aefeccd2e4828704e03dd58f5b79ecb20d25c"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/clean_docs",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "581c0864d32a72b4affbc2271a433413870a384c"
+      },
+      "number": 418,
+      "state": "open",
+      "title": "Document configuration",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "581c0864d32a72b4affbc2271a433413870a384c": {
+        "docs/config.md": "# Configuration\n\nSet `DATABASE_URL` to the connection string.\nNever commit real credentials.\n"
+      },
+      "f46aefeccd2e4828704e03dd58f5b79ecb20d25c": {
+        "docs/config.md": "# Configuration\n"
+      }
+    }
+  },
+  "ground_truth": [],
+  "kind": "clean",
+  "language": "markdown",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [], \"summary\": \"Mock review of clean_docs.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Document configuration"
+}

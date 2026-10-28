@@ -68,6 +68,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106", "PLR0915"]
+"evaluation/build_cases.py" = ["E501"]  # benchmark source snippets are data
 
 [tool.mypy]
 python_version = "3.12"

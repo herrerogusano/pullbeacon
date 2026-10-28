@@ -14,6 +14,7 @@ WORKFLOWS = [
     ROOT / ".github" / "workflows" / "ci.yml",
     ROOT / ".github" / "workflows" / "pullbeacon.yml",
     ROOT / "examples" / "pullbeacon.yml",
+    ROOT / ".github" / "workflows" / "benchmark.yml",
 ]
 PINNED = re.compile(r"^[\w.\-]+/[\w.\-]+(/[\w.\-/]+)?@[0-9a-f]{40}$")
 
@@ -52,7 +53,7 @@ def test_third_party_actions_are_pinned(path: Path) -> None:
             assert PINNED.match(uses), uses
 
 
-@pytest.mark.parametrize("path", WORKFLOWS[1:], ids=lambda p: p.name)
+@pytest.mark.parametrize("path", WORKFLOWS[1:3], ids=lambda p: p.name)
 def test_privileged_workflows_never_touch_pr_code(path: Path) -> None:
     text = path.read_text(encoding="utf-8")
     workflow = load(path)
@@ -79,7 +80,7 @@ def test_privileged_workflows_never_touch_pr_code(path: Path) -> None:
 
 
 def test_apply_is_the_only_job_with_contents_write() -> None:
-    for path in WORKFLOWS[1:]:
+    for path in WORKFLOWS[1:3]:
         jobs = load(path)["jobs"]
         writers = [
             n for n, j in jobs.items() if j.get("permissions", {}).get("contents") == "write"
@@ -108,6 +109,18 @@ def test_action_passes_inputs_only_through_env() -> None:
 def test_example_workflow_references_a_placeholder_not_an_invented_owner() -> None:
     text = (ROOT / "examples" / "pullbeacon.yml").read_text(encoding="utf-8")
     assert "<OWNER>/<REPO>@<COMMIT_SHA>" in text
+
+
+def test_benchmark_is_manual_and_confirmed() -> None:
+    workflow = load(ROOT / ".github" / "workflows" / "benchmark.yml")
+    assert set(triggers(workflow)) == {"workflow_dispatch"}
+    assert workflow["permissions"] == {"contents": "read"}
+    job = workflow["jobs"]["benchmark"]
+    assert "SPEND" in job["if"]
+    run = next(s["run"] for s in job["steps"] if "run" in s)
+    assert "${{" not in run
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "--provider live" not in ci
 
 
 def test_comment_commands_are_never_cancelled_by_concurrency() -> None:

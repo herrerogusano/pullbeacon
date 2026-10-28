@@ -168,7 +168,14 @@ def validate_findings(
 
     ordered = sorted(
         candidates.values(),
-        key=lambda f: (f.severity.rank, -f.confidence, f.path or "", f.line or 0, f.fingerprint),
+        key=lambda f: (
+            f.severity.rank,
+            not f.inline,
+            -f.confidence,
+            f.path or "",
+            f.line or 0,
+            f.fingerprint,
+        ),
     )[:MAX_FINDINGS]
     numbered: list[Finding] = []
     inline_count = 0

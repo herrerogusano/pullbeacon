@@ -1,0 +1,85 @@
+{
+  "case_id": "py_check_then_act",
+  "criticality": "high",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 7,
+        "changes": 7,
+        "deletions": 0,
+        "filename": "app/wallet.py",
+        "patch": "@@ -1,3 +1,10 @@\n class Wallet:\n     def __init__(self, store):\n         self.store = store\n+\n+    def withdraw(self, account_id, amount):\n+        balance = self.store.balance(account_id)\n+        if balance >= amount:\n+            self.store.set_balance(account_id, balance - amount)\n+            return True\n+        return False",
+        "sha": "677dfac3c785f6fa63e98b5f8826173c89414086",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "203ed9f5197962aa567cf2cce5dd268a67be3417"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_check_then_act",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "ad1814c09f944bd542e37936db32d1f94ff22585"
+      },
+      "number": 847,
+      "state": "open",
+      "title": "Withdraw endpoint",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "203ed9f5197962aa567cf2cce5dd268a67be3417": {
+        "app/wallet.py": "class Wallet:\n    def __init__(self, store):\n        self.store = store\n"
+      },
+      "ad1814c09f944bd542e37936db32d1f94ff22585": {
+        "app/wallet.py": "class Wallet:\n    def __init__(self, store):\n        self.store = store\n\n    def withdraw(self, account_id, amount):\n        balance = self.store.balance(account_id)\n        if balance >= amount:\n            self.store.set_balance(account_id, balance - amount)\n            return True\n        return False\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness",
+        "reliability",
+        "security"
+      ],
+      "category": "correctness",
+      "id": "race-withdraw",
+      "lines": [
+        8
+      ],
+      "path": "app/wallet.py",
+      "rationale": "Read-check-write without a lock or atomic update: concurrent withdrawals can overdraw the account.",
+      "severity": "high"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"self.store.set_balance(account_id, balance - amount)\", \"explanation\": \"Read-check-write without a lock or atomic update: concurrent withdrawals can overdraw the account.\", \"impact\": \"See explanation.\", \"line\": 8, \"path\": \"app/wallet.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Race condition between balance check and update\"}], \"summary\": \"Mock review of py_check_then_act.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Withdraw endpoint"
+}

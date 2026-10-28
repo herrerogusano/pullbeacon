@@ -51,3 +51,5 @@ jobs:
         run: |
           uv run python -m pullbeacon --help
           uv run python -m pullbeacon validate-config --file examples/.pullbeacon.yml
+          uv run python -m pullbeacon review --fixture tests/fixtures/pr_auth_bug.json --mock-llm --dry-run > /dev/null
+          uv run python -m pullbeacon eval --dataset evaluation/cases --mock-llm --output "$RUNNER_TEMP/mock.json" > /dev/null

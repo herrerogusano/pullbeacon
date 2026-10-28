@@ -1,0 +1,95 @@
+{
+  "case_id": "py_refund_untested",
+  "criticality": "high",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 2,
+        "changes": 4,
+        "deletions": 2,
+        "filename": "app/refunds.py",
+        "patch": "@@ -1,5 +1,5 @@\n-from decimal import Decimal, ROUND_HALF_UP\n+from decimal import Decimal, ROUND_DOWN\n \n \n def refund(amount: Decimal) -> Decimal:\n-    return amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)\n+    return amount.quantize(Decimal('0.01'), rounding=ROUND_DOWN)",
+        "sha": "4801fc3a8c774e1a4c020aecd158bdd971cda2e8",
+        "status": "modified"
+      },
+      {
+        "additions": 0,
+        "changes": 0,
+        "deletions": 0,
+        "filename": "tests/test_refunds.py",
+        "patch": "",
+        "sha": "09664efc2bfd2755523a12fa6bda81bcbad22f91",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "c2cbca160828edaec8181de16a8e3d5ad255435a"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_refund_untested",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "907f9b5759135d626f5689ff66f50771a7542763"
+      },
+      "number": 169,
+      "state": "open",
+      "title": "Change refund rounding",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "907f9b5759135d626f5689ff66f50771a7542763": {
+        "app/refunds.py": "from decimal import Decimal, ROUND_DOWN\n\n\ndef refund(amount: Decimal) -> Decimal:\n    return amount.quantize(Decimal('0.01'), rounding=ROUND_DOWN)\n",
+        "tests/test_refunds.py": "from decimal import Decimal\n\nfrom app.refunds import refund\n\n\ndef test_refund_whole():\n    assert refund(Decimal('10')) == Decimal('10.00')\n"
+      },
+      "c2cbca160828edaec8181de16a8e3d5ad255435a": {
+        "app/refunds.py": "from decimal import Decimal, ROUND_HALF_UP\n\n\ndef refund(amount: Decimal) -> Decimal:\n    return amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)\n",
+        "tests/test_refunds.py": "from decimal import Decimal\n\nfrom app.refunds import refund\n\n\ndef test_refund_whole():\n    assert refund(Decimal('10')) == Decimal('10.00')\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness",
+        "testing"
+      ],
+      "category": "testing",
+      "id": "untested-rounding",
+      "lines": [
+        5
+      ],
+      "path": "app/refunds.py",
+      "rationale": "Money rounding changed from half-up to down with no test for fractional cents; customers are silently under-refunded.",
+      "severity": "high"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"testing\", \"confidence\": 0.85, \"evidence\": \"return amount.quantize(Decimal('0.01'), rounding=ROUND_DOWN)\", \"explanation\": \"Money rounding changed from half-up to down with no test for fractional cents; customers are silently under-refunded.\", \"impact\": \"See explanation.\", \"line\": 5, \"path\": \"app/refunds.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Critical rounding change without tests\"}], \"summary\": \"Mock review of py_refund_untested.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Change refund rounding"
+}

@@ -1,0 +1,83 @@
+{
+  "case_id": "py_n_plus_one",
+  "criticality": "medium",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 5,
+        "changes": 6,
+        "deletions": 1,
+        "filename": "app/feed.py",
+        "patch": "@@ -1,3 +1,7 @@\n def feed(db, limit=20):\n     posts = db.posts.latest(limit)\n-    return [p.to_dict() for p in posts]\n+    result = []\n+    for post in posts:\n+        author = db.users.get(post.author_id)\n+        result.append({**post.to_dict(), 'author': author.name})\n+    return result",
+        "sha": "e58d4c4bc6328bf8aad2758e46708c0d4b4793a8",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "2881cd28853478dfc366b7b8e259de7cddf04bf2"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_n_plus_one",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "af291ddad20e7d34aa465807ec30271cfe63ee82"
+      },
+      "number": 136,
+      "state": "open",
+      "title": "Show author names in feed",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "2881cd28853478dfc366b7b8e259de7cddf04bf2": {
+        "app/feed.py": "def feed(db, limit=20):\n    posts = db.posts.latest(limit)\n    return [p.to_dict() for p in posts]\n"
+      },
+      "af291ddad20e7d34aa465807ec30271cfe63ee82": {
+        "app/feed.py": "def feed(db, limit=20):\n    posts = db.posts.latest(limit)\n    result = []\n    for post in posts:\n        author = db.users.get(post.author_id)\n        result.append({**post.to_dict(), 'author': author.name})\n    return result\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "performance"
+      ],
+      "category": "performance",
+      "id": "n-plus-one",
+      "lines": [
+        5
+      ],
+      "path": "app/feed.py",
+      "rationale": "One user query per post (N+1); fetch authors in one batched query.",
+      "severity": "medium"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [], \"summary\": \"Mock review of py_n_plus_one.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Show author names in feed"
+}

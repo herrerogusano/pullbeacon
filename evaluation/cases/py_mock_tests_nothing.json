@@ -1,0 +1,81 @@
+{
+  "case_id": "py_mock_tests_nothing",
+  "criticality": "medium",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 8,
+        "changes": 8,
+        "deletions": 0,
+        "filename": "tests/test_discounts.py",
+        "patch": "@@ -0,0 +1,8 @@\n+from unittest import mock\n+\n+from app import discounts\n+\n+\n+def test_apply_discount():\n+    with mock.patch.object(discounts, 'apply_discount', return_value=90):\n+        assert discounts.apply_discount(100, 0.1) == 90",
+        "sha": "12c36115719d4919271532e1e86612addcdf0b20",
+        "status": "added"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "6dfd213ae93675586604db518211a305cd603a1a"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_mock_tests_nothing",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "c65c5b6bcc05931f56a1139955d350d2e2465e68"
+      },
+      "number": 553,
+      "state": "open",
+      "title": "Add tests for discount service",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "6dfd213ae93675586604db518211a305cd603a1a": {},
+      "c65c5b6bcc05931f56a1139955d350d2e2465e68": {
+        "tests/test_discounts.py": "from unittest import mock\n\nfrom app import discounts\n\n\ndef test_apply_discount():\n    with mock.patch.object(discounts, 'apply_discount', return_value=90):\n        assert discounts.apply_discount(100, 0.1) == 90\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "testing"
+      ],
+      "category": "testing",
+      "id": "mock-sut",
+      "lines": [
+        7
+      ],
+      "path": "tests/test_discounts.py",
+      "rationale": "The test mocks the function under test, so it asserts the mock, not the behaviour.",
+      "severity": "medium"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"testing\", \"confidence\": 0.85, \"evidence\": \"with mock.patch.object(discounts, 'apply_discount', return_value=90):\", \"explanation\": \"The test mocks the function under test, so it asserts the mock, not the behaviour.\", \"impact\": \"See explanation.\", \"line\": 7, \"path\": \"tests/test_discounts.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Test mocks the function it is supposed to test\"}], \"summary\": \"Mock review of py_mock_tests_nothing.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Add tests for discount service"
+}

@@ -1,0 +1,85 @@
+{
+  "case_id": "py_unclosed_file",
+  "criticality": "medium",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 5,
+        "changes": 5,
+        "deletions": 0,
+        "filename": "app/export.py",
+        "patch": "@@ -1,4 +1,9 @@\n import csv\n+\n+\n+def load_header(path):\n+    handle = open(path, encoding='utf-8')\n+    return handle.readline().strip().split(',')\n \n \n def export(rows, out):",
+        "sha": "236088f48c2ada319fe1634087ababcca8ec8803",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "7db3149507bdfacf2adebcbdaa08a34eb1edf608"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_unclosed_file",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "9e309680cdc9159da8ba403ac5fee6b879becbe8"
+      },
+      "number": 498,
+      "state": "open",
+      "title": "Read export template",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "7db3149507bdfacf2adebcbdaa08a34eb1edf608": {
+        "app/export.py": "import csv\n\n\ndef export(rows, out):\n    writer = csv.writer(out)\n    writer.writerows(rows)\n"
+      },
+      "9e309680cdc9159da8ba403ac5fee6b879becbe8": {
+        "app/export.py": "import csv\n\n\ndef load_header(path):\n    handle = open(path, encoding='utf-8')\n    return handle.readline().strip().split(',')\n\n\ndef export(rows, out):\n    writer = csv.writer(out)\n    writer.writerows(rows)\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness",
+        "performance",
+        "reliability"
+      ],
+      "category": "reliability",
+      "id": "unclosed-file",
+      "lines": [
+        5
+      ],
+      "path": "app/export.py",
+      "rationale": "The file handle is never closed; use a with block.",
+      "severity": "medium"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"handle = open(path, encoding='utf-8')\", \"explanation\": \"The file handle is never closed; use a with block.\", \"impact\": \"See explanation.\", \"line\": 5, \"path\": \"app/export.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"File opened without being closed\"}, {\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"handle = open(path, encoding='utf-8')\", \"explanation\": \"The file handle is never closed; use a with block.\", \"impact\": \"See explanation.\", \"line\": 5, \"path\": \"app/export.py\", \"severity\": \"low\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Same issue, reworded\"}], \"summary\": \"Mock review of py_unclosed_file.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Read export template"
+}

@@ -1,0 +1,93 @@
+{
+  "apply_expectation": {
+    "expected_content": "PAGE_SIZE = 50\n\n\ndef search(request, repo):\n    query = request.args.get('q', '')\n    limit = max(1, min(int(request.args.get('limit', PAGE_SIZE)), 200))\n    return repo.find(query, limit=limit)\n",
+    "path": "app/search.py"
+  },
+  "case_id": "py_unbounded_limit",
+  "criticality": "medium",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 2,
+        "changes": 3,
+        "deletions": 1,
+        "filename": "app/search.py",
+        "patch": "@@ -3,4 +3,5 @@\n \n def search(request, repo):\n     query = request.args.get('q', '')\n-    return repo.find(query, limit=PAGE_SIZE)\n+    limit = int(request.args.get('limit', PAGE_SIZE))\n+    return repo.find(query, limit=limit)",
+        "sha": "651e8c67cf93d60ff31e89a1f5d211becbddfaba",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "854d1d1ea05187cc747295391e0fd631c52a0807"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_unbounded_limit",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "23e4ebd93294bb120db13e8448aa81d85aa2fe89"
+      },
+      "number": 271,
+      "state": "open",
+      "title": "Allow clients to choose page size",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "23e4ebd93294bb120db13e8448aa81d85aa2fe89": {
+        "app/search.py": "PAGE_SIZE = 50\n\n\ndef search(request, repo):\n    query = request.args.get('q', '')\n    limit = int(request.args.get('limit', PAGE_SIZE))\n    return repo.find(query, limit=limit)\n"
+      },
+      "854d1d1ea05187cc747295391e0fd631c52a0807": {
+        "app/search.py": "PAGE_SIZE = 50\n\n\ndef search(request, repo):\n    query = request.args.get('q', '')\n    return repo.find(query, limit=PAGE_SIZE)\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness",
+        "performance",
+        "reliability",
+        "security"
+      ],
+      "category": "reliability",
+      "id": "unbounded-limit",
+      "lines": [
+        6
+      ],
+      "path": "app/search.py",
+      "rationale": "limit is not bounded or validated: huge or negative values reach the database and non-numeric input raises an unhandled ValueError.",
+      "severity": "medium"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "apply": [
+      "{\"edits\": [{\"finding_ids\": [\"PB-001\"], \"path\": \"app/search.py\", \"replacements\": [{\"end_line\": 6, \"original\": \"    limit = int(request.args.get('limit', PAGE_SIZE))\\n\", \"replacement\": \"    limit = max(1, min(int(request.args.get('limit', PAGE_SIZE)), 200))\\n\", \"start_line\": 6}]}], \"explanation\": \"Mock fix.\"}"
+    ],
+    "review": [
+      "{\"findings\": [{\"can_apply\": true, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"limit = int(request.args.get('limit', PAGE_SIZE))\", \"explanation\": \"limit is not bounded or validated: huge or negative values reach the database and non-numeric input raises an unhandled ValueError.\", \"impact\": \"See explanation.\", \"line\": 6, \"path\": \"app/search.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": \"Clamp limit to 1..200 and reject non-numeric values.\", \"title\": \"Client-controlled limit is not validated\"}], \"summary\": \"Mock review of py_unbounded_limit.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Allow clients to choose page size"
+}
