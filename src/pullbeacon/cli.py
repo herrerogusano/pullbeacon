@@ -32,8 +32,23 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--fixture", type=Path, help="local PR fixture JSON (no network)")
     review.add_argument("--config", type=Path, help="config file (default: built-in defaults)")
     review.add_argument("--dry-run", action="store_true", help="print the report, publish nothing")
+    _add_llm_arguments(review)
 
     return parser
+
+
+def _add_llm_arguments(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--mock-llm",
+        action="store_true",
+        help="use the fixture's canned LLM responses (no provider call, no cost)",
+    )
+    group.add_argument(
+        "--provider",
+        choices=["live"],
+        help="'live' calls the configured provider (requires its API key; may cost money)",
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:

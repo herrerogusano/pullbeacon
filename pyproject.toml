@@ -62,6 +62,7 @@ ignore = [
     "PLR2004",  # magic values in tests and HTTP status codes
     "PLR0911",
     "PLR0912",
+    "PLR0915",  # validation pipelines are long but linear; splitting hurts readability
     "PLC0415",  # lazy imports keep the CLI fast and LiteLLM optional at import time
 ]
 

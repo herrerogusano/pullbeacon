@@ -19,7 +19,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 |---|---|---|
 | 01 Foundation | DONE_LOCAL | see log below |
 | 02 GitHub + diff | DONE_LOCAL | client, diff map, scope, fixtures |
-| 03 LLM + review engine | NOT_STARTED | |
+| 03 LLM + review engine | DONE_LOCAL | live provider path NOT_VERIFIED (no paid calls authorised) |
 | 04 Publish reviews | NOT_STARTED | |
 | 05 Actions + commands | NOT_STARTED | |
 | 06 Apply + commits | NOT_STARTED | |
@@ -42,6 +42,11 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D10 | `context_files` are literal base-branch paths (no globs), max 20 | avoids tree enumeration and keeps context explicit/auditable | glob over the base tree |
 | D11 | Shipped in-memory `FakeGitHub` (`pullbeacon.testing`) behind `httpx.MockTransport` | fixture CLI mode, tests and evaluation all exercise the real client code | hand-written respx stubs per test |
 | D12 | Diff rendered for the LLM with a coordinate prefix on every data line (`| R12 + ...`) | the model cites real line numbers and file content cannot forge structural lines | XML-like tags (forgeable by content) |
+| D13 | Evidence must literally appear in the cited file's diff (whitespace-normalised, coordinate prefix tolerated); otherwise the finding is dropped | deterministic anti-hallucination gate; the plan's "evidencia fundada" made testable | trusting model line numbers |
+| D14 | Wrong/non-commentable line ⇒ finding kept as non-inline (summary only) with no line; invented path ⇒ dropped | never attribute to a guessed line, but keep real issues in that file | dropping all mis-located findings |
+| D15 | Structured output via LiteLLM `response_format: json_schema (strict)` when `supports_response_schema`, automatic fallback to JSON-in-text with the same strict validation on schema rejection | portable across providers; fallback never trusted more | provider-specific tool calling |
+| D16 | Untrusted data wrapped in markers that embed a hash of the content | content cannot contain its own closing marker | fixed delimiters |
+| D17 | Budget: per-call upper-bound estimate (prompt tokens + full output budget) from the bundled LiteLLM cost map; unknown pricing ⇒ allowed with an explicit warning | the plan forbids promising a hard cap; blocking unknown models would block valid setups | refusing unknown-price models |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -86,6 +91,22 @@ Commands executed (all passed): `ruff check`, `ruff format --check`, `mypy src`,
 → 3 files with exact commentable ranges, skips: `.env.production` sensitive, `assets/logo.png`
 binary, `uv.lock` generated.
 
+### Phase 03 — LLM adapters and review engine (2026-10-28) — DONE_LOCAL
+
+Created: `adapters/llm.py` (`LLMClient` protocol, `FakeLLMClient`, `LiteLLMClient` with no tools,
+`num_retries=0` + own bounded retries: 2 for 429/timeout/5xx, none for auth/4xx; schema fallback;
+error messages never echo provider text), `prompts.py` (versioned `review-v1`/`explain-v1`/`apply-v1`
+prompts and JSON schemas), `core/findings.py` (validation, evidence check, dedupe by fingerprint,
+severity ordering, stable `PB-NNN` ids, inline cap), `core/review.py` (batching, `CostGuard`,
+one JSON correction retry), CLI flags `--mock-llm` / `--provider live`.
+
+Commands executed (all passed): ruff check/format, `mypy src`, `pytest -q` (157 passed), demo
+`uv run python -m pullbeacon review --fixture tests/fixtures/pr_auth_bug.json --mock-llm --dry-run`
+→ one critical finding on `src/api/users.py:13` RIGHT, `usage.cost_source = simulated`.
+
+Not verified: real Anthropic/OpenAI/Gemini calls (`LiteLLMClient` is tested with an injected
+`completion` function and real LiteLLM exception classes only). Requires authorisation to spend.
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
@@ -94,6 +115,9 @@ binary, `uv.lock` generated.
 | T02 | PASS (local) | `tests/unit/test_config.py::test_invalid_config_is_rejected` |
 | T03 | PASS (local) | `test_github_client.py::test_pagination_two_pages`, `test_diff.py::test_two_hunks_line_numbers` |
 | T04 | PASS (local) | `test_scope.py::test_skip_reasons`, demo output above |
+| T05 | PASS (local) | `test_review_engine.py::test_invalid_json_*` |
+| T06 | PASS (local, engine) | `test_findings.py` invented path / line outside diff |
+| T07 | PASS (local, mock) | `test_review_engine.py::test_clean_pr_yields_zero_findings` |
 | T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
 | T24 | IN_PROGRESS | local-only repo |
 | others | NOT_RUN | later phases |
