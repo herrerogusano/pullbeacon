@@ -191,6 +191,8 @@ class ReviewReport(_Frozen):
     skipped_files: tuple[SkippedFile, ...] = ()
     truncated: bool = False
     warnings: tuple[str, ...] = ()
+    # Why model findings were discarded by validation (no code content; used by evaluation).
+    discarded: tuple[str, ...] = ()
     usage: Usage = Usage()
 
 

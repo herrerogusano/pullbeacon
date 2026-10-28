@@ -1,0 +1,83 @@
+{
+  "case_id": "ts_timezone_day",
+  "criticality": "medium",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 2,
+        "changes": 3,
+        "deletions": 1,
+        "filename": "web/calendar.ts",
+        "patch": "@@ -1,3 +1,4 @@\n export function dayKey(iso: string): string {\n-  return iso.slice(0, 10);\n+  const d = new Date(iso);\n+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;\n }",
+        "sha": "12abe2f49d10ef87b8cf246d2ddd7fb2c67d6575",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "8208b04c02c6a81dc72f2d804189f77ad0e6c852"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/ts_timezone_day",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "539039085a09571448896acfad0309e64ba7f558"
+      },
+      "number": 750,
+      "state": "open",
+      "title": "Group events by day",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "539039085a09571448896acfad0309e64ba7f558": {
+        "web/calendar.ts": "export function dayKey(iso: string): string {\n  const d = new Date(iso);\n  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;\n}\n"
+      },
+      "8208b04c02c6a81dc72f2d804189f77ad0e6c852": {
+        "web/calendar.ts": "export function dayKey(iso: string): string {\n  return iso.slice(0, 10);\n}\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness"
+      ],
+      "category": "correctness",
+      "id": "local-tz",
+      "lines": [
+        3
+      ],
+      "path": "web/calendar.ts",
+      "rationale": "Local-time getters shift UTC timestamps to the viewer's timezone, so events land on the wrong day; months/days are also not zero-padded.",
+      "severity": "medium"
+    }
+  ],
+  "kind": "bug",
+  "language": "typescript",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;\", \"explanation\": \"Local-time getters shift UTC timestamps to the viewer's timezone, so events land on the wrong day; months/days are also not zero-padded.\", \"impact\": \"See explanation.\", \"line\": 3, \"path\": \"web/calendar.ts\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Day key depends on the local timezone\"}], \"summary\": \"Mock review of ts_timezone_day.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Group events by day"
+}

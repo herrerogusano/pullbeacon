@@ -1,0 +1,54 @@
+# Live model benchmark. Manual only: it calls paid provider APIs.
+name: Benchmark (manual, paid)
+
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: Comma-separated LiteLLM model ids (e.g. anthropic/<model-a>,anthropic/<model-b>)
+        required: true
+      max_total_cost_usd:
+        description: Preventive total budget for the run (USD)
+        required: true
+        default: "1"
+      confirm:
+        description: Type SPEND to confirm that this run costs money
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    if: github.event.inputs.confirm == 'SPEND'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: false
+      - name: Run live benchmark
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MODELS: ${{ github.event.inputs.models }}
+          BUDGET: ${{ github.event.inputs.max_total_cost_usd }}
+          LITELLM_LOCAL_MODEL_COST_MAP: "True"
+        run: |
+          uv sync --locked --no-dev
+          uv run python -m pullbeacon eval --provider live --confirm-spend \
+            --models "$MODELS" --max-total-cost-usd "$BUDGET" --output results/live.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmark-results
+          path: results/
+          retention-days: 30

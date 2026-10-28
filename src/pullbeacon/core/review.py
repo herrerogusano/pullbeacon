@@ -243,6 +243,7 @@ class ReviewEngine:
                 skipped_files=tuple(sorted(skipped_all, key=lambda s: s.path)),
                 truncated=truncated,
                 warnings=tuple(warnings),
+                discarded=outcome.dropped,
                 usage=usage,
             )
         except ValidationError as exc:  # pragma: no cover - defensive

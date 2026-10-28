@@ -1,0 +1,83 @@
+{
+  "case_id": "js_innerhtml_xss",
+  "criticality": "high",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 2,
+        "changes": 4,
+        "deletions": 2,
+        "filename": "web/banner.js",
+        "patch": "@@ -1,3 +1,3 @@\n-export function showBanner(el) {\n-  el.textContent = 'Results';\n+export function showBanner(el, params) {\n+  el.innerHTML = `Results for <b>${params.get('q')}</b>`;\n }",
+        "sha": "0af703f19293855c727ee0d9bc61fcb2dff689d3",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "e9a1c6bf16e297299ab55a2b0c0f918a929d7341"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/js_innerhtml_xss",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "c656b42d5211f91f0ae8a1002883f8cb5622347e"
+      },
+      "number": 363,
+      "state": "open",
+      "title": "Render search term in banner",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "c656b42d5211f91f0ae8a1002883f8cb5622347e": {
+        "web/banner.js": "export function showBanner(el, params) {\n  el.innerHTML = `Results for <b>${params.get('q')}</b>`;\n}\n"
+      },
+      "e9a1c6bf16e297299ab55a2b0c0f918a929d7341": {
+        "web/banner.js": "export function showBanner(el) {\n  el.textContent = 'Results';\n}\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "security"
+      ],
+      "category": "security",
+      "id": "xss",
+      "lines": [
+        2
+      ],
+      "path": "web/banner.js",
+      "rationale": "Unescaped query parameter is written with innerHTML (reflected XSS).",
+      "severity": "high"
+    }
+  ],
+  "kind": "bug",
+  "language": "javascript",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"el.innerHTML = `Results for <b>${params.get('q')}</b>`;\", \"explanation\": \"Unescaped query parameter is written with innerHTML (reflected XSS).\", \"impact\": \"See explanation.\", \"line\": 2, \"path\": \"web/banner.js\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"User input rendered with innerHTML\"}], \"summary\": \"Mock review of js_innerhtml_xss.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Render search term in banner"
+}

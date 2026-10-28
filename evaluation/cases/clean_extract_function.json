@@ -1,0 +1,77 @@
+{
+  "case_id": "clean_extract_function",
+  "criticality": "none",
+  "expected_non_findings": [
+    {
+      "lines": [
+        2
+      ],
+      "path": "app/pricing.py",
+      "rationale": "Plain extraction; behaviour unchanged."
+    }
+  ],
+  "fixture": {
+    "files": [
+      {
+        "additions": 5,
+        "changes": 6,
+        "deletions": 1,
+        "filename": "app/pricing.py",
+        "patch": "@@ -1,3 +1,7 @@\n+def tax(amount, rate):\n+    return amount * rate\n+\n+\n def total(items, rate):\n     subtotal = sum(i.price for i in items)\n-    return subtotal + subtotal * rate\n+    return subtotal + tax(subtotal, rate)",
+        "sha": "6148552838410af7f801ca6d7261b2c6e1081bbc",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "235514f11216404441dfcf3f0eb87caeff95a37b"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/clean_extract_function",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "22c01a8e0b4026e35bcc12da039fe712caf40864"
+      },
+      "number": 652,
+      "state": "open",
+      "title": "Extract tax helper",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "22c01a8e0b4026e35bcc12da039fe712caf40864": {
+        "app/pricing.py": "def tax(amount, rate):\n    return amount * rate\n\n\ndef total(items, rate):\n    subtotal = sum(i.price for i in items)\n    return subtotal + tax(subtotal, rate)\n"
+      },
+      "235514f11216404441dfcf3f0eb87caeff95a37b": {
+        "app/pricing.py": "def total(items, rate):\n    subtotal = sum(i.price for i in items)\n    return subtotal + subtotal * rate\n"
+      }
+    }
+  },
+  "ground_truth": [],
+  "kind": "clean",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"maintainability\", \"confidence\": 0.85, \"evidence\": \"return amount * rate\", \"explanation\": \"Looks suspicious.\", \"impact\": \"See explanation.\", \"line\": 2, \"path\": \"app/pricing.py\", \"severity\": \"low\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Possible issue\"}], \"summary\": \"Mock review of clean_extract_function.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Extract tax helper"
+}

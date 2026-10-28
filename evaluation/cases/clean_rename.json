@@ -1,0 +1,77 @@
+{
+  "case_id": "clean_rename",
+  "criticality": "none",
+  "expected_non_findings": [
+    {
+      "lines": [
+        2
+      ],
+      "path": "web/cart.ts",
+      "rationale": "Rename only."
+    }
+  ],
+  "fixture": {
+    "files": [
+      {
+        "additions": 4,
+        "changes": 8,
+        "deletions": 4,
+        "filename": "web/cart.ts",
+        "patch": "@@ -1,5 +1,5 @@\n-export function count(c: { qty: number }[]): number {\n-  let n = 0;\n-  for (const x of c) n += x.qty;\n-  return n;\n+export function count(lines: { qty: number }[]): number {\n+  let quantity = 0;\n+  for (const line of lines) quantity += line.qty;\n+  return quantity;\n }",
+        "sha": "4307d1e61e0ccd49bd4d95e13ac91d963c9cee8e",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "4a50f7650fd4337315bb1aafd55c07311532aeac"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/clean_rename",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "0428267575c5e2bdf570aadfb59abb4e21e7a368"
+      },
+      "number": 163,
+      "state": "open",
+      "title": "Rename variable for clarity",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "0428267575c5e2bdf570aadfb59abb4e21e7a368": {
+        "web/cart.ts": "export function count(lines: { qty: number }[]): number {\n  let quantity = 0;\n  for (const line of lines) quantity += line.qty;\n  return quantity;\n}\n"
+      },
+      "4a50f7650fd4337315bb1aafd55c07311532aeac": {
+        "web/cart.ts": "export function count(c: { qty: number }[]): number {\n  let n = 0;\n  for (const x of c) n += x.qty;\n  return n;\n}\n"
+      }
+    }
+  },
+  "ground_truth": [],
+  "kind": "clean",
+  "language": "typescript",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [], \"summary\": \"Mock review of clean_rename.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Rename variable for clarity"
+}

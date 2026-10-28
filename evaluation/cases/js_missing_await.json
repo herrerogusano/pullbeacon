@@ -1,0 +1,91 @@
+{
+  "apply_expectation": {
+    "expected_content": "export async function save(api, settings) {\n  await api.put('/settings', settings);\n}\n\nexport async function saveAndExit(api, settings, router) {\n  await save(api, settings);\n  router.push('/home');\n}\n",
+    "path": "web/settings.js"
+  },
+  "case_id": "js_missing_await",
+  "criticality": "high",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 5,
+        "changes": 5,
+        "deletions": 0,
+        "filename": "web/settings.js",
+        "patch": "@@ -1,3 +1,8 @@\n export async function save(api, settings) {\n   await api.put('/settings', settings);\n }\n+\n+export async function saveAndExit(api, settings, router) {\n+  save(api, settings);\n+  router.push('/home');\n+}",
+        "sha": "be0001cc8ee5f981a60e30195c8a42560c0eef8e",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "f9bb95a13f34212979a9d4139ba7da8ae4faf594"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/js_missing_await",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "40cdcaed089e49c73244aa36002ce7abaab60e53"
+      },
+      "number": 996,
+      "state": "open",
+      "title": "Save settings before redirect",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "40cdcaed089e49c73244aa36002ce7abaab60e53": {
+        "web/settings.js": "export async function save(api, settings) {\n  await api.put('/settings', settings);\n}\n\nexport async function saveAndExit(api, settings, router) {\n  save(api, settings);\n  router.push('/home');\n}\n"
+      },
+      "f9bb95a13f34212979a9d4139ba7da8ae4faf594": {
+        "web/settings.js": "export async function save(api, settings) {\n  await api.put('/settings', settings);\n}\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness",
+        "reliability"
+      ],
+      "category": "correctness",
+      "id": "missing-await",
+      "lines": [
+        6
+      ],
+      "path": "web/settings.js",
+      "rationale": "save() is not awaited: navigation happens before the request finishes and failures are unhandled.",
+      "severity": "high"
+    }
+  ],
+  "kind": "bug",
+  "language": "javascript",
+  "mock_responses": {
+    "apply": [
+      "{\"edits\": [{\"finding_ids\": [\"PB-001\"], \"path\": \"web/settings.js\", \"replacements\": [{\"end_line\": 6, \"original\": \"  save(api, settings);\\n\", \"replacement\": \"  await save(api, settings);\\n\", \"start_line\": 6}]}], \"explanation\": \"Mock fix.\"}"
+    ],
+    "review": [
+      "{\"findings\": [{\"can_apply\": true, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"save(api, settings);\", \"explanation\": \"save() is not awaited: navigation happens before the request finishes and failures are unhandled.\", \"impact\": \"See explanation.\", \"line\": 6, \"path\": \"web/settings.js\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": \"await save(api, settings) before navigating.\", \"title\": \"Promise from save() is not awaited\"}, {\"can_apply\": true, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"save(api, settings);\", \"explanation\": \"save() is not awaited: navigation happens before the request finishes and failures are unhandled.\", \"impact\": \"See explanation.\", \"line\": 999, \"path\": \"web/settings.js\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": \"await save(api, settings) before navigating.\", \"title\": \"Issue on a line that is not in the diff\"}], \"summary\": \"Mock review of js_missing_await.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Save settings before redirect"
+}

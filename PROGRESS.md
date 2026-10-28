@@ -23,7 +23,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 04 Publish reviews | DONE_LOCAL | real GitHub publish NOT_VERIFIED_REMOTELY |
 | 05 Actions + commands | DONE_LOCAL | workflows `NOT_VERIFIED_REMOTELY` |
 | 06 Apply + commits | DONE_LOCAL | real commit on GitHub NOT_VERIFIED_REMOTELY |
-| 07 Evaluation | NOT_STARTED | |
+| 07 Evaluation | DONE_LOCAL | live benchmark BLOCKED_BY_AUTH (API key not yet available to the agent) |
 | 08 Hardening + release | NOT_STARTED | |
 | 09 GitHub App (optional) | NOT_STARTED | requires explicit approval after MVP |
 
@@ -62,6 +62,10 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D30 | Before editing, fetched content must hash to the PR file's git blob id (`sha` in the files API) and the tree entry must be a regular file (100644/100755) | proves we edit exactly the reviewed bytes; excludes symlinks/submodules | trusting the contents API alone |
 | D31 | Commit flow: refuse protected branches; ref must equal the reviewed head before and right before `PATCH refs` (`force: false`); verify the ref after | a concurrent push always wins; no force, no merge | optimistic update without re-check |
 | D32 | The commenter's permission is re-checked right before the write | permission can change during the run | single check |
+| D33 | Benchmark matching: inline, same path, ±3 lines, accepted category; unlocated ⇒ FP; deterministic, never model-graded | reproducible and explainable; plan forbids self-grading | LLM-as-judge |
+| D34 | Mock reviewer is deliberately imperfect (1 miss, 1 FP trap, 1 invented line, 1 duplicate) and its metrics are asserted exactly | proves every metric path works; clearly labelled as harness test | perfect oracle (would hide metric bugs) |
+| D35 | Live benchmark only via CLI `--confirm-spend` or manual `benchmark.yml` (`confirm: SPEND`); CI runs mock eval only | plan: no live benchmarking in CI | scheduled benchmark |
+| D36 | Findings sorted by severity, then inline before non-inline, then confidence | stable ids favour locatable findings (`apply` targets) | confidence first |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -163,6 +167,21 @@ Fixtures now carry real git blob ids.
 Commands executed (all passed): ruff, mypy, `pytest -q` (285 passed). Remote: CI for phases
 01–05 passed on GitHub (run 40738993439, Python 3.12 and 3.13).
 
+### Phase 07 — Evaluation (2026-10-28) — DONE_LOCAL (live run pending)
+
+Created: `evaluation/build_cases.py`, 16 cases in `evaluation/cases/`, `evaluation/README.md`,
+`src/pullbeacon/evaluation/{dataset,metrics,runner,report}.py`, `pullbeacon eval` CLI,
+`.github/workflows/benchmark.yml` (manual, paid), CI smoke for fixture review + mock eval,
+`ReviewReport.discarded`, `tests/unit/test_evaluation.py`.
+
+Commands executed (all passed): ruff, mypy, `pytest -q` (297 passed),
+`uv run python -m pullbeacon eval --dataset evaluation/cases --mock-llm --output evaluation/results/mock.json`
+→ mock (harness test, not model quality): TP 11, FP 2, FN 1, recall 0.9167, precision 0.8462,
+FP/clean PR 0.25, unlocated 1, duplicates 1, apply exact 2/2.
+
+Live benchmark: authorised by the user on 2026-10-28 (budget proposal ≤ 2 USD); waiting for
+`ANTHROPIC_API_KEY` to be provided securely (GitHub secret and/or user env var).
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
@@ -186,6 +205,8 @@ Commands executed (all passed): ruff, mypy, `pytest -q` (285 passed). Remote: CI
 | T17 | PASS (local) | `test_shell_text_in_replacement_is_just_file_content` |
 | T18 | PASS (local) | reply text asserted in `test_authorized_apply_creates_one_bounded_commit` |
 | T23 | PASS (local) | `test_protected_branch_reports_without_mutation`, `test_github_403_on_ref_update` |
+| T19 | PASS (local) | `test_evaluation.py::test_mock_run_metrics_are_exact` |
+| T20 | PASS (local) | `test_live_eval_requires_confirmation_and_never_runs_without_it` |
 | T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
 | T24 | IN_PROGRESS | local-only repo |
 | others | NOT_RUN | later phases |

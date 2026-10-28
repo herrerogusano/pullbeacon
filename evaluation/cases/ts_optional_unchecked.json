@@ -1,0 +1,84 @@
+{
+  "case_id": "ts_optional_unchecked",
+  "criticality": "medium",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 1,
+        "changes": 2,
+        "deletions": 1,
+        "filename": "web/team.ts",
+        "patch": "@@ -1,5 +1,5 @@\n export interface Team { name: string; owner?: { displayName: string } }\n \n export function teamTitle(team: Team): string {\n-  return team.name;\n+  return `${team.name} (${team.owner!.displayName})`;\n }",
+        "sha": "47859769eb020651b560172baa9ccbb392a1d766",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "dcca4921f2bd39fc6c899f63f5904b3627b0ffa1"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/ts_optional_unchecked",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "54fbb032c39fe763fee91fa48a955764ee9b6ea8"
+      },
+      "number": 869,
+      "state": "open",
+      "title": "Display team owner",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "54fbb032c39fe763fee91fa48a955764ee9b6ea8": {
+        "web/team.ts": "export interface Team { name: string; owner?: { displayName: string } }\n\nexport function teamTitle(team: Team): string {\n  return `${team.name} (${team.owner!.displayName})`;\n}\n"
+      },
+      "dcca4921f2bd39fc6c899f63f5904b3627b0ffa1": {
+        "web/team.ts": "export interface Team { name: string; owner?: { displayName: string } }\n\nexport function teamTitle(team: Team): string {\n  return team.name;\n}\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "correctness",
+        "reliability"
+      ],
+      "category": "correctness",
+      "id": "non-null-owner",
+      "lines": [
+        4
+      ],
+      "path": "web/team.ts",
+      "rationale": "owner is optional but asserted non-null; teams without an owner crash.",
+      "severity": "medium"
+    }
+  ],
+  "kind": "bug",
+  "language": "typescript",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"return `${team.name} (${team.owner!.displayName})`;\", \"explanation\": \"owner is optional but asserted non-null; teams without an owner crash.\", \"impact\": \"See explanation.\", \"line\": 4, \"path\": \"web/team.ts\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Optional owner dereferenced without a check\"}], \"summary\": \"Mock review of ts_optional_unchecked.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Display team owner"
+}

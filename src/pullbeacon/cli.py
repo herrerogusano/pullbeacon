@@ -41,6 +41,10 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--dry-run", action="store_true", help="print the report, publish nothing")
     _add_llm_arguments(review)
 
+    from pullbeacon.commands_eval import add_eval_parser
+
+    add_eval_parser(sub)
+
     sub.add_parser(
         "run-action",
         help="GitHub Action entry point (reads GITHUB_EVENT_* and INPUT_* environment variables)",
@@ -84,6 +88,10 @@ def _dispatch(args: argparse.Namespace) -> int:
         return commands_local.validate_config(args.file)
     if args.command == "review":
         return commands_local.review(args)
+    if args.command == "eval":
+        from pullbeacon.commands_eval import run_eval
+
+        return run_eval(args)
     if args.command == "run-action":
         from pullbeacon.commands_github import run_action_cli
 

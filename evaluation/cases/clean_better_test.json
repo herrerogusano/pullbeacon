@@ -1,0 +1,77 @@
+{
+  "case_id": "clean_better_test",
+  "criticality": "none",
+  "expected_non_findings": [
+    {
+      "lines": [
+        6
+      ],
+      "path": "tests/test_slug.py",
+      "rationale": "Stronger assertions; nothing wrong."
+    }
+  ],
+  "fixture": {
+    "files": [
+      {
+        "additions": 2,
+        "changes": 3,
+        "deletions": 1,
+        "filename": "tests/test_slug.py",
+        "patch": "@@ -2,4 +2,5 @@\n \n \n def test_slug():\n-    assert slug('A B')\n+    assert slug('A B') == 'a-b'\n+    assert slug('  x ') == 'x'",
+        "sha": "0716340568302b393b8bb82b1b6311e978f7d2f7",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "298f5b57d977841bfb38c52a3dac88b36a7ce3b6"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/clean_better_test",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "da18c64c84f45b74976057492ad6151e306f9336"
+      },
+      "number": 423,
+      "state": "open",
+      "title": "Strengthen slug test",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "298f5b57d977841bfb38c52a3dac88b36a7ce3b6": {
+        "tests/test_slug.py": "from app.text import slug\n\n\ndef test_slug():\n    assert slug('A B')\n"
+      },
+      "da18c64c84f45b74976057492ad6151e306f9336": {
+        "tests/test_slug.py": "from app.text import slug\n\n\ndef test_slug():\n    assert slug('A B') == 'a-b'\n    assert slug('  x ') == 'x'\n"
+      }
+    }
+  },
+  "ground_truth": [],
+  "kind": "clean",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [], \"summary\": \"Mock review of clean_better_test.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Strengthen slug test"
+}

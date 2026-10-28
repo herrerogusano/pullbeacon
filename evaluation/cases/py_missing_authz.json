@@ -1,0 +1,83 @@
+{
+  "case_id": "py_missing_authz",
+  "criticality": "critical",
+  "expected_non_findings": [],
+  "fixture": {
+    "files": [
+      {
+        "additions": 6,
+        "changes": 6,
+        "deletions": 0,
+        "filename": "app/invoices.py",
+        "patch": "@@ -5,3 +5,9 @@\n def list_invoices(request):\n     user = current_user(request)\n     return invoices.for_owner(user.id)\n+\n+\n+def download_invoice(request, invoice_id):\n+    current_user(request)\n+    invoice = invoices.get(invoice_id)\n+    return invoice.pdf_bytes()",
+        "sha": "74191db0316682774079c7605f7297705a5167ee",
+        "status": "modified"
+      }
+    ],
+    "pull_request": {
+      "base": {
+        "ref": "main",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "6824ca6ca4466fbd2a72efd2e529da5b881d561e"
+      },
+      "body": "",
+      "draft": false,
+      "head": {
+        "ref": "eval/py_missing_authz",
+        "repo": {
+          "full_name": "pullbeacon-eval/bench",
+          "name": "bench",
+          "owner": {
+            "login": "pullbeacon-eval"
+          }
+        },
+        "sha": "b1456bda6cb0368de6a60bc9a10553da4e6267cf"
+      },
+      "number": 296,
+      "state": "open",
+      "title": "Add invoice download endpoint",
+      "user": {
+        "login": "eval-author",
+        "type": "User"
+      }
+    },
+    "trees": {
+      "6824ca6ca4466fbd2a72efd2e529da5b881d561e": {
+        "app/invoices.py": "from app.auth import current_user\nfrom app.store import invoices\n\n\ndef list_invoices(request):\n    user = current_user(request)\n    return invoices.for_owner(user.id)\n"
+      },
+      "b1456bda6cb0368de6a60bc9a10553da4e6267cf": {
+        "app/invoices.py": "from app.auth import current_user\nfrom app.store import invoices\n\n\ndef list_invoices(request):\n    user = current_user(request)\n    return invoices.for_owner(user.id)\n\n\ndef download_invoice(request, invoice_id):\n    current_user(request)\n    invoice = invoices.get(invoice_id)\n    return invoice.pdf_bytes()\n"
+      }
+    }
+  },
+  "ground_truth": [
+    {
+      "accepted_categories": [
+        "security"
+      ],
+      "category": "security",
+      "id": "missing-owner-check",
+      "lines": [
+        12
+      ],
+      "path": "app/invoices.py",
+      "rationale": "Any authenticated user can download any invoice: ownership is never checked.",
+      "severity": "critical"
+    }
+  ],
+  "kind": "bug",
+  "language": "python",
+  "mock_responses": {
+    "review": [
+      "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"invoice = invoices.get(invoice_id)\", \"explanation\": \"Any authenticated user can download any invoice: ownership is never checked.\", \"impact\": \"See explanation.\", \"line\": 12, \"path\": \"app/invoices.py\", \"severity\": \"critical\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"download_invoice does not verify invoice ownership\"}], \"summary\": \"Mock review of py_missing_authz.\"}"
+    ]
+  },
+  "size": "small",
+  "title": "Add invoice download endpoint"
+}
