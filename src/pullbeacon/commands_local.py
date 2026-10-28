@@ -8,8 +8,11 @@ from pathlib import Path
 from typing import Any
 
 from pullbeacon.adapters.github import GitHubClient, fetch_snapshot
+from pullbeacon.adapters.llm import FakeLLMClient, LiteLLMClient, LLMClient
 from pullbeacon.cli_output import emit_json
 from pullbeacon.config import PullBeaconConfig, default_config, load_config_file
+from pullbeacon.core.context import fetch_context_files
+from pullbeacon.core.review import ReviewEngine
 from pullbeacon.core.scope import ReviewScope, select_scope
 from pullbeacon.domain.errors import ConfigError
 from pullbeacon.domain.models import PullRequestSnapshot
@@ -107,10 +110,41 @@ def snapshot_from_fixture(fixture: dict[str, Any]) -> tuple[FakeGitHub, PullRequ
     return fake, snapshot
 
 
+def llm_for_fixture(
+    args: argparse.Namespace, config: PullBeaconConfig, fixture: dict[str, Any]
+) -> LLMClient:
+    if getattr(args, "mock_llm", False):
+        responses = fixture.get("llm_responses")
+        if not isinstance(responses, dict):
+            raise ConfigError("fixture has no 'llm_responses' for --mock-llm")
+        return FakeLLMClient(responses={k: list(v) for k, v in responses.items()})
+    if getattr(args, "provider", None) == "live":
+        if config.model is None:
+            raise ConfigError("--provider live requires 'model' in the config file (--config)")
+        return LiteLLMClient(config.model)
+    raise ConfigError("choose --mock-llm (offline) or --provider live (paid API call)")
+
+
 def review(args: argparse.Namespace) -> int:
     if args.fixture is None:
-        raise ConfigError("review currently requires --fixture")
+        from pullbeacon.commands_github import review_remote
+
+        return review_remote(args)
     config = load_config_arg(args.config)
-    _, snapshot = snapshot_from_fixture(load_fixture(args.fixture))
-    emit_json(scope_summary(snapshot, select_scope(snapshot, config)))
+    fixture = load_fixture(args.fixture)
+    fake, snapshot = snapshot_from_fixture(fixture)
+    scope = select_scope(snapshot, config)
+    if not (getattr(args, "mock_llm", False) or getattr(args, "provider", None)):
+        # Scope-only dry run: shows exactly what would be sent, without any LLM.
+        emit_json(scope_summary(snapshot, scope))
+        return EXIT_OK
+    llm = llm_for_fixture(args, config, fixture)
+    with GitHubClient(None, transport=fake.transport(), max_retries=0) as client:
+        context, warnings = fetch_context_files(
+            client, snapshot, config, budget=config.limits.max_context_chars // 4
+        )
+    report = ReviewEngine(llm, config).review(
+        snapshot, scope, mode="local", context_files=context, context_warnings=warnings
+    )
+    emit_json(report)
     return EXIT_OK
