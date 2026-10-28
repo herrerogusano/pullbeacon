@@ -24,7 +24,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 05 Actions + commands | DONE_LOCAL | workflows `NOT_VERIFIED_REMOTELY` |
 | 06 Apply + commits | DONE_LOCAL | real commit on GitHub NOT_VERIFIED_REMOTELY |
 | 07 Evaluation | DONE_LOCAL | live benchmark BLOCKED_BY_AUTH (API key not yet available to the agent) |
-| 08 Hardening + release | NOT_STARTED | |
+| 08 Hardening + release | DONE_LOCAL | release candidate; live/apply remote acceptance pending the API key; tag `v0.1.0` needs approval |
 | 09 GitHub App (optional) | NOT_STARTED | requires explicit approval after MVP |
 
 ## Decisions (not already fixed by the plans)
@@ -66,6 +66,9 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D34 | Mock reviewer is deliberately imperfect (1 miss, 1 FP trap, 1 invented line, 1 duplicate) and its metrics are asserted exactly | proves every metric path works; clearly labelled as harness test | perfect oracle (would hide metric bugs) |
 | D35 | Live benchmark only via CLI `--confirm-spend` or manual `benchmark.yml` (`confirm: SPEND`); CI runs mock eval only | plan: no live benchmarking in CI | scheduled benchmark |
 | D36 | Findings sorted by severity, then inline before non-inline, then confidence | stable ids favour locatable findings (`apply` targets) | confidence first |
+| D37 | Concurrency group per comment for `issue_comment`, per PR for PR events (#9) | GitHub keeps one pending run per group and cancels older pending ones even with `cancel-in-progress: false`; found in the remote smoke test | per-PR group |
+| D38 | filelock<4 advisories (3 IDs) accepted and ignored explicitly in `uv audit`; any other advisory fails CI | litellm pins `filelock<4.0`; issues need a second local user and affect classes only used by litellm's proxy CLI | overriding litellm's constraint |
+| D39 | gitleaks downloaded in CI by exact version and verified against a SHA256 recorded on 2026-10-28 | no third-party action with repo write scope needed | gitleaks-action |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -182,6 +185,34 @@ FP/clean PR 0.25, unlocated 1, duplicates 1, apply exact 2/2.
 Live benchmark: authorised by the user on 2026-10-28 (budget proposal ≤ 2 USD); waiting for
 `ANTHROPIC_API_KEY` to be provided securely (GitHub secret and/or user env var).
 
+### Phase 08 — Hardening and release candidate (2026-10-28) — DONE_LOCAL
+
+Created/updated: `tests/integration/test_e2e.py` (event → auth → snapshot → fake LLM → validation →
+review → explain → apply commit → stale refusal → re-review; asserts no credential in GitHub
+payloads, prompts or output), CI `security` job (`uv audit`, gitleaks, `uv build`), workflow tests
+(example inputs ⊆ `action.yml` inputs, benchmark manual-only), user `README.md`, full `SECURITY.md`,
+`docs/architecture.md` (Mermaid), `docs/adr/ADR-001…004`, `docs/acceptance-checklist.md`, `CHANGELOG.md`.
+
+Commands executed (all passed): ruff, mypy, `pytest -q` (300 passed), coverage 88 % total,
+`uv audit` (3 accepted filelock advisories, otherwise clean), gitleaks over full history
+(no leaks), `uv build` (sdist + wheel `0.1.0rc1`).
+
+Coverage of critical modules: config 93 %, paths 94 %, diff 98 %, scope 97 %, findings 98 %,
+apply 92 %, github client 90 %, git_commit 84 %, publisher 99 %, markers 88 %, runner 91 %,
+apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
+
+### Remote verification log (real GitHub, this repository)
+
+| Date | Evidence | Result |
+|---|---|---|
+| 2026-10-28 | CI runs on PRs #2–#9 and pushes to `main` | PASS (Python 3.12/3.13) |
+| 2026-10-28 | PR #8: automatic review on `pull_request_target` (mock LLM) | PASS — review posted, 12 files reviewed, 23 skipped with reasons |
+| 2026-10-28 | PR #8: `@pullbeacon review` | PASS — second review posted |
+| 2026-10-28 | PR #8: quoted `> @pullbeacon apply` | PASS — ignored |
+| 2026-10-28 | PR #8: burst `explain`/help | FAIL → fixed in #9 → PASS (help and explain replies posted) |
+| — | Live LLM review, explain with findings, `apply` commit on a real PR | NOT_RUN — waiting for `ANTHROPIC_API_KEY` |
+| — | Read-only user denied, fork PR skipped | NOT_RUN remotely (needs a second account / fork); PASS locally |
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
@@ -207,10 +238,15 @@ Live benchmark: authorised by the user on 2026-10-28 (budget proposal ≤ 2 USD)
 | T23 | PASS (local) | `test_protected_branch_reports_without_mutation`, `test_github_403_on_ref_update` |
 | T19 | PASS (local) | `test_evaluation.py::test_mock_run_metrics_are_exact` |
 | T20 | PASS (local) | `test_live_eval_requires_confirmation_and_never_runs_without_it` |
-| T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
-| T24 | IN_PROGRESS | local-only repo |
-| others | NOT_RUN | later phases |
+| T22 | PASS (local) | `test_e2e.py` secret assertions, redaction tests; remote logs of mock runs show no secrets |
+| T24 | NOT_APPLICABLE | remote created on 2026-10-28 |
+| T21 | NOT_RUN | needs a second repository (checklist R13) |
 
 ## Human actions pending
 
-None yet. (Remote repo, secrets and paid calls will be requested when phases 05–08 need them.)
+1. Provide `ANTHROPIC_API_KEY` securely: `gh secret set ANTHROPIC_API_KEY -R herrerogusano/pullbeacon`
+   (remote tests) and/or `setx ANTHROPIC_API_KEY ...` (local benchmark). Paid calls already
+   authorised by the user on 2026-10-28; planned spend ≤ 2 USD.
+2. Approve tag/release `v0.1.0` and decide repository visibility (currently private).
+3. Optional: a second GitHub account or a fork to verify permission denial and fork skip remotely.
+4. Phase 09 (GitHub App) only on explicit request.
