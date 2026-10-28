@@ -174,7 +174,8 @@ decisions: [`docs/adr/`](docs/adr/), security: [`SECURITY.md`](SECURITY.md).
 |---|---|---|
 | Unit, integration and end-to-end tests (fake GitHub + fake LLM) | `pytest` locally and in CI (Python 3.12, 3.13) | passing |
 | Automatic review, manual `review`, `explain`, help, quoted commands ignored | real PRs in this repository with `mock-llm` | working (see PR #8) |
-| Live LLM reviews, `apply` commit on a real PR, real model benchmark | — | see `PROGRESS.md` for current status |
+| Live benchmark, Claude Haiku 5.5 vs Sonnet 5.5 (16 cases) | `pullbeacon eval --provider live`, manual review of disagreements | both recall 12/12, 0 FP on clean PRs, no unsupported claims — [report](docs/benchmarks/2026-10-28-claude.md) |
+| Live LLM review, `apply` commit on a real PR | — | see `PROGRESS.md` for current status |
 
 ## License
 

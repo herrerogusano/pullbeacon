@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import time
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -75,32 +76,53 @@ def mock_factory(case: EvalCase) -> LLMClient:
     return FakeLLMClient(responses={k: list(v) for k, v in case.mock_responses.items()})
 
 
+@dataclass(frozen=True)
+class ApplyOutcome:
+    attempted: bool = False
+    valid: bool = False
+    exact: bool = False
+    reason: str = ""
+    cost_usd: float = 0.0
+
+
 def _apply_check(
     case: EvalCase, llm: LLMClient, report: Any, config: PullBeaconConfig, fake: FakeGitHub
-) -> tuple[bool, bool, bool]:
+) -> ApplyOutcome:
     expectation = case.apply_expectation
     if expectation is None:
-        return False, False, False
+        return ApplyOutcome()
     marker = marker_from_report(report, trigger="eval")
-    eligible, _ = select_findings(marker.findings, None, config)
+    eligible, skipped = select_findings(marker.findings, None, config)
     eligible = [f for f in eligible if f.path == expectation.path][:1]
     if not eligible:
-        return True, False, False
+        reasons = "; ".join(sorted({r for _, r in skipped})) or "no finding on the expected file"
+        return ApplyOutcome(attempted=True, reason=f"not eligible: {reasons}")
     head = case.fixture["pull_request"]["head"]["sha"]
     content = fake.file_at(head, expectation.path)
     if content is None:
-        return True, False, False
+        return ApplyOutcome(attempted=True, reason="file missing in fixture")
     blob = next(f["sha"] for f in case.fixture["files"] if f["filename"] == expectation.path)
     source = SourceFile(expectation.path, content.decode("utf-8"), blob)
     request = build_apply_request(eligible, [source], max_output_tokens=2048)
     try:
-        data, _ = call_json(llm, request, CostGuard(config.limits.max_estimated_cost_usd))
+        data, usage = call_json(llm, request, CostGuard(config.limits.max_estimated_cost_usd))
+    except PullBeaconError as exc:
+        return ApplyOutcome(attempted=True, reason=f"llm: {exc.message}")
+    cost = usage.cost_usd or 0.0
+    try:
         plan = validate_proposal(data, eligible, [source], config)
-    except PullBeaconError:
-        return True, False, False
+    except PullBeaconError as exc:
+        return ApplyOutcome(attempted=True, reason=f"rejected: {exc.message}", cost_usd=cost)
     if not plan.edits:
-        return True, False, False
-    return True, True, plan.edits[0].new_content == expectation.expected_content
+        return ApplyOutcome(attempted=True, reason="no edit proposed", cost_usd=cost)
+    exact = plan.edits[0].new_content == expectation.expected_content
+    return ApplyOutcome(
+        attempted=True,
+        valid=True,
+        exact=exact,
+        reason="" if exact else "valid edit, differs from the reference fix",
+        cost_usd=cost,
+    )
 
 
 def evaluate_model(
@@ -137,10 +159,16 @@ def evaluate_model(
             continue
         result = score_case(case, report, latency_s=time.perf_counter() - start)
         spent_usd += result.cost_usd or 0.0
-        attempted, valid, exact = _apply_check(case, llm, report, config, fake)
+        outcome = _apply_check(case, llm, report, config, fake)
+        spent_usd += outcome.cost_usd
         results.append(
             result.model_copy(
-                update={"apply_attempted": attempted, "apply_valid": valid, "apply_exact": exact}
+                update={
+                    "apply_attempted": outcome.attempted,
+                    "apply_valid": outcome.valid,
+                    "apply_exact": outcome.exact,
+                    "apply_reason": outcome.reason,
+                }
             )
         )
     summary = summarize(results, cases, provider=provider, model=model, mode=mode)
