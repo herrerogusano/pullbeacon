@@ -121,3 +121,12 @@ def test_benchmark_is_manual_and_confirmed() -> None:
     assert "${{" not in run
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "--provider live" not in ci
+
+
+def test_comment_commands_are_never_cancelled_by_concurrency() -> None:
+    # GitHub keeps one pending run per concurrency group and cancels older pending ones, so
+    # comment-triggered runs need a group per comment (found in the remote smoke test on PR #8).
+    for path in WORKFLOWS[1:3]:
+        concurrency = load(path)["concurrency"]
+        assert "github.event.comment.id" in concurrency["group"]
+        assert concurrency["cancel-in-progress"] is False
