@@ -18,7 +18,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | Phase | Status | Notes |
 |---|---|---|
 | 01 Foundation | DONE_LOCAL | see log below |
-| 02 GitHub + diff | NOT_STARTED | |
+| 02 GitHub + diff | DONE_LOCAL | client, diff map, scope, fixtures |
 | 03 LLM + review engine | NOT_STARTED | |
 | 04 Publish reviews | NOT_STARTED | |
 | 05 Actions + commands | NOT_STARTED | |
@@ -39,6 +39,9 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D6 | Missing `.pullbeacon.yml` ⇒ conservative defaults: `automatic_review: false`, `apply_enabled: false`, no model | fail closed; a repo must opt in explicitly | enabling reviews by default |
 | D7 | Hard-coded deny lists (sensitive files never sent to LLM; `.github/**`, config, CODEOWNERS never edited by apply) that config cannot override | config errors must not open security holes | configurable-only lists |
 | D8 | YAML aliases rejected in config | prevents alias-expansion DoS during validation; config never needs them | allowing aliases |
+| D10 | `context_files` are literal base-branch paths (no globs), max 20 | avoids tree enumeration and keeps context explicit/auditable | glob over the base tree |
+| D11 | Shipped in-memory `FakeGitHub` (`pullbeacon.testing`) behind `httpx.MockTransport` | fixture CLI mode, tests and evaluation all exercise the real client code | hand-written respx stubs per test |
+| D12 | Diff rendered for the LLM with a coordinate prefix on every data line (`| R12 + ...`) | the model cites real line numbers and file content cannot forge structural lines | XML-like tags (forgeable by content) |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -67,12 +70,30 @@ CI workflow written with actions pinned by SHA (checkout v7.0.1, setup-uv v10.3.
 Risks / notes: the example config uses a placeholder model id on purpose; `validate-config`
 warns and live reviews will refuse it.
 
+### Phase 02 — GitHub client and diff map (2026-10-28) — DONE_LOCAL
+
+Created: `adapters/github.py` (httpx client: API version header, bounded retries for 429/5xx/timeouts
+honouring `Retry-After`/`x-ratelimit-reset`, `Link` pagination restricted to the API host,
+3000-file ceiling detection, contents at exact SHA with size limit and symlink/submodule refusal,
+collaborator permission with fail-closed semantics), `core/diff.py` (hunk parser with RIGHT/LEFT
+line map, CRLF, `\ No newline`, malformed/truncated patch detection, LLM rendering, fingerprints),
+`core/scope.py` (include/exclude, sensitive, binary, generated, no-patch, limits — all with
+reasons), `core/context.py`, `testing/fake_github.py`, `scripts/build_fixtures.py`,
+`tests/fixtures/pr_{two_hunks,auth_bug,clean}.json`, `.gitattributes` (LF in repo).
+
+Commands executed (all passed): `ruff check`, `ruff format --check`, `mypy src`, `pytest -q`
+(118 passed), demo `uv run python -m pullbeacon review --fixture tests/fixtures/pr_two_hunks.json --dry-run`
+→ 3 files with exact commentable ranges, skips: `.env.production` sensitive, `assets/logo.png`
+binary, `uv.lock` generated.
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
 |---|---|---|
 | T01 | PASS (local) | `tests/unit/test_cli.py` (socket guarded), CLI smoke commands above |
 | T02 | PASS (local) | `tests/unit/test_config.py::test_invalid_config_is_rejected` |
+| T03 | PASS (local) | `test_github_client.py::test_pagination_two_pages`, `test_diff.py::test_two_hunks_line_numbers` |
+| T04 | PASS (local) | `test_scope.py::test_skip_reasons`, demo output above |
 | T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
 | T24 | IN_PROGRESS | local-only repo |
 | others | NOT_RUN | later phases |
