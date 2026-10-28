@@ -108,3 +108,12 @@ def test_action_passes_inputs_only_through_env() -> None:
 def test_example_workflow_references_a_placeholder_not_an_invented_owner() -> None:
     text = (ROOT / "examples" / "pullbeacon.yml").read_text(encoding="utf-8")
     assert "<OWNER>/<REPO>@<COMMIT_SHA>" in text
+
+
+def test_comment_commands_are_never_cancelled_by_concurrency() -> None:
+    # GitHub keeps one pending run per concurrency group and cancels older pending ones, so
+    # comment-triggered runs need a group per comment (found in the remote smoke test on PR #8).
+    for path in WORKFLOWS[1:3]:
+        concurrency = load(path)["concurrency"]
+        assert "github.event.comment.id" in concurrency["group"]
+        assert concurrency["cancel-in-progress"] is False
