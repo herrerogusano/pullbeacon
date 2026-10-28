@@ -130,3 +130,13 @@ def test_comment_commands_are_never_cancelled_by_concurrency() -> None:
         concurrency = load(path)["concurrency"]
         assert "github.event.comment.id" in concurrency["group"]
         assert concurrency["cancel-in-progress"] is False
+
+
+def test_example_workflow_only_uses_declared_action_inputs() -> None:
+    declared = set(load(ROOT / "action.yml")["inputs"])
+    for path in WORKFLOWS[1:3]:
+        for step in all_steps(load(path)):
+            uses = str(step.get("uses", ""))
+            if "<OWNER>" in uses or uses.startswith("./.pullbeacon-action"):
+                assert set(step.get("with", {})) <= declared, (path.name, step["with"])
+                assert step["with"]["mode"] in ("review", "apply")
