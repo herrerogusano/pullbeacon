@@ -22,8 +22,13 @@ on:
 permissions: {}
 
 concurrency:
-  # One PullBeacon run per PR at a time; queued runs are not cancelled.
-  group: pullbeacon-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+  # Comments: one group per comment, so quick successive commands are never dropped (GitHub keeps
+  # only one pending run per group). PR events: one group per PR; a newer push replaces a pending
+  # review of an older commit. Races between runs are handled by SHA checks in PullBeacon.
+  group: >-
+    pullbeacon-${{ github.event_name == 'issue_comment'
+    && format('comment-{0}', github.event.comment.id)
+    || format('pr-{0}', github.event.pull_request.number || inputs.pr_number) }}
   cancel-in-progress: false
 
 jobs:
