@@ -29,5 +29,7 @@ def get_profile(store: AccountStore, current: User, account_id: int) -> dict[str
 
 
 def delete_account(store: AccountStore, current: User, account_id: int) -> dict[str, int]:
+    if current.id != account_id and not current.is_admin:
+        raise PermissionError("forbidden")
     store.delete(account_id)
     return {"deleted": account_id}
