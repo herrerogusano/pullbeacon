@@ -21,7 +21,13 @@ from pullbeacon.adapters.publisher import (
     trigger_already_reviewed,
     trusted_reviews,
 )
-from pullbeacon.config import CONFIG_FILENAMES, PullBeaconConfig, default_config, parse_config
+from pullbeacon.config import (
+    CONFIG_FILENAMES,
+    ModelConfig,
+    PullBeaconConfig,
+    default_config,
+    parse_config,
+)
 from pullbeacon.core.context import fetch_context_files
 from pullbeacon.core.explain import explain
 from pullbeacon.core.review import ReviewEngine
@@ -51,11 +57,38 @@ class Services:
     # Set by the workflow: whether this job has `contents: write` and is allowed to apply.
     apply_job: bool = False
     config_override: PullBeaconConfig | None = None
+    config_files: tuple[str, ...] = CONFIG_FILENAMES
+    # Workflow-level overrides (the workflow file lives on the default branch, so it is trusted).
+    model_override: str | None = None
+    automatic_override: bool | None = None
+
+    def config_for(self, snapshot: PullRequestSnapshot) -> PullBeaconConfig:
+        config = self.config_override or load_trusted_config(
+            self.client, snapshot, names=self.config_files
+        )
+        update: dict[str, object] = {}
+        if self.automatic_override is not None:
+            update["automatic_review"] = self.automatic_override
+        if self.model_override:
+            if config.model is None:
+                raise ConfigError("input 'model' needs a 'model' section in the base config")
+            prefix = f"{config.model.provider}/"
+            if not self.model_override.startswith(prefix):
+                raise ConfigError(f"input 'model' must use the configured provider ('{prefix}')")
+            update["model"] = ModelConfig.model_validate(
+                {**config.model.model_dump(), "name": self.model_override}
+            )
+        return config.model_copy(update=update) if update else config
 
 
-def load_trusted_config(client: GitHubClient, snapshot: PullRequestSnapshot) -> PullBeaconConfig:
+def load_trusted_config(
+    client: GitHubClient,
+    snapshot: PullRequestSnapshot,
+    *,
+    names: tuple[str, ...] = CONFIG_FILENAMES,
+) -> PullBeaconConfig:
     """Config from the PR *base* commit. A PR can never configure its own review."""
-    for name in CONFIG_FILENAMES:
+    for name in names:
         raw = client.get_file_content(
             snapshot.owner, snapshot.repo, name, snapshot.base_sha, max_bytes=64 * 1024
         )
@@ -98,7 +131,7 @@ def run_review(
     client = services.client
     snapshot = fetch_snapshot(client, owner, repo, number)
     check_supported(snapshot)
-    config = services.config_override or load_trusted_config(client, snapshot)
+    config = services.config_for(snapshot)
 
     if mode == "automatic":
         if not config.automatic_review:
@@ -172,7 +205,7 @@ def run_explain(
     check_supported(snapshot)
     if trigger_already_replied(client, snapshot, trigger_comment_id, bot_login=services.bot_login):
         return skipped("duplicate delivery of the same command")
-    config = services.config_override or load_trusted_config(client, snapshot)
+    config = services.config_for(snapshot)
     reviews = trusted_reviews(client, snapshot, bot_login=services.bot_login)
     latest = latest_review_for_head(reviews, snapshot.head_sha)
     if latest is None:

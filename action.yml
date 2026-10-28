@@ -1,0 +1,96 @@
+name: PullBeacon
+description: BYOK, multi-model pull request reviewer and controlled fixer (review, explain, apply).
+author: Alberto Herrero
+branding:
+  icon: radio
+  color: purple
+
+inputs:
+  mode:
+    description: "'review' (reviews, explain, help) or 'apply' (code changes; needs contents: write)."
+    required: true
+  github-token:
+    description: Token used for the GitHub API. Defaults to the job's GITHUB_TOKEN.
+    required: false
+    default: ${{ github.token }}
+  config-file:
+    description: Config path, always read from the PR base commit (never from the PR).
+    required: false
+    default: .pullbeacon.yml
+  automatic-review:
+    description: "'config' (follow automatic_review in the config), 'true' or 'false'."
+    required: false
+    default: config
+  model:
+    description: Optional LiteLLM model id override; must use the provider configured in the base config.
+    required: false
+    default: ""
+  dry-run:
+    description: "'true' runs everything but publishes nothing to GitHub."
+    required: false
+    default: "false"
+  mock-llm:
+    description: "'true' uses canned empty responses (no provider call, no cost) to test the wiring."
+    required: false
+    default: "false"
+  bot-login:
+    description: Login whose reviews are trusted as PullBeacon state.
+    required: false
+    default: github-actions[bot]
+  anthropic-api-key:
+    description: Anthropic API key (pass a secret). Only the configured provider's key is needed.
+    required: false
+    default: ""
+  openai-api-key:
+    description: OpenAI API key (pass a secret).
+    required: false
+    default: ""
+  gemini-api-key:
+    description: Gemini API key (pass a secret).
+    required: false
+    default: ""
+
+outputs:
+  status:
+    description: completed, skipped, partial or failed.
+    value: ${{ steps.run.outputs.status }}
+  review-url:
+    description: URL of the published review, if any.
+    value: ${{ steps.run.outputs.review-url }}
+  comment-url:
+    description: URL of the reply comment, if any.
+    value: ${{ steps.run.outputs.comment-url }}
+  commit-sha:
+    description: Commit created by apply, if any.
+    value: ${{ steps.run.outputs.commit-sha }}
+
+runs:
+  using: composite
+  steps:
+    # The tool runs from this action's own (pinned) source and lockfile. The pull request is never
+    # checked out, installed or executed. No dependency cache: caches can be poisoned across events.
+    - name: Set up uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        python-version: "3.12"
+        enable-cache: false
+
+    - name: Run PullBeacon
+      id: run
+      shell: bash
+      # Inputs are passed as environment variables only; nothing is interpolated into the script.
+      env:
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_CONFIG_FILE: ${{ inputs.config-file }}
+        INPUT_AUTOMATIC_REVIEW: ${{ inputs.automatic-review }}
+        INPUT_MODEL: ${{ inputs.model }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_MOCK_LLM: ${{ inputs.mock-llm }}
+        INPUT_BOT_LOGIN: ${{ inputs.bot-login }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        GEMINI_API_KEY: ${{ inputs.gemini-api-key }}
+        LITELLM_LOCAL_MODEL_COST_MAP: "True"
+        PYTHONUNBUFFERED: "1"
+      run: uv run --project "$GITHUB_ACTION_PATH" --locked --no-dev --quiet python -I -m pullbeacon --log-level INFO run-action

@@ -21,7 +21,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 02 GitHub + diff | DONE_LOCAL | client, diff map, scope, fixtures |
 | 03 LLM + review engine | DONE_LOCAL | live provider path NOT_VERIFIED (no paid calls authorised) |
 | 04 Publish reviews | DONE_LOCAL | real GitHub publish NOT_VERIFIED_REMOTELY |
-| 05 Actions + commands | NOT_STARTED | |
+| 05 Actions + commands | DONE_LOCAL | workflows `NOT_VERIFIED_REMOTELY` |
 | 06 Apply + commits | NOT_STARTED | |
 | 07 Evaluation | NOT_STARTED | |
 | 08 Hardening + release | NOT_STARTED | |
@@ -52,6 +52,12 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D20 | All model text rendered through `sanitize` (no `@` pings, no HTML comments, no `javascript:`), code in dynamic-length fences | model output is untrusted and must not forge markers or notify people | raw Markdown |
 | D21 | On 422 the whole review is re-posted without inline comments, listing them as `not_posted_inline` | GitHub rejects the whole review on one bad line; never claim inline that did not happen | per-comment bisection (more API calls) |
 | D22 | Idempotency: automatic = `sha256(head|config_hash|prompt_version|automatic)` checked **before** the LLM call; manual = trigger `comment:<id>` in the marker; replies carry `reply:v1 trigger=<id>` | saves cost on redeliveries and repeated events | Actions cache / artifacts |
+| D23 | Commands must start a line; fenced/inline code, quotes and HTML comments are ignored; first command wins; malformed ⇒ help without LLM | explicit recognition, no partial matches | free-text search for `@pullbeacon` |
+| D24 | One workflow, two jobs: `review` (`contents: read`) and `apply` (`contents: write`, only when the comment contains `@pullbeacon apply`); each job ignores the other's commands | privilege separation without two files to keep in sync | single job with write access |
+| D25 | Composite action runs `uv run --project $GITHUB_ACTION_PATH --locked --no-dev python -I -m pullbeacon run-action`; inputs only via `env`; no uv cache | trusted pinned code, reproducible deps, no expression injection, no cache poisoning | Docker action (slower, image to publish) |
+| D26 | Provider keys as explicit action inputs (`anthropic-api-key`, …) | explicit and documented; GitHub masks secrets | implicit step env |
+| D27 | `mock-llm: true` input answers with empty canned results | lets users smoke-test the wiring on a real repo at zero cost | none |
+| D28 | Dogfood workflow checks out the **default branch** into `.pullbeacon-action` and runs `uses: ./.pullbeacon-action`; live only if repo variable `PULLBEACON_LIVE == 'true'` | the action used on our own PRs is never the PR's version; no accidental spend | `uses: ./` on the PR checkout |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -126,6 +132,21 @@ ignored, 403/429/5xx surfaced, explain via comment only (LLM or deterministic fa
 
 Not verified remotely: publishing to a real PR (no remote/authorisation yet).
 
+### Phase 05 — Workflows and commands (2026-10-28) — DONE_LOCAL
+
+Created: `orchestration/commands.py` (parser), `orchestration/events.py` (router for
+`pull_request_target`, `issue_comment`, `workflow_dispatch`), `orchestration/runner.py`
+(job-mode filter, API permission check before anything else, friendly idempotent replies,
+`GITHUB_OUTPUT`/`GITHUB_STEP_SUMMARY`), `pullbeacon run-action`, `action.yml`,
+`examples/pullbeacon.yml`, `.github/workflows/pullbeacon.yml` (dogfood), `.pullbeacon.yml`,
+tests `test_commands.py`, `test_action.py`, `test_workflows.py` (static checks: pinned SHAs,
+explicit permissions, no PR checkout/install/test, no `${{ }}` in scripts, only `apply` can write).
+
+Commands executed (all passed): ruff, mypy, `pytest -q` (238 passed), including a CLI
+`run-action` end-to-end test against the in-memory GitHub with `INPUT_MOCK_LLM=true`.
+
+Validation externa: `NOT_VERIFIED_REMOTELY` (no remote repository yet). Checklist ready in phase 08.
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
@@ -140,6 +161,9 @@ Not verified remotely: publishing to a real PR (no remote/authorisation yet).
 | T08 | PASS (local, fake GitHub) | `test_publish.py::test_automatic_review_is_idempotent_per_sha` |
 | T09 | PASS (local, fake GitHub) | `test_manual_commands_review_again_but_redelivery_is_idempotent` |
 | T10 | PASS (local, fake GitHub) | `test_explain_posts_comment_without_code_changes` |
+| T11 | PASS (local) | `test_action.py::test_ignored_comments_cost_nothing` |
+| T12 | PASS (local, review/explain) | `test_users_without_write_are_denied_before_llm` (apply in phase 06) |
+| T13 | PASS (local, review) | `test_fork_pr_is_skipped_without_secrets_or_llm`, `test_dependabot_pr_is_skipped` |
 | T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
 | T24 | IN_PROGRESS | local-only repo |
 | others | NOT_RUN | later phases |
