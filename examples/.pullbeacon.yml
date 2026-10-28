@@ -1,0 +1,37 @@
+# PullBeacon configuration. Commit it to the DEFAULT branch: PullBeacon always reads the
+# configuration from the PR's base branch, never from the PR itself.
+version: 1
+
+# Review every opened/updated internal PR automatically. Manual `@pullbeacon review` always works.
+automatic_review: true
+
+model:
+  provider: anthropic
+  # Replace with a real LiteLLM model id your account can access, e.g. "anthropic/<model-id>",
+  # "openai/<model-id>" or "gemini/<model-id>". Placeholders are rejected on purpose.
+  name: anthropic/REPLACE-WITH-MODEL-ID
+  temperature: 0
+  timeout_seconds: 120
+
+limits:
+  max_changed_files: 40
+  max_changed_lines: 1500
+  max_context_chars: 120000
+  max_file_bytes: 200000
+  max_output_tokens: 4096
+  # Preventive per-run estimate, not an accounting cap. Use provider billing limits too.
+  max_estimated_cost_usd: 1.00
+  max_inline_comments: 15
+  max_batches: 4
+
+policy:
+  include: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.js"]
+  exclude: ["**/*.lock", "**/generated/**", "**/vendor/**"]
+  # Extra base-branch files the reviewer may read for context (bounded by max_file_bytes).
+  context_files: []
+  apply_enabled: true
+  allowed_apply_paths: ["src/**", "tests/**"]
+  min_apply_confidence: 0.80
+  max_apply_files: 5
+  max_apply_changed_lines: 120
+  apply_context_window: 10
