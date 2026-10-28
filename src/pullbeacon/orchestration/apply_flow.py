@@ -31,9 +31,10 @@ from pullbeacon.orchestration.events import Task
 from pullbeacon.orchestration.flows import Services, check_supported
 
 NO_CI_NOTE = (
-    "PullBeacon did **not** run tests, builds or CI. Commits pushed with the workflow's "
-    "`GITHUB_TOKEN` usually do not trigger other workflows, so CI may not have run on this "
-    "commit. Comment `@pullbeacon review` to review the new commit."
+    "PullBeacon did **not** run tests, builds or CI. Commits made with the workflow's "
+    "`GITHUB_TOKEN` usually do not trigger other workflows, or their runs wait for a "
+    "maintainer's approval, so CI may not have run on this commit. Comment "
+    "`@pullbeacon review` to review the new commit."
 )
 
 

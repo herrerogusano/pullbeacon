@@ -19,12 +19,12 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 |---|---|---|
 | 01 Foundation | DONE_LOCAL | see log below |
 | 02 GitHub + diff | DONE_LOCAL | client, diff map, scope, fixtures |
-| 03 LLM + review engine | DONE_LOCAL | live provider path NOT_VERIFIED (no paid calls authorised) |
-| 04 Publish reviews | DONE_LOCAL | real GitHub publish NOT_VERIFIED_REMOTELY |
-| 05 Actions + commands | DONE_LOCAL | workflows `NOT_VERIFIED_REMOTELY` |
-| 06 Apply + commits | DONE_LOCAL | real commit on GitHub NOT_VERIFIED_REMOTELY |
+| 03 LLM + review engine | DONE_REMOTE | live Anthropic path verified (benchmark + PR #13); OpenAI/Gemini only with mocks |
+| 04 Publish reviews | DONE_REMOTE | inline review on PR #13 |
+| 05 Actions + commands | DONE_REMOTE | dogfood on PRs #8–#13 |
+| 06 Apply + commits | DONE_REMOTE | real commit on PR #13 (`4cc7ca5`) |
 | 07 Evaluation | DONE_REMOTE | live benchmark run 2026-10-28 (Claude Haiku/Sonnet 5.5), report in `docs/benchmarks/` |
-| 08 Hardening + release | DONE_LOCAL | release candidate; live/apply remote acceptance pending the API key; tag `v0.1.0` needs approval |
+| 08 Hardening + release | DONE_REMOTE | live review/explain/apply verified on PR #13; tag `v0.1.0` needs approval |
 | 09 GitHub App (optional) | NOT_STARTED | requires explicit approval after MVP |
 
 ## Decisions (not already fixed by the plans)
@@ -214,7 +214,12 @@ apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
 | 2026-10-28 | PR #8: burst `explain`/help | FAIL → fixed in #9 → PASS (help and explain replies posted) |
 | 2026-10-28 | `ANTHROPIC_API_KEY` stored as repo secret + user env var by the user (hidden prompt); 22-token check call to `claude-haiku-5-5` | PASS (0.000004 USD) |
 | 2026-10-28 | Live benchmark, 2 models × 16 cases (`docs/benchmarks/2026-10-28-claude.md`) | PASS — recall 1.0 both; precision 0.571 / 0.632 by rule, 0 unsupported claims after manual review; 0 FP on clean PRs; ≈0.28 USD total |
-| — | Live LLM review, explain with findings, `apply` commit on a real PR | IN_PROGRESS |
+| 2026-10-28 | PR #13 (demo, closed unmerged), `claude-haiku-5-5`: automatic review | PASS — 1 critical finding inline on `src/demo/accounts.py:31` (missing ownership check), ~0.0008 USD |
+| 2026-10-28 | PR #13: `@pullbeacon explain PB-001` | PASS — correct explanation as a comment, no code change |
+| 2026-10-28 | PR #13: `@pullbeacon apply PB-001` | PASS — commit `4cc7ca5` by `github-actions[bot]`, exactly the 2-line guard, fast-forward, ~0.0003 USD |
+| 2026-10-28 | PR #13: `@pullbeacon apply` again before re-review | PASS — refused ("review is for an older commit"), branch unchanged |
+| 2026-10-28 | PR #13: `@pullbeacon review` after the commit | PASS — review of `4cc7ca5`, no findings |
+| 2026-10-28 | CI on the `apply` commit | as documented: run created but `action_required` (not executed without approval); PullBeacon did not claim CI ran |
 | — | Read-only user denied, fork PR skipped | NOT_RUN remotely (needs a second account / fork); PASS locally |
 
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
@@ -228,17 +233,17 @@ apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
 | T05 | PASS (local) | `test_review_engine.py::test_invalid_json_*` |
 | T06 | PASS (local, engine) | `test_findings.py` invented path / line outside diff |
 | T07 | PASS (local, mock) | `test_review_engine.py::test_clean_pr_yields_zero_findings` |
-| T08 | PASS (local, fake GitHub) | `test_publish.py::test_automatic_review_is_idempotent_per_sha` |
-| T09 | PASS (local, fake GitHub) | `test_manual_commands_review_again_but_redelivery_is_idempotent` |
-| T10 | PASS (local, fake GitHub) | `test_explain_posts_comment_without_code_changes` |
+| T08 | PASS (remote PRs #8, #13) + local | `test_publish.py::test_automatic_review_is_idempotent_per_sha` |
+| T09 | PASS (remote PRs #8, #13) + local | `test_manual_commands_review_again_but_redelivery_is_idempotent` |
+| T10 | PASS (remote PR #13) + local | `test_explain_posts_comment_without_code_changes` |
 | T11 | PASS (local) | `test_action.py::test_ignored_comments_cost_nothing` |
 | T12 | PASS (local, review/explain) | `test_users_without_write_are_denied_before_llm` (apply in phase 06) |
 | T13 | PASS (local, review) | `test_fork_pr_is_skipped_without_secrets_or_llm`, `test_dependabot_pr_is_skipped` |
-| T14 | PASS (local, fake GitHub) | `test_apply_flow.py::test_authorized_apply_creates_one_bounded_commit` |
-| T15 | PASS (local) | `test_review_of_older_sha_is_not_used`, `test_head_moved_between_proposal_and_commit_aborts` |
+| T14 | PASS (remote, PR #13) + local | `test_apply_flow.py::test_authorized_apply_creates_one_bounded_commit` |
+| T15 | PASS (remote PR #13, stale review) + local | `test_review_of_older_sha_is_not_used`, `test_head_moved_between_proposal_and_commit_aborts` |
 | T16 | PASS (local) | `test_invalid_model_proposal_aborts_whole_apply`, `test_finding_eligibility` |
 | T17 | PASS (local) | `test_shell_text_in_replacement_is_just_file_content` |
-| T18 | PASS (local) | reply text asserted in `test_authorized_apply_creates_one_bounded_commit` |
+| T18 | PASS (remote, PR #13: CI `action_required`, reply says CI not run) + local | reply text asserted in `test_authorized_apply_creates_one_bounded_commit` |
 | T23 | PASS (local) | `test_protected_branch_reports_without_mutation`, `test_github_403_on_ref_update` |
 | T19 | PASS (local) | `test_evaluation.py::test_mock_run_metrics_are_exact` |
 | T20 | PASS (local) | `test_live_eval_requires_confirmation_and_never_runs_without_it` |
