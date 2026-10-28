@@ -69,3 +69,65 @@ def review_remote(args: argparse.Namespace) -> int:
         )
     emit_json(result)
     return 0 if result.status is not RunStatus.FAILED else 1
+
+
+MOCK_RESPONSES = {
+    "review": '{"summary": "Mock run: no model was called (mock-llm: true).", "findings": []}',
+    "explain": '{"explanation": "Mock run: no model was called (mock-llm: true)."}',
+    "apply": '{"edits": [], "explanation": "Mock run: no model was called."}',
+}
+
+
+def run_action_cli(_args: argparse.Namespace) -> int:
+    """Entry point used by action.yml. Reads the Actions environment, never CLI arguments."""
+    import os
+
+    from pullbeacon.adapters.github import DEFAULT_BASE_URL
+    from pullbeacon.core.paths import UnsafePathError, normalize_repo_path
+    from pullbeacon.orchestration.events import load_event
+    from pullbeacon.orchestration.runner import ActionInputs, run_action, write_action_outputs
+
+    env = os.environ
+    inputs = ActionInputs.from_env(env)
+    try:
+        config_file = normalize_repo_path(inputs.config_file)
+    except UnsafePathError:
+        raise ConfigError("input 'config-file' must be a repository-relative path") from None
+    event_name = env.get("GITHUB_EVENT_NAME", "")
+    event_path = env.get("GITHUB_EVENT_PATH")
+    if not event_name or not event_path:
+        raise ConfigError("run-action must run inside GitHub Actions (GITHUB_EVENT_* missing)")
+    event = load_event(Path(event_path))
+
+    if inputs.mock_llm:
+        fake = FakeLLMClient(responses={k: [v] for k, v in MOCK_RESPONSES.items()})
+        factory: LLMFactory = lambda _config: fake  # noqa: E731
+    else:
+
+        def factory(config: PullBeaconConfig) -> LLMClient | None:
+            return LiteLLMClient(config.model) if config.model is not None else None
+
+    automatic = {"config": None, "true": True, "false": False}[inputs.automatic_review]
+    with GitHubClient(
+        github_token(), base_url=env.get("GITHUB_API_URL", DEFAULT_BASE_URL)
+    ) as client:
+        services = Services(
+            client=client,
+            llm_factory=factory,
+            bot_login=inputs.bot_login,
+            apply_job=inputs.mode == "apply",
+            config_files=(config_file,),
+            model_override=inputs.model,
+            automatic_override=automatic,
+        )
+        result = run_action(
+            services,
+            inputs,
+            event_name=event_name,
+            event=event,
+            actor=env.get("GITHUB_ACTOR"),
+            run_id=env.get("GITHUB_RUN_ID", ""),
+        )
+    emit_json(result)
+    write_action_outputs(result, env)
+    return 1 if result.status is RunStatus.FAILED else 0

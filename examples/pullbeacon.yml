@@ -1,0 +1,69 @@
+# Copy to .github/workflows/pullbeacon.yml on your DEFAULT branch.
+# Replace <OWNER>/<REPO>@<COMMIT_SHA> with the PullBeacon repository and a full commit SHA you trust.
+#
+# Security model (see SECURITY.md):
+# - pull_request_target and issue_comment run the workflow from the default branch, never from the PR.
+# - Nothing from the PR is checked out, installed, built or executed.
+# - Only PRs from branches of this repository are handled; forks and Dependabot are skipped.
+# - Commands require write access, verified through the GitHub API before any LLM call.
+name: PullBeacon
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to review
+        required: true
+
+permissions: {}
+
+concurrency:
+  # One PullBeacon run per PR at a time; queued runs are not cancelled.
+  group: pullbeacon-${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    # Cheap pre-filter only; PullBeacon re-checks everything (permissions via the API).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+       contains(github.event.comment.body, '@pullbeacon') &&
+       github.event.comment.user.type != 'Bot' &&
+       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: <OWNER>/<REPO>@<COMMIT_SHA> # pullbeacon v0.1.0
+        with:
+          mode: review
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          # gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+
+  apply:
+    # Separate job: the only one with contents: write, and only for "@pullbeacon apply" comments.
+    if: >-
+      github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@pullbeacon apply') &&
+      github.event.comment.user.type != 'Bot' &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: <OWNER>/<REPO>@<COMMIT_SHA> # pullbeacon v0.1.0
+        with:
+          mode: apply
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
