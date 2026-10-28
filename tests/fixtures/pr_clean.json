@@ -1,0 +1,63 @@
+{
+  "files": [
+    {
+      "additions": 2,
+      "changes": 4,
+      "deletions": 2,
+      "filename": "src/pricing.py",
+      "patch": "@@ -1,3 +1,3 @@\n def final_price(price, discount):\n-    p = price - price * discount\n-    return round(p, 2)\n+    discounted = price - price * discount\n+    return round(discounted, 2)",
+      "sha": "08a63697bdb6643a19b2dfdbba7a39ce218481ff",
+      "status": "modified"
+    }
+  ],
+  "llm_responses": {
+    "review": [
+      "{\"summary\": \"Pure rename; behaviour unchanged.\", \"findings\": []}"
+    ]
+  },
+  "permissions": {
+    "dev-alice": "write"
+  },
+  "pull_request": {
+    "base": {
+      "ref": "main",
+      "repo": {
+        "full_name": "acme/shop",
+        "name": "shop",
+        "owner": {
+          "login": "acme"
+        }
+      },
+      "sha": "8084d554cca286abf4b354abefcafabf896926af"
+    },
+    "body": "",
+    "draft": false,
+    "head": {
+      "ref": "feature/clean",
+      "repo": {
+        "full_name": "acme/shop",
+        "name": "shop",
+        "owner": {
+          "login": "acme"
+        }
+      },
+      "sha": "f24660bcba7490bacd0f13e30be8984dc9a475d3"
+    },
+    "html_url": "https://github.com/acme/shop/pull/30",
+    "number": 30,
+    "state": "open",
+    "title": "Rename local variable for readability",
+    "user": {
+      "login": "dev-alice",
+      "type": "User"
+    }
+  },
+  "trees": {
+    "8084d554cca286abf4b354abefcafabf896926af": {
+      "src/pricing.py": "def final_price(price, discount):\n    p = price - price * discount\n    return round(p, 2)\n"
+    },
+    "f24660bcba7490bacd0f13e30be8984dc9a475d3": {
+      "src/pricing.py": "def final_price(price, discount):\n    discounted = price - price * discount\n    return round(discounted, 2)\n"
+    }
+  }
+}

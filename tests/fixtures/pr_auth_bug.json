@@ -1,0 +1,73 @@
+{
+  "expected_fixed_content": {
+    "src/api/users.py": "from app.auth import require_user\nfrom app.db import db\n\n\ndef get_profile(request, user_id):\n    current = require_user(request)\n    if current.id != user_id and not current.is_admin:\n        raise PermissionError(\"forbidden\")\n    return db.users.get(user_id)\n\n\ndef delete_account(request, user_id):\n    current = require_user(request)\n    if current.id != user_id and not current.is_admin:\n        raise PermissionError(\"forbidden\")\n    db.users.delete(user_id)\n    return {\"deleted\": user_id}\n\n\ndef list_orders(request):\n    current = require_user(request)\n    return db.orders.for_user(current.id)\n"
+  },
+  "files": [
+    {
+      "additions": 6,
+      "changes": 6,
+      "deletions": 0,
+      "filename": "src/api/users.py",
+      "patch": "@@ -9,6 +9,12 @@\n     return db.users.get(user_id)\n \n \n+def delete_account(request, user_id):\n+    require_user(request)\n+    db.users.delete(user_id)\n+    return {\"deleted\": user_id}\n+\n+\n def list_orders(request):\n     current = require_user(request)\n     return db.orders.for_user(current.id)",
+      "sha": "80592860faafc2ebec210fa7d69095d6d092c44a",
+      "status": "modified"
+    }
+  ],
+  "llm_responses": {
+    "apply": [
+      "{\"edits\": [{\"path\": \"src/api/users.py\", \"finding_ids\": [\"PB-001\"], \"replacements\": [{\"start_line\": 13, \"end_line\": 13, \"original\": \"    require_user(request)\\n\", \"replacement\": \"    current = require_user(request)\\n    if current.id != user_id and not current.is_admin:\\n        raise PermissionError(\\\"forbidden\\\")\\n\"}]}], \"explanation\": \"Require ownership or admin before deleting.\"}"
+    ],
+    "explain": [
+      "{\"explanation\": \"get_profile shows the intended rule: only the owner or an admin may act on an account. delete_account skips that check, so the authorization boundary depends only on authentication.\"}"
+    ],
+    "review": [
+      "{\"summary\": \"Adds a delete_account endpoint. It authenticates the caller but never checks that the caller owns the account or is an admin.\", \"findings\": [{\"severity\": \"critical\", \"category\": \"security\", \"title\": \"delete_account does not check that the caller owns the account\", \"explanation\": \"require_user only authenticates. Any logged-in user can delete any other account by passing its id, unlike get_profile which checks ownership.\", \"impact\": \"Account takeover / data loss for arbitrary users.\", \"evidence\": \"require_user(request)\", \"path\": \"src/api/users.py\", \"line\": 13, \"side\": \"RIGHT\", \"suggested_fix\": \"Mirror get_profile: keep the current user and raise PermissionError unless current.id == user_id or current.is_admin.\", \"confidence\": 0.93, \"can_apply\": true}]}"
+    ]
+  },
+  "permissions": {
+    "dev-alice": "write",
+    "reader-bob": "read"
+  },
+  "pull_request": {
+    "base": {
+      "ref": "main",
+      "repo": {
+        "full_name": "acme/shop",
+        "name": "shop",
+        "owner": {
+          "login": "acme"
+        }
+      },
+      "sha": "98ed2b19ba6a33b558d6b0bc0c53692e58cc4134"
+    },
+    "body": "",
+    "draft": false,
+    "head": {
+      "ref": "feature/auth-bug",
+      "repo": {
+        "full_name": "acme/shop",
+        "name": "shop",
+        "owner": {
+          "login": "acme"
+        }
+      },
+      "sha": "9af1d2f190e2d5d5a440753b4367320e4a633908"
+    },
+    "html_url": "https://github.com/acme/shop/pull/21",
+    "number": 21,
+    "state": "open",
+    "title": "Add account deletion endpoint",
+    "user": {
+      "login": "dev-alice",
+      "type": "User"
+    }
+  },
+  "trees": {
+    "98ed2b19ba6a33b558d6b0bc0c53692e58cc4134": {
+      "src/api/users.py": "from app.auth import require_user\nfrom app.db import db\n\n\ndef get_profile(request, user_id):\n    current = require_user(request)\n    if current.id != user_id and not current.is_admin:\n        raise PermissionError(\"forbidden\")\n    return db.users.get(user_id)\n\n\ndef list_orders(request):\n    current = require_user(request)\n    return db.orders.for_user(current.id)\n"
+    },
+    "9af1d2f190e2d5d5a440753b4367320e4a633908": {
+      "src/api/users.py": "from app.auth import require_user\nfrom app.db import db\n\n\ndef get_profile(request, user_id):\n    current = require_user(request)\n    if current.id != user_id and not current.is_admin:\n        raise PermissionError(\"forbidden\")\n    return db.users.get(user_id)\n\n\ndef delete_account(request, user_id):\n    require_user(request)\n    db.users.delete(user_id)\n    return {\"deleted\": user_id}\n\n\ndef list_orders(request):\n    current = require_user(request)\n    return db.orders.for_user(current.id)\n"
+    }
+  }
+}

@@ -14,7 +14,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from pullbeacon.core.paths import UnsafePathError, validate_glob
+from pullbeacon.core.paths import UnsafePathError, is_sensitive, validate_glob
 from pullbeacon.domain.errors import ConfigError
 from pullbeacon.domain.models import canonical_json
 
@@ -73,7 +73,8 @@ class LimitsConfig(_Strict):
 class PolicyConfig(_Strict):
     include: tuple[str, ...] = ("**",)
     exclude: tuple[str, ...] = ()
-    context_files: tuple[str, ...] = ()
+    # Literal base-branch paths (no wildcards) the reviewer may read as extra context.
+    context_files: tuple[str, ...] = Field(default=(), max_length=20)
     apply_enabled: bool = False
     allowed_apply_paths: tuple[str, ...] = ()
     min_apply_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
@@ -91,13 +92,23 @@ class PolicyConfig(_Strict):
         except UnsafePathError as exc:
             raise ValueError(str(exc)) from exc
 
-    @field_validator("context_files", "allowed_apply_paths")
+    @field_validator("allowed_apply_paths")
     @classmethod
     def _not_too_broad(cls, patterns: tuple[str, ...]) -> tuple[str, ...]:
         broad = [p for p in patterns if p in _TOO_BROAD]
         if broad:
             raise ValueError(f"pattern {broad[0]!r} is too broad; list directories explicitly")
         return patterns
+
+    @field_validator("context_files")
+    @classmethod
+    def _literal_paths(cls, paths: tuple[str, ...]) -> tuple[str, ...]:
+        for path in paths:
+            if any(ch in path for ch in "*?[]"):
+                raise ValueError("context_files must be literal paths without wildcards")
+            if is_sensitive(path):
+                raise ValueError(f"context file {path!r} matches a sensitive-file pattern")
+        return paths
 
     @model_validator(mode="after")
     def _apply_needs_paths(self) -> PolicyConfig:
