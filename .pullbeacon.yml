@@ -3,8 +3,9 @@ version: 1
 automatic_review: true
 model:
   provider: anthropic
-  # Set a real LiteLLM model id before enabling live runs (repository variable PULLBEACON_LIVE).
-  name: anthropic/REPLACE-WITH-MODEL-ID
+  # Chosen from docs/benchmarks/2026-10-28-claude.md: same recall as Sonnet 5.5, ~13x cheaper.
+  # Live calls only happen when the repository variable PULLBEACON_LIVE is "true".
+  name: anthropic/claude-haiku-5-5
 limits:
   max_changed_files: 30
   max_changed_lines: 1200
