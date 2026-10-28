@@ -137,9 +137,12 @@ def review_summary(
     if report.warnings:
         lines += ["", "**Warnings:**"]
         lines += [f"- {sanitize(w, 300)}" for w in report.warnings[:10]]
-    commands = ["`@pullbeacon review`", "`@pullbeacon explain PB-001`"]
-    if apply_available and any(f.can_apply for f in report.findings):
-        commands += ["`@pullbeacon apply`", "`@pullbeacon apply PB-001`"]
+    commands = ["`@pullbeacon review`"]
+    if report.findings:
+        commands.append(f"`@pullbeacon explain {report.findings[0].id}`")
+    applicable = [f for f in report.findings if f.can_apply]
+    if apply_available and applicable:
+        commands += ["`@pullbeacon apply`", f"`@pullbeacon apply {applicable[0].id}`"]
     lines += [
         "",
         f"<sub>{usage_line(report.usage, report.simulated)} · "

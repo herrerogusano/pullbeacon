@@ -224,3 +224,12 @@ def test_explain_falls_back_without_model() -> None:
     result = run_explain(services, "acme", "shop", PR, finding_id="PB-001", trigger_comment_id=8)
     assert "original finding" in result.reason
     assert "require_user only authenticates" in fake.issue_comments[PR][-1]["body"]
+
+
+def test_summary_only_suggests_commands_that_apply() -> None:
+    fake, services, _llm, _ = setup("pr_clean.json")
+    run_review(services, "acme", "shop", 30, mode="manual", trigger="comment:1")
+    body = fake.reviews[30][-1]["body"]
+    assert "@pullbeacon explain" not in body
+    assert "@pullbeacon apply" not in body
+    assert "`@pullbeacon review`" in body
