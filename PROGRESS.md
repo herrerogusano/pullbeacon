@@ -11,7 +11,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 - Locked versions (uv.lock): litellm 1.106.5, pydantic 2.14.1, httpx 0.28.1, pytest 9.2.0,
   ruff 0.17.3, mypy 2.4.0, respx 0.23.1.
 - GitHub REST API versions supported today: `2026-03-10`, `2022-11-28` (`gh api versions`).
-- Repository: local only, no remote yet (branch `master` from the initial T3 commit, work on `feature/mvp`).
+- Repository: https://github.com/herrerogusano/pullbeacon (private, created 2026-10-28). Default branch `main`; one branch + PR per phase.
 
 ## Phase checklist
 
@@ -22,7 +22,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 03 LLM + review engine | DONE_LOCAL | live provider path NOT_VERIFIED (no paid calls authorised) |
 | 04 Publish reviews | DONE_LOCAL | real GitHub publish NOT_VERIFIED_REMOTELY |
 | 05 Actions + commands | DONE_LOCAL | workflows `NOT_VERIFIED_REMOTELY` |
-| 06 Apply + commits | NOT_STARTED | |
+| 06 Apply + commits | DONE_LOCAL | real commit on GitHub NOT_VERIFIED_REMOTELY |
 | 07 Evaluation | NOT_STARTED | |
 | 08 Hardening + release | NOT_STARTED | |
 | 09 GitHub App (optional) | NOT_STARTED | requires explicit approval after MVP |
@@ -58,6 +58,10 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D26 | Provider keys as explicit action inputs (`anthropic-api-key`, …) | explicit and documented; GitHub masks secrets | implicit step env |
 | D27 | `mock-llm: true` input answers with empty canned results | lets users smoke-test the wiring on a real repo at zero cost | none |
 | D28 | Dogfood workflow checks out the **default branch** into `.pullbeacon-action` and runs `uses: ./.pullbeacon-action`; live only if repo variable `PULLBEACON_LIVE == 'true'` | the action used on our own PRs is never the PR's version; no accidental spend | `uses: ./` on the PR checkout |
+| D29 | Apply edits are line-range replacements that must repeat the exact original text; one invalid replacement aborts the whole apply; omitted findings are listed as skipped | fail closed, never silently partial | full-file rewrites by the model |
+| D30 | Before editing, fetched content must hash to the PR file's git blob id (`sha` in the files API) and the tree entry must be a regular file (100644/100755) | proves we edit exactly the reviewed bytes; excludes symlinks/submodules | trusting the contents API alone |
+| D31 | Commit flow: refuse protected branches; ref must equal the reviewed head before and right before `PATCH refs` (`force: false`); verify the ref after | a concurrent push always wins; no force, no merge | optimistic update without re-check |
+| D32 | The commenter's permission is re-checked right before the write | permission can change during the run | single check |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -147,6 +151,18 @@ Commands executed (all passed): ruff, mypy, `pytest -q` (238 passed), including 
 
 Validation externa: `NOT_VERIFIED_REMOTELY` (no remote repository yet). Checklist ready in phase 08.
 
+### Phase 06 — `@pullbeacon apply` (2026-10-28) — DONE_LOCAL
+
+Created: `core/apply.py` (eligibility, prompt with numbered lines, strict proposal validation:
+exact original text, locality window, no overlap, placeholders/credentials, CRLF preserved,
+disproportion and line/file limits), `adapters/git_commit.py` (Git Data API commit),
+Git Data methods + `check_branch` in `adapters/github.py`, `core/gitobjects.py`,
+`orchestration/apply_flow.py`, tests `tests/unit/test_apply.py`, `tests/integration/test_apply_flow.py`.
+Fixtures now carry real git blob ids.
+
+Commands executed (all passed): ruff, mypy, `pytest -q` (285 passed). Remote: CI for phases
+01–05 passed on GitHub (run 40738993439, Python 3.12 and 3.13).
+
 ## Acceptance matrix (MATRIZ_ACEPTACION.md)
 
 | ID | Result | Evidence |
@@ -164,6 +180,12 @@ Validation externa: `NOT_VERIFIED_REMOTELY` (no remote repository yet). Checklis
 | T11 | PASS (local) | `test_action.py::test_ignored_comments_cost_nothing` |
 | T12 | PASS (local, review/explain) | `test_users_without_write_are_denied_before_llm` (apply in phase 06) |
 | T13 | PASS (local, review) | `test_fork_pr_is_skipped_without_secrets_or_llm`, `test_dependabot_pr_is_skipped` |
+| T14 | PASS (local, fake GitHub) | `test_apply_flow.py::test_authorized_apply_creates_one_bounded_commit` |
+| T15 | PASS (local) | `test_review_of_older_sha_is_not_used`, `test_head_moved_between_proposal_and_commit_aborts` |
+| T16 | PASS (local) | `test_invalid_model_proposal_aborts_whole_apply`, `test_finding_eligibility` |
+| T17 | PASS (local) | `test_shell_text_in_replacement_is_just_file_content` |
+| T18 | PASS (local) | reply text asserted in `test_authorized_apply_creates_one_bounded_commit` |
+| T23 | PASS (local) | `test_protected_branch_reports_without_mutation`, `test_github_403_on_ref_update` |
 | T22 | PARTIAL | redaction tests in `tests/unit/test_logging_and_secrets.py`; full check in phase 08 |
 | T24 | IN_PROGRESS | local-only repo |
 | others | NOT_RUN | later phases |

@@ -60,6 +60,28 @@ def _check_sha(value: str) -> str:
     return value
 
 
+_BRANCH_FORBIDDEN = re.compile(r"(\.\.|@\{|//|[\x00-\x20~^:?*\[\\\x7f])")
+
+
+def check_branch(name: str) -> str:
+    """Validate a branch name against git's ref rules (stricter where it is cheap)."""
+    if (
+        not name
+        or len(name) > 255
+        or _BRANCH_FORBIDDEN.search(name)
+        or name.startswith(("/", "-", "."))
+        or name.endswith(("/", ".", ".lock"))
+        or "/." in name
+        or name == "@"
+    ):
+        raise GitHubAPIError("invalid branch name")
+    return name
+
+
+def _quote_ref(branch: str) -> str:
+    return "/".join(quote(part, safe="") for part in branch.split("/"))
+
+
 def _check_login(value: str) -> str:
     if not _LOGIN.match(value):
         raise GitHubAPIError("invalid GitHub login")
@@ -311,6 +333,56 @@ class GitHubClient:
         path = f"{repo_path(owner, repo)}/issues/{number}/comments"
         data = self.request("POST", path, json={"body": body}, expected=(201,)).json()
         return data if isinstance(data, dict) else {}
+
+    # ------------------------------------------------------------------ git data (apply)
+
+    def get_branch(self, owner: str, repo: str, branch: str) -> dict[str, Any]:
+        path = f"{repo_path(owner, repo)}/branches/{quote(check_branch(branch), safe='')}"
+        data = self.request("GET", path).json()
+        return data if isinstance(data, dict) else {}
+
+    def get_ref_sha(self, owner: str, repo: str, branch: str) -> str:
+        path = f"{repo_path(owner, repo)}/git/ref/heads/{_quote_ref(check_branch(branch))}"
+        data = self.request("GET", path).json()
+        sha = data.get("object", {}).get("sha") if isinstance(data, dict) else None
+        if not isinstance(sha, str):
+            raise GitHubAPIError("unexpected ref payload")
+        return _check_sha(sha)
+
+    def get_commit(self, owner: str, repo: str, sha: str) -> dict[str, Any]:
+        path = f"{repo_path(owner, repo)}/git/commits/{_check_sha(sha)}"
+        data = self.request("GET", path).json()
+        return data if isinstance(data, dict) else {}
+
+    def get_tree(self, owner: str, repo: str, sha: str) -> dict[str, Any]:
+        path = f"{repo_path(owner, repo)}/git/trees/{_check_sha(sha)}"
+        data = self.request("GET", path, params={"recursive": "1"}).json()
+        return data if isinstance(data, dict) else {}
+
+    def create_tree(
+        self, owner: str, repo: str, *, base_tree: str, entries: list[dict[str, Any]]
+    ) -> str:
+        path = f"{repo_path(owner, repo)}/git/trees"
+        payload = {"base_tree": _check_sha(base_tree), "tree": entries}
+        data = self.request("POST", path, json=payload, expected=(201,)).json()
+        return _check_sha(str(data.get("sha", "")))
+
+    def create_commit(
+        self, owner: str, repo: str, *, message: str, tree: str, parents: list[str]
+    ) -> dict[str, Any]:
+        path = f"{repo_path(owner, repo)}/git/commits"
+        payload = {
+            "message": message,
+            "tree": _check_sha(tree),
+            "parents": [_check_sha(p) for p in parents],
+        }
+        data = self.request("POST", path, json=payload, expected=(201,)).json()
+        return data if isinstance(data, dict) else {}
+
+    def update_ref(self, owner: str, repo: str, branch: str, sha: str) -> None:
+        """Fast-forward only: ``force`` is always false. Never merges, never force-pushes."""
+        path = f"{repo_path(owner, repo)}/git/refs/heads/{_quote_ref(check_branch(branch))}"
+        self.request("PATCH", path, json={"sha": _check_sha(sha), "force": False})
 
 
 def snapshot_from_api(

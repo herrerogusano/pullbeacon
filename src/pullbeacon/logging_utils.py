@@ -24,7 +24,7 @@ SECRET_ENV_VARS = (
     "PULLBEACON_GITHUB_TOKEN",
 )
 
-_TOKEN_PATTERNS = (
+TOKEN_PATTERNS = (
     re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}"),
     re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
     re.compile(r"sk-ant-[A-Za-z0-9_\-]{10,}"),
@@ -46,7 +46,7 @@ def _secret_values(extra: Iterable[str] = ()) -> list[str]:
 def redact(text: str, extra_secrets: Iterable[str] = ()) -> str:
     for value in _secret_values(extra_secrets):
         text = text.replace(value, REDACTED)
-    for pattern in _TOKEN_PATTERNS:
+    for pattern in TOKEN_PATTERNS:
         if pattern.groups >= 2:
             text = pattern.sub(lambda m: f"{m.group(1)}{m.group(2)}{REDACTED}", text)
         else:
