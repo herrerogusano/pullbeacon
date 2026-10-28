@@ -16,6 +16,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from pullbeacon.core.gitobjects import git_sha  # noqa: E402
+
 OUT = ROOT / "tests" / "fixtures"
 
 
@@ -58,7 +60,8 @@ def file_entry(
     adds = sum(1 for ln in (text_patch or "").splitlines() if ln.startswith("+"))
     dels = sum(1 for ln in (text_patch or "").splitlines() if ln.startswith("-"))
     entry: dict[str, Any] = {
-        "sha": sha(f"blob:{path}:{after}"),
+        # Real git blob id of the head content, as the GitHub files API reports it.
+        "sha": git_sha("blob", after.encode("utf-8")) if after is not None else sha(path),
         "filename": path,
         "status": status,
         "additions": adds,

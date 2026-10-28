@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import base64
 import copy
-import hashlib
 import json
 import re
 from collections.abc import Callable
@@ -19,12 +18,10 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 import httpx
 
+from pullbeacon.core.gitobjects import git_sha
+
 API = "https://api.github.com"
 Handler = Callable[[httpx.Request], httpx.Response | None]
-
-
-def git_sha(kind: str, data: bytes) -> str:
-    return hashlib.sha1(f"{kind} {len(data)}\0".encode() + data, usedforsecurity=False).hexdigest()
 
 
 @dataclass

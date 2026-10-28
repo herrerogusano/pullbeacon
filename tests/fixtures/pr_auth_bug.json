@@ -9,7 +9,7 @@
       "deletions": 0,
       "filename": "src/api/users.py",
       "patch": "@@ -9,6 +9,12 @@\n     return db.users.get(user_id)\n \n \n+def delete_account(request, user_id):\n+    require_user(request)\n+    db.users.delete(user_id)\n+    return {\"deleted\": user_id}\n+\n+\n def list_orders(request):\n     current = require_user(request)\n     return db.orders.for_user(current.id)",
-      "sha": "80592860faafc2ebec210fa7d69095d6d092c44a",
+      "sha": "1593cbef6897c1629214d637e65e6647c0f4ca07",
       "status": "modified"
     }
   ],

@@ -6,7 +6,7 @@
       "deletions": 2,
       "filename": "src/pricing.py",
       "patch": "@@ -1,3 +1,3 @@\n def final_price(price, discount):\n-    p = price - price * discount\n-    return round(p, 2)\n+    discounted = price - price * discount\n+    return round(discounted, 2)",
-      "sha": "08a63697bdb6643a19b2dfdbba7a39ce218481ff",
+      "sha": "b3a70920eae511bc3a992eaa35f516df57c1fe66",
       "status": "modified"
     }
   ],

@@ -12,6 +12,7 @@ from pullbeacon.adapters.github import fetch_snapshot
 from pullbeacon.adapters.publisher import post_reply, trigger_already_replied
 from pullbeacon.core.render import sanitize
 from pullbeacon.domain.errors import (
+    ApplyRejected,
     BudgetExceeded,
     ConfigError,
     CredentialError,
@@ -70,6 +71,7 @@ class ActionInputs:
 
 
 FRIENDLY = {
+    ApplyRejected: "Apply was rejected and nothing was changed",
     ConfigError: "PullBeacon configuration problem",
     CredentialError: "PullBeacon is missing a credential (check the repository secrets)",
     PermissionDenied: "Permission denied",
