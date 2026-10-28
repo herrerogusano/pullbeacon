@@ -1,0 +1,93 @@
+[project]
+name = "pullbeacon"
+version = "0.1.0rc1"
+description = "BYOK, multi-model pull request reviewer and controlled fixer for GitHub Actions."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "Alberto Herrero" }]
+keywords = ["code-review", "github-actions", "llm", "pull-request"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "httpx>=0.28,<1",
+    "pydantic>=2.11,<3",
+    "pyyaml>=6.0.2,<7",
+    # litellm 1.82.7 and 1.82.8 were compromised on PyPI (March 2026) and yanked.
+    # The floor keeps resolution well past them; uv.lock pins the exact build.
+    "litellm>=1.106,<2",
+]
+
+[project.scripts]
+pullbeacon = "pullbeacon.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "pytest-cov>=6.2",
+    "respx>=0.22",
+    "ruff>=0.14",
+    "mypy>=1.18",
+    "types-pyyaml>=6.0.12",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pullbeacon"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/pullbeacon", "tests", "README.md", "LICENSE", "SECURITY.md", "action.yml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["evaluation/cases"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "PL", "PT", "C4"]
+ignore = [
+    "PLR0913",  # explicit keyword arguments are clearer than config bags here
+    "PLR2004",  # magic values in tests and HTTP status codes
+    "PLR0911",
+    "PLR0912",
+    "PLC0415",  # lazy imports keep the CLI fast and LiteLLM optional at import time
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "PLR0915"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["pullbeacon"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["litellm", "litellm.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.coverage.run]
+source = ["pullbeacon"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
