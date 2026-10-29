@@ -39,11 +39,13 @@ branch names, file paths — and **all LLM output**.
 
 ### Accepted risks
 
-- **filelock < 4 (GHSA-567q-5qvw-pf92, GHSA-9vhv-jxww-xfm5, GHSA-v4x8-3wr5-3wq8):** required by
-  `litellm` (`filelock<4.0`). The issues need another local user on the same machine and affect
-  `SoftFileLock`/`ReadWriteLock`, which `litellm` only uses in its proxy CLI (not used by
-  PullBeacon). GitHub-hosted runners are ephemeral and single-tenant. These three IDs are ignored
-  explicitly in CI; any other advisory fails the build. Revisit when `litellm` allows filelock 4.
+- **filelock < 4 (13 advisories, listed in `.github/workflows/ci.yml`; 10 of them new since
+  2026-10-28):** required by `litellm` (`filelock<4.0`, still true in 1.106.6). Every issue needs
+  another local user on the same machine (symlink swaps, planted files, forged PIDs, ACL
+  inheritance). `filelock` is only used by `litellm`'s proxy CLI and by `huggingface-hub`'s download
+  cache, neither of which PullBeacon calls. GitHub-hosted runners are ephemeral and single-tenant.
+  These IDs are ignored explicitly in CI; any other advisory fails the build. Revisit when `litellm`
+  allows filelock 4.
 - **Same-repository writers are trusted.** Someone with write access can already push code and
   workflows; PullBeacon does not try to defend a repository against its own maintainers.
 - The `GITHUB_TOKEN` identity (`github-actions[bot]`) is shared by all workflows of the
