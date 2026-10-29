@@ -71,8 +71,8 @@ jobs:
           python-version: "3.12"
           enable-cache: false
 
-      # Accepted risk (see SECURITY.md): filelock<4 is required by litellm; the three advisories
-      # need another local user on the machine and affect lock classes PullBeacon never uses.
+      # Accepted risk (see SECURITY.md): filelock<4 is required by litellm; these 13 advisories
+      # all need another local user on the same machine. Runners are ephemeral and single-tenant.
       # Any other vulnerability fails this job.
       - name: Dependency audit
         run: >-
@@ -80,6 +80,16 @@ jobs:
           --ignore GHSA-567q-5qvw-pf92
           --ignore GHSA-9vhv-jxww-xfm5
           --ignore GHSA-v4x8-3wr5-3wq8
+          --ignore GHSA-6627-m3xw-93mp
+          --ignore GHSA-69hj-f68j-2879
+          --ignore GHSA-8mx5-7m5m-r77g
+          --ignore GHSA-9c4x-gm8v-wgc4
+          --ignore GHSA-9j6q-wvj5-jgjg
+          --ignore GHSA-cwqr-hh33-gh44
+          --ignore GHSA-fq56-3cx3-fjxp
+          --ignore GHSA-j8f7-rjxc-mr56
+          --ignore GHSA-m462-7rxw-wvpg
+          --ignore GHSA-rfpc-qcw5-3pc4
 
       - name: Secret scan (gitleaks, checksum-pinned)
         run: |

@@ -24,7 +24,7 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | 05 Actions + commands | DONE_REMOTE | dogfood on PRs #8–#13 |
 | 06 Apply + commits | DONE_REMOTE | real commit on PR #13 (`4cc7ca5`) |
 | 07 Evaluation | DONE_REMOTE | live benchmark run 2026-10-28 (Claude Haiku/Sonnet 5.5), report in `docs/benchmarks/` |
-| 08 Hardening + release | DONE_REMOTE | live review/explain/apply verified on PR #13; tag `v0.1.0` needs approval |
+| 08 Hardening + release | DONE_REMOTE | live review/explain/apply verified on PR #13; tag `v0.1.0` approved and created 2026-10-29 |
 | 09 GitHub App (optional) | NOT_STARTED | requires explicit approval after MVP |
 
 ## Decisions (not already fixed by the plans)
@@ -253,7 +253,7 @@ apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
 
 ## Human actions pending
 
-1. Done 2026-10-28: `ANTHROPIC_API_KEY` configured (expires in 30 days — rotate with `%TEMP%\pullbeacon-set-anthropic-key.ps1` or `gh secret set`).
-2. Approve tag/release `v0.1.0` and decide repository visibility (currently private).
+1. Done 2026-10-29: `ANTHROPIC_API_KEY` replaced with a key without expiry (repo secret + user env var); verified with a free `/v1/models` call. Rotate with `%TEMP%\pullbeacon-set-anthropic-key.ps1` or `gh secret set`.
+2. Done 2026-10-29: tag/release `v0.1.0` approved by the user.
 3. Optional: a second GitHub account or a fork to verify permission denial and fork skip remotely.
 4. Phase 09 (GitHub App) only on explicit request.

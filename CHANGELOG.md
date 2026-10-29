@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0 (2026-10-29)
+
+First stable MVP release. Same code as 0.1.0rc1 plus the fixes listed under it; verified live on
+GitHub with Anthropic Claude (review, explain, apply, stale apply refused, re-review) and a 16-case
+benchmark (`docs/benchmarks/2026-10-28-claude.md`). OpenAI and Gemini are supported through LiteLLM
+but only tested with mocks.
+
 ## 0.1.0rc1 — release candidate (2026-10-28)
 
 First release candidate of the MVP.

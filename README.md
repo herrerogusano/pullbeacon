@@ -9,7 +9,7 @@ Gemini through the [LiteLLM](https://docs.litellm.ai/) SDK), posts findings on t
 lines, and — only when a person with write access asks — commits small, validated fixes to the PR
 branch.
 
-> Status: **v0.1.0 release candidate.** See [What has been verified](#what-has-been-verified)
+> Status: **v0.1.0.** See [What has been verified](#what-has-been-verified)
 > and [`PROGRESS.md`](PROGRESS.md) for exactly what was tested and how.
 
 ## What it does
