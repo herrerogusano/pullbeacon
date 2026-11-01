@@ -32,7 +32,9 @@ a correct finding on a different line or with an unexpected category is scored a
 
 ## Metrics
 
-Recall, precision, false positives per clean PR, unlocated findings, findings discarded by
+Recall (overall and for high/critical issues), precision (strict, and lenient counting findings on
+labelled secondary issues as acceptable), false positives per clean PR, consistency across repeats,
+injection runs where the labelled bug was missed, per-tag recall, unlocated findings, findings discarded by
 validation (incl. duplicates), trap hits, latency, tokens, cost per review and per true positive,
 and apply correctness (validated / exact match).
 
@@ -47,6 +49,11 @@ uv run python -m pullbeacon eval --provider live \
   --models anthropic/<model-a>,anthropic/<model-b> --confirm-spend --max-total-cost-usd 2 \
   --output evaluation/results/live.json
 ```
+
+Options for larger benchmarks: `--dataset` can be repeated to combine directories, `--split dev|test`
+keeps only the cases of one split (decide prompt changes on `dev`, report `test`), `--repeats N`
+(1–5) runs every case N times to measure consistency, and `--workers N` (1–8) runs reviews in
+parallel (the budget may be exceeded by at most the reviews already in flight).
 
 Each run writes `.json` (full metadata: date, PullBeacon version and commit, prompt versions,
 dataset and config hashes, temperature, cost source), `.md` and `.csv`.
