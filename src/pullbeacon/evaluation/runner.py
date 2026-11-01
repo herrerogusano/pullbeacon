@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 from pullbeacon import __version__
 from pullbeacon.adapters.github import GitHubClient, fetch_snapshot
-from pullbeacon.adapters.llm import FakeLLMClient, LLMClient
+from pullbeacon.adapters.llm import FakeLLMClient, LLMClient, LLMRequest, LLMResponse
 from pullbeacon.config import PullBeaconConfig, parse_config
 from pullbeacon.core.apply import (
     SourceFile,
@@ -130,10 +130,38 @@ def _apply_check(
     )
 
 
+class _SpendTracker:
+    """LLM client proxy that adds up the cost of every completed call.
+
+    A review can fail after paid calls (e.g. malformed JSON after the retry): the review report
+    is lost then, but the money is spent and must still count against the evaluation budget.
+    """
+
+    def __init__(self, inner: LLMClient) -> None:
+        self._inner = inner
+        self.provider = inner.provider
+        self.model = inner.model
+        self.simulated = inner.simulated
+        self.spent_usd = 0.0
+        self.unknown = False
+
+    def complete(self, request: LLMRequest) -> LLMResponse:
+        response = self._inner.complete(request)
+        if response.usage.cost_usd is None:
+            self.unknown = True
+        else:
+            self.spent_usd += response.usage.cost_usd
+        return response
+
+    def estimate_max_cost(self, request: LLMRequest) -> float | None:
+        return self._inner.estimate_max_cost(request)
+
+
 def _run_one(
-    case: EvalCase, llm: LLMClient, config: PullBeaconConfig, sample: int
+    case: EvalCase, llm_client: LLMClient, config: PullBeaconConfig, sample: int
 ) -> tuple[CaseResult, float]:
     """Review one case once; returns the scored result and the money it spent."""
+    llm = _SpendTracker(llm_client)
     fake = FakeGitHub.from_fixture(case.fixture)
     number = int(case.fixture["pull_request"]["number"])
     with GitHubClient(None, transport=fake.transport(), max_retries=0) as client:
@@ -144,13 +172,16 @@ def _run_one(
         report = ReviewEngine(llm, config).review(snapshot, scope, mode="local")
     except PullBeaconError as exc:
         error = CaseResult(
-            case_id=case.case_id, kind=case.kind, sample=sample, error=f"{exc.code}: {exc.message}"
+            case_id=case.case_id,
+            kind=case.kind,
+            sample=sample,
+            error=f"{exc.code}: {exc.message}",
+            cost_usd=None if llm.unknown else round(llm.spent_usd, 6),
         )
-        return error, 0.0
+        return error, llm.spent_usd
     result = score_case(case, report, latency_s=time.perf_counter() - start, sample=sample)
-    spent = result.cost_usd or 0.0
     outcome = _apply_check(case, llm, report, config, fake) if sample == 0 else ApplyOutcome()
-    spent += outcome.cost_usd
+    spent = llm.spent_usd
     return (
         result.model_copy(
             update={
