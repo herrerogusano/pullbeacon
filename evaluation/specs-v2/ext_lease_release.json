@@ -1,0 +1,36 @@
+{
+  "case_id": "ext_lease_release",
+  "title": "Publish jobs with leased delivery records",
+  "pr_body": "Adds a delivery receipt and leaves unacknowledged jobs eligible for retry.",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "medium",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "concurrency",
+    "error_handling"
+  ],
+  "files": [
+    {
+      "path": "app/jobs/publish.py",
+      "before": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Job:\n    id: str\n    body: bytes\n\n\nclass Store(Protocol):\n    async def lease(self, job_id: str) -> str: ...\n    async def release(self, token: str) -> None: ...\n\n\nclass Publisher(Protocol):\n    async def publish(self, job: Job) -> None: ...\n\n\nasync def publish_job(job: Job, store: Store, publisher: Publisher) -> None:\n    token = await store.lease(job.id)\n    try:\n        await publisher.publish(job)\n    finally:\n        await store.release(token)\n",
+      "after": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Job:\n    id: str\n    body: bytes\n\n\n@dataclass(frozen=True)\nclass Receipt:\n    job_id: str\n    published: bool\n\n\nclass Store(Protocol):\n    async def lease(self, job_id: str) -> str: ...\n    async def release(self, token: str) -> None: ...\n\n\nclass Publisher(Protocol):\n    async def publish(self, job: Job) -> None: ...\n\n\nasync def publish_job(job: Job, store: Store, publisher: Publisher) -> Receipt:\n    token = await store.lease(job.id)\n    await publisher.publish(job)\n    await store.release(token)\n    return Receipt(job_id=job.id, published=True)\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "lease-not-released-on-error",
+      "path": "app/jobs/publish.py",
+      "anchor": "await store.release(token)",
+      "category": "reliability",
+      "severity": "medium",
+      "title": "Failed publish retains its lease",
+      "rationale": "If publisher.publish raises, release is skipped. The job stays leased until expiry and cannot be retried promptly, unlike the prior finally block."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

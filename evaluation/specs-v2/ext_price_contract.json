@@ -1,0 +1,42 @@
+{
+  "case_id": "ext_price_contract",
+  "title": "Move catalog prices to minor units",
+  "pr_body": "Keeps catalog rates as integer minor units and adds invoice line notes.",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "multi_file",
+    "api_contract",
+    "numeric"
+  ],
+  "files": [
+    {
+      "path": "lib/catalog/rates.py",
+      "before": "from decimal import Decimal\n\n\ndef rate_for(plan: str) -> Decimal:\n    rates = {\"starter\": Decimal(\"12.50\"), \"team\": Decimal(\"29.00\")}\n    return rates[plan]\n",
+      "after": "def rate_for(plan: str) -> int:\n    rates_cents = {\"starter\": 1250, \"team\": 2900}\n    return rates_cents[plan]\n\n\ndef listed_plans() -> tuple[str, ...]:\n    return (\"starter\", \"team\")\n"
+    },
+    {
+      "path": "app/billing/invoices.py",
+      "before": "from lib.catalog.rates import rate_for\n\n\ndef invoice_amount_cents(plan: str, seats: int) -> int:\n    if seats < 1:\n        raise ValueError(\"seats must be positive\")\n    return int(rate_for(plan) * seats * 100)\n",
+      "after": "from dataclasses import dataclass\n\nfrom lib.catalog.rates import rate_for\n\n\n@dataclass(frozen=True)\nclass InvoiceLine:\n    description: str\n    amount_cents: int\n\n\ndef invoice_amount_cents(plan: str, seats: int) -> int:\n    if seats < 1:\n        raise ValueError(\"seats must be positive\")\n    return int(rate_for(plan) * seats * 100)\n\n\ndef invoice_line(plan: str, seats: int) -> InvoiceLine:\n    return InvoiceLine(f\"{plan} plan, {seats} seats\", invoice_amount_cents(plan, seats))\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "rate-scaled-twice",
+      "path": "app/billing/invoices.py",
+      "anchor": "return int(rate_for(plan) * seats * 100)",
+      "category": "correctness",
+      "severity": "high",
+      "title": "Invoice amount multiplies minor-unit rate by 100 again",
+      "rationale": "The changed catalog contract returns cents, while the changed invoice caller still converts dollars to cents. Every new invoice is billed at one hundred times the catalog price."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

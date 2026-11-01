@@ -1,0 +1,102 @@
+{
+ "acceptable_findings": [
+  {
+   "lines": [
+    35
+   ],
+   "path": "app/rates.py",
+   "rationale": "Concurrent misses fetch the same rate twice (thundering herd); minor."
+  }
+ ],
+ "author": "claude",
+ "case_id": "cl_syn_cache_timedelta_seconds",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 35,
+    "changes": 36,
+    "deletions": 1,
+    "filename": "app/rates.py",
+    "patch": "@@ -2,8 +2,42 @@\n \n from __future__ import annotations\n \n+import threading\n+from dataclasses import dataclass\n+from datetime import UTC, datetime\n+\n from app.rates_client import fetch_rate\n+\n+RATE_TTL_SECONDS = 15 * 60\n+\n+\n+@dataclass(frozen=True)\n+class _Entry:\n+    rate: float\n+    fetched_at: datetime\n+\n+\n+_cache: dict[tuple[str, str], _Entry] = {}\n+_lock = threading.Lock()\n+\n+\n+def _now() -> datetime:\n+    return datetime.now(UTC)\n \n \n def get_rate(base: str, quote: str) -> float:\n-    return fetch_rate(base, quote)\n+    \"\"\"Return the base->quote rate, refreshing it at most every RATE_TTL_SECONDS.\"\"\"\n+    key = (base.upper(), quote.upper())\n+    with _lock:\n+        entry = _cache.get(key)\n+        if entry is not None and (_now() - entry.fetched_at).seconds < RATE_TTL_SECONDS:\n+            return entry.rate\n+    rate = fetch_rate(*key)\n+    with _lock:\n+        _cache[key] = _Entry(rate=rate, fetched_at=_now())\n+    return rate\n+\n+\n+def clear() -> None:\n+    with _lock:\n+        _cache.clear()",
+    "sha": "a3f18fde5ee38c3a0dedb5401a8a34b84a421d0f",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "f97a2e46b29717ec5d6977ce6e386b4da22da728"
+   },
+   "body": "The provider rate-limits us; cache rates in-process with a 15 minute TTL.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_syn_cache_timedelta_seconds",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "c75ace0100614ed7fbfe419c308d17b683dfc39b"
+   },
+   "number": 866,
+   "state": "open",
+   "title": "Cache exchange rates for 15 minutes",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "c75ace0100614ed7fbfe419c308d17b683dfc39b": {
+    "app/rates.py": "\"\"\"Small in-process cache for exchange rates fetched from the provider.\"\"\"\n\nfrom __future__ import annotations\n\nimport threading\nfrom dataclasses import dataclass\nfrom datetime import UTC, datetime\n\nfrom app.rates_client import fetch_rate\n\nRATE_TTL_SECONDS = 15 * 60\n\n\n@dataclass(frozen=True)\nclass _Entry:\n    rate: float\n    fetched_at: datetime\n\n\n_cache: dict[tuple[str, str], _Entry] = {}\n_lock = threading.Lock()\n\n\ndef _now() -> datetime:\n    return datetime.now(UTC)\n\n\ndef get_rate(base: str, quote: str) -> float:\n    \"\"\"Return the base->quote rate, refreshing it at most every RATE_TTL_SECONDS.\"\"\"\n    key = (base.upper(), quote.upper())\n    with _lock:\n        entry = _cache.get(key)\n        if entry is not None and (_now() - entry.fetched_at).seconds < RATE_TTL_SECONDS:\n            return entry.rate\n    rate = fetch_rate(*key)\n    with _lock:\n        _cache[key] = _Entry(rate=rate, fetched_at=_now())\n    return rate\n\n\ndef clear() -> None:\n    with _lock:\n        _cache.clear()\n"
+   },
+   "f97a2e46b29717ec5d6977ce6e386b4da22da728": {
+    "app/rates.py": "\"\"\"Small in-process cache for exchange rates fetched from the provider.\"\"\"\n\nfrom __future__ import annotations\n\nfrom app.rates_client import fetch_rate\n\n\ndef get_rate(base: str, quote: str) -> float:\n    return fetch_rate(base, quote)\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability"
+   ],
+   "category": "correctness",
+   "id": "seconds-wraps-daily",
+   "lines": [
+    33
+   ],
+   "path": "app/rates.py",
+   "rationale": "timedelta.seconds is only the seconds component (0-86399), not the total. An entry fetched 1 day and 5 minutes ago has .seconds == 300 and is served as fresh, so stale exchange rates are returned for the first 15 minutes of every following day.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"if entry is not None and (_now() - entry.fetched_at).seconds < RATE_TTL_SECONDS:\", \"explanation\": \"timedelta.seconds is only the seconds component (0-86399), not the total. An entry fetched 1 day and 5 minutes ago has .seconds == 300 and is served as fresh, so stale exchange rates are returned for the first 15 minutes of every following day.\", \"impact\": \"See explanation.\", \"line\": 33, \"path\": \"app/rates.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"timedelta.seconds ignores days\"}], \"summary\": \"Mock review of cl_syn_cache_timedelta_seconds.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "logic",
+  "numeric",
+  "timezone"
+ ],
+ "title": "Cache exchange rates for 15 minutes"
+}

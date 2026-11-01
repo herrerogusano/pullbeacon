@@ -1,0 +1,41 @@
+{
+    "case_id":  "ext_workflow_title",
+    "title":  "Include pull request title in release notes check",
+    "pr_body":  "Makes the release note check display the proposed title in its status output.",
+    "language":  "yaml",
+    "kind":  "bug",
+    "criticality":  "high",
+    "split":  "test",
+    "source":  "external",
+    "author":  "codex",
+    "provenance":  "Original synthetic production-style change authored for benchmark v2.",
+    "tags":  [
+                 "security",
+                 "command_injection",
+                 "ci_workflow"
+             ],
+    "files":  [
+                  {
+                      "path":  ".github/workflows/release-note.yml",
+                      "before":  "name: Release note check\non:\n  pull_request:\n    types: [opened, synchronize, edited]\npermissions:\n  contents: read\njobs:\n  note:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Check note\n        env:\n          PR_TITLE: ${{ github.event.pull_request.title }}\n        run: |\n          printf \u0027%s\\n\u0027 \"$PR_TITLE\"\n          test -n \"$PR_TITLE\"\n",
+                      "after":  "name: Release note check\non:\n  pull_request:\n    types: [opened, synchronize, edited]\npermissions:\n  contents: read\njobs:\n  note:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Check note\n        run: |\n          printf \u0027Checking: %s\\n\u0027 \"${{ github.event.pull_request.title }}\"\n          test -n \"${{ github.event.pull_request.title }}\"\n"
+                  }
+              ],
+    "bugs":  [
+                 {
+                     "id":  "title-shell-expansion",
+                     "path":  ".github/workflows/release-note.yml",
+                     "anchor":  "printf \u0027Checking: %s\\n\u0027",
+                     "category":  "security",
+                     "severity":  "high",
+                     "title":  "Pull request title is interpolated into shell script",
+                     "rationale":  "A pull request author controls the title. GitHub substitutes it into the run script before the shell parses it, so command substitutions or quote breaks in the title execute in the workflow job."
+                 }
+             ],
+    "traps":  [
+
+              ],
+    "acceptable":  [
+
+                   ]
+}

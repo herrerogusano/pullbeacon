@@ -1,0 +1,100 @@
+{
+ "acceptable_findings": [],
+ "author": "claude",
+ "case_id": "cl_syn_ts_podium_sort",
+ "criticality": "medium",
+ "expected_non_findings": [
+  {
+   "lines": [
+    20
+   ],
+   "path": "web/leaderboard.ts",
+   "rationale": "Explicit undefined check handles a 0 score correctly."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 31,
+    "changes": 31,
+    "deletions": 0,
+    "filename": "web/leaderboard.ts",
+    "patch": "@@ -3,6 +3,37 @@\n   points: number;\n }\n \n+export interface PodiumEntry {\n+  player: string;\n+  best: number;\n+  rank: 1 | 2 | 3;\n+}\n+\n export function totalPoints(scores: Score[]): number {\n   return scores.reduce((sum, s) => sum + s.points, 0);\n }\n+\n+function bestByPlayer(scores: Score[]): Map<string, number> {\n+  const best = new Map<string, number>();\n+  for (const { player, points } of scores) {\n+    const previous = best.get(player);\n+    if (previous === undefined || points > previous) {\n+      best.set(player, points);\n+    }\n+  }\n+  return best;\n+}\n+\n+export function podium(scores: Score[]): PodiumEntry[] {\n+  const best = bestByPlayer(scores);\n+  const values = [...new Set(best.values())].sort().reverse().slice(0, 3);\n+  const entries: PodiumEntry[] = [];\n+  values.forEach((value, index) => {\n+    for (const [player, points] of best) {\n+      if (points === value) {\n+        entries.push({ player, best: points, rank: (index + 1) as 1 | 2 | 3 });\n+      }\n+    }\n+  });\n+  return entries;\n+}",
+    "sha": "668c716e5ab3df6f10d72ae81b2a521a7776ea9c",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "616ea744d44d61455030091ca17663c3a1d18977"
+   },
+   "body": "Adds `podium()` for the results page; ties share a rank.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_syn_ts_podium_sort",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "6f96f280caa8bf37f1035b3e3967e02e61b620de"
+   },
+   "number": 169,
+   "state": "open",
+   "title": "Show a podium of the best three scores",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "616ea744d44d61455030091ca17663c3a1d18977": {
+    "web/leaderboard.ts": "export interface Score {\n  player: string;\n  points: number;\n}\n\nexport function totalPoints(scores: Score[]): number {\n  return scores.reduce((sum, s) => sum + s.points, 0);\n}\n"
+   },
+   "6f96f280caa8bf37f1035b3e3967e02e61b620de": {
+    "web/leaderboard.ts": "export interface Score {\n  player: string;\n  points: number;\n}\n\nexport interface PodiumEntry {\n  player: string;\n  best: number;\n  rank: 1 | 2 | 3;\n}\n\nexport function totalPoints(scores: Score[]): number {\n  return scores.reduce((sum, s) => sum + s.points, 0);\n}\n\nfunction bestByPlayer(scores: Score[]): Map<string, number> {\n  const best = new Map<string, number>();\n  for (const { player, points } of scores) {\n    const previous = best.get(player);\n    if (previous === undefined || points > previous) {\n      best.set(player, points);\n    }\n  }\n  return best;\n}\n\nexport function podium(scores: Score[]): PodiumEntry[] {\n  const best = bestByPlayer(scores);\n  const values = [...new Set(best.values())].sort().reverse().slice(0, 3);\n  const entries: PodiumEntry[] = [];\n  values.forEach((value, index) => {\n    for (const [player, points] of best) {\n      if (points === value) {\n        entries.push({ player, best: points, rank: (index + 1) as 1 | 2 | 3 });\n      }\n    }\n  });\n  return entries;\n}\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness"
+   ],
+   "category": "correctness",
+   "id": "lexicographic-sort",
+   "lines": [
+    29
+   ],
+   "path": "web/leaderboard.ts",
+   "rationale": "Array.prototype.sort without a comparator sorts by string value, so [9, 10, 100] becomes [10, 100, 9] and reverse() puts 9 first: the podium shows the wrong players once scores have different digit counts.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "typescript",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"const values = [...new Set(best.values())].sort().reverse().slice(0, 3);\", \"explanation\": \"Array.prototype.sort without a comparator sorts by string value, so [9, 10, 100] becomes [10, 100, 9] and reverse() puts 9 first: the podium shows the wrong players once scores have different digit counts.\", \"impact\": \"See explanation.\", \"line\": 29, \"path\": \"web/leaderboard.ts\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Numbers sorted as strings\"}], \"summary\": \"Mock review of cl_syn_ts_podium_sort.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "small",
+ "source": "synthetic",
+ "split": "dev",
+ "tags": [
+  "logic",
+  "types"
+ ],
+ "title": "Show a podium of the best three scores"
+}

@@ -1,0 +1,93 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_workflow_title",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 2,
+    "changes": 6,
+    "deletions": 4,
+    "filename": ".github/workflows/release-note.yml",
+    "patch": "@@ -9,8 +9,6 @@\n     runs-on: ubuntu-latest\n     steps:\n       - name: Check note\n-        env:\n-          PR_TITLE: ${{ github.event.pull_request.title }}\n         run: |\n-          printf '%s\\n' \"$PR_TITLE\"\n-          test -n \"$PR_TITLE\"\n+          printf 'Checking: %s\\n' \"${{ github.event.pull_request.title }}\"\n+          test -n \"${{ github.event.pull_request.title }}\"",
+    "sha": "b7301c4374de6dce5e467d4274b8eb00ae2acc3a",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "db0c627c8d07397cc6790afb653ba9c0beec67d4"
+   },
+   "body": "Makes the release note check display the proposed title in its status output.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_workflow_title",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "5df4a6e29c3e04dde707f74e383f7329bd5ae7ab"
+   },
+   "number": 430,
+   "state": "open",
+   "title": "Include pull request title in release notes check",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "5df4a6e29c3e04dde707f74e383f7329bd5ae7ab": {
+    ".github/workflows/release-note.yml": "name: Release note check\non:\n  pull_request:\n    types: [opened, synchronize, edited]\npermissions:\n  contents: read\njobs:\n  note:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Check note\n        run: |\n          printf 'Checking: %s\\n' \"${{ github.event.pull_request.title }}\"\n          test -n \"${{ github.event.pull_request.title }}\"\n"
+   },
+   "db0c627c8d07397cc6790afb653ba9c0beec67d4": {
+    ".github/workflows/release-note.yml": "name: Release note check\non:\n  pull_request:\n    types: [opened, synchronize, edited]\npermissions:\n  contents: read\njobs:\n  note:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Check note\n        env:\n          PR_TITLE: ${{ github.event.pull_request.title }}\n        run: |\n          printf '%s\\n' \"$PR_TITLE\"\n          test -n \"$PR_TITLE\"\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "title-shell-expansion",
+   "lines": [
+    13
+   ],
+   "path": ".github/workflows/release-note.yml",
+   "rationale": "A pull request author controls the title. GitHub substitutes it into the run script before the shell parses it, so command substitutions or quote breaks in the title execute in the workflow job.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "yaml",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"printf 'Checking: %s\\\\n' \\\"${{ github.event.pull_request.title }}\\\"\", \"explanation\": \"A pull request author controls the title. GitHub substitutes it into the run script before the shell parses it, so command substitutions or quote breaks in the title execute in the workflow job.\", \"impact\": \"See explanation.\", \"line\": 13, \"path\": \".github/workflows/release-note.yml\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Pull request title is interpolated into shell script\"}], \"summary\": \"Mock review of ext_workflow_title.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "ci_workflow",
+  "command_injection",
+  "security"
+ ],
+ "title": "Include pull request title in release notes check"
+}

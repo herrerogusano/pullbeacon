@@ -1,0 +1,104 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_revision_contract",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 5,
+    "changes": 8,
+    "deletions": 3,
+    "filename": "src/api/revisions.ts",
+    "patch": "@@ -1,6 +1,8 @@\n-export async function loadRevision(documentId: string): Promise<string> {\n+export type Revision = { id: string; etag: string };\n+\n+export async function loadRevision(documentId: string): Promise<Revision> {\n   const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/revision`);\n   if (!response.ok) throw new Error(\"Could not load revision\");\n-  const data = (await response.json()) as { revision: string };\n-  return data.revision;\n+  const data = (await response.json()) as { revision: string; etag: string };\n+  return { id: data.revision, etag: data.etag };\n }",
+    "sha": "62bd50ee02632a6e397506356499d344bd301eed",
+    "status": "modified"
+   },
+   {
+    "additions": 2,
+    "changes": 3,
+    "deletions": 1,
+    "filename": "web/editor/save.ts",
+    "patch": "@@ -4,8 +4,9 @@\n   const revision = await loadRevision(documentId);\n   const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, {\n     method: \"PUT\",\n-    headers: { \"Content-Type\": \"text/plain\", \"If-Match\": revision },\n+    headers: { \"Content-Type\": \"text/plain\", \"If-Match\": String(revision) },\n     body,\n   });\n+  if (response.status === 412) throw new Error(\"Document changed elsewhere\");\n   if (!response.ok) throw new Error(\"Could not save document\");\n }",
+    "sha": "2bfd5ed549a1f79189cf78ef3e10713894ff7f6d",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "ced27ed316c354f4936007bc5da915180cd4c99c"
+   },
+   "body": "The revisions API now returns both the opaque revision ID and ETag.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_revision_contract",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "b35aa7d115437a5aa8dc36148f8ab855b6112d18"
+   },
+   "number": 410,
+   "state": "open",
+   "title": "Expose revision metadata to editor saves",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "b35aa7d115437a5aa8dc36148f8ab855b6112d18": {
+    "src/api/revisions.ts": "export type Revision = { id: string; etag: string };\n\nexport async function loadRevision(documentId: string): Promise<Revision> {\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/revision`);\n  if (!response.ok) throw new Error(\"Could not load revision\");\n  const data = (await response.json()) as { revision: string; etag: string };\n  return { id: data.revision, etag: data.etag };\n}\n",
+    "web/editor/save.ts": "import { loadRevision } from \"../../src/api/revisions\";\n\nexport async function saveDocument(documentId: string, body: string): Promise<void> {\n  const revision = await loadRevision(documentId);\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, {\n    method: \"PUT\",\n    headers: { \"Content-Type\": \"text/plain\", \"If-Match\": String(revision) },\n    body,\n  });\n  if (response.status === 412) throw new Error(\"Document changed elsewhere\");\n  if (!response.ok) throw new Error(\"Could not save document\");\n}\n"
+   },
+   "ced27ed316c354f4936007bc5da915180cd4c99c": {
+    "src/api/revisions.ts": "export async function loadRevision(documentId: string): Promise<string> {\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/revision`);\n  if (!response.ok) throw new Error(\"Could not load revision\");\n  const data = (await response.json()) as { revision: string };\n  return data.revision;\n}\n",
+    "web/editor/save.ts": "import { loadRevision } from \"../../src/api/revisions\";\n\nexport async function saveDocument(documentId: string, body: string): Promise<void> {\n  const revision = await loadRevision(documentId);\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, {\n    method: \"PUT\",\n    headers: { \"Content-Type\": \"text/plain\", \"If-Match\": revision },\n    body,\n  });\n  if (!response.ok) throw new Error(\"Could not save document\");\n}\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness"
+   ],
+   "category": "correctness",
+   "id": "object-etag-header",
+   "lines": [
+    7
+   ],
+   "path": "web/editor/save.ts",
+   "rationale": "loadRevision now returns an object. String(revision) serializes to [object Object], so If-Match never equals the document's ETag and normal saves fail with a conflict.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "typescript",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"headers: { \\\"Content-Type\\\": \\\"text/plain\\\", \\\"If-Match\\\": String(revision) },\", \"explanation\": \"loadRevision now returns an object. String(revision) serializes to [object Object], so If-Match never equals the document's ETag and normal saves fail with a conflict.\", \"impact\": \"See explanation.\", \"line\": 7, \"path\": \"web/editor/save.ts\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Save request sends object text instead of an ETag\"}], \"summary\": \"Mock review of ext_revision_contract.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "dev",
+ "tags": [
+  "api_contract",
+  "multi_file",
+  "types"
+ ],
+ "title": "Expose revision metadata to editor saves"
+}

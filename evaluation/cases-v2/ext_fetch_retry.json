@@ -1,0 +1,93 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_fetch_retry",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 18,
+    "changes": 24,
+    "deletions": 6,
+    "filename": "web/feeds/fetch.ts",
+    "patch": "@@ -1,9 +1,21 @@\n+const TRANSIENT = new Set([502, 503, 504]);\n+\n export async function fetchFeed(url: string, timeoutMs: number): Promise<Response> {\n-  const controller = new AbortController();\n-  const timer = setTimeout(() => controller.abort(), timeoutMs);\n-  try {\n-    return await fetch(url, { signal: controller.signal });\n-  } finally {\n-    clearTimeout(timer);\n+  for (let attempt = 0; attempt < 3; attempt += 1) {\n+    const controller = new AbortController();\n+    const timer = setTimeout(() => controller.abort(), timeoutMs);\n+    try {\n+      const response = await fetch(url, { signal: controller.signal });\n+      clearTimeout(timer);\n+      if (!TRANSIENT.has(response.status) || attempt === 2) {\n+        return response;\n+      }\n+      await response.body?.cancel();\n+    } catch (error) {\n+      if (attempt === 2) {\n+        throw error;\n+      }\n+    }\n   }\n+  throw new Error(\"unreachable retry state\");\n }",
+    "sha": "d434c5f5d640d476f4aad77951a8bbad98942c02",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "4893528629fbaad5ebb4446f6b7c33032752e290"
+   },
+   "body": "Retries short network failures while keeping the per-attempt deadline.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_fetch_retry",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "65ca20fcb63f1ebf7ebaee1bc6f630b74f9341ce"
+   },
+   "number": 352,
+   "state": "open",
+   "title": "Retry transient feed transport failures",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "4893528629fbaad5ebb4446f6b7c33032752e290": {
+    "web/feeds/fetch.ts": "export async function fetchFeed(url: string, timeoutMs: number): Promise<Response> {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), timeoutMs);\n  try {\n    return await fetch(url, { signal: controller.signal });\n  } finally {\n    clearTimeout(timer);\n  }\n}\n"
+   },
+   "65ca20fcb63f1ebf7ebaee1bc6f630b74f9341ce": {
+    "web/feeds/fetch.ts": "const TRANSIENT = new Set([502, 503, 504]);\n\nexport async function fetchFeed(url: string, timeoutMs: number): Promise<Response> {\n  for (let attempt = 0; attempt < 3; attempt += 1) {\n    const controller = new AbortController();\n    const timer = setTimeout(() => controller.abort(), timeoutMs);\n    try {\n      const response = await fetch(url, { signal: controller.signal });\n      clearTimeout(timer);\n      if (!TRANSIENT.has(response.status) || attempt === 2) {\n        return response;\n      }\n      await response.body?.cancel();\n    } catch (error) {\n      if (attempt === 2) {\n        throw error;\n      }\n    }\n  }\n  throw new Error(\"unreachable retry state\");\n}\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "reliability"
+   ],
+   "category": "reliability",
+   "id": "timers-left-on-fetch-error",
+   "lines": [
+    8
+   ],
+   "path": "web/feeds/fetch.ts",
+   "rationale": "When fetch rejects, control jumps to catch before clearTimeout. Each retry leaves a live timer and controller until timeout, increasing pending work under repeated transport failures.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "typescript",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"const response = await fetch(url, { signal: controller.signal });\", \"explanation\": \"When fetch rejects, control jumps to catch before clearTimeout. Each retry leaves a live timer and controller until timeout, increasing pending work under repeated transport failures.\", \"impact\": \"See explanation.\", \"line\": 8, \"path\": \"web/feeds/fetch.ts\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Failed fetch attempts retain deadline timers\"}], \"summary\": \"Mock review of ext_fetch_retry.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "async",
+  "error_handling",
+  "resource_leak"
+ ],
+ "title": "Retry transient feed transport failures"
+}

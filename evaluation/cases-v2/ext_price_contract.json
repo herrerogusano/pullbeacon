@@ -1,0 +1,104 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_price_contract",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 5,
+    "changes": 9,
+    "deletions": 4,
+    "filename": "lib/catalog/rates.py",
+    "patch": "@@ -1,6 +1,7 @@\n-from decimal import Decimal\n+def rate_for(plan: str) -> int:\n+    rates_cents = {\"starter\": 1250, \"team\": 2900}\n+    return rates_cents[plan]\n \n \n-def rate_for(plan: str) -> Decimal:\n-    rates = {\"starter\": Decimal(\"12.50\"), \"team\": Decimal(\"29.00\")}\n-    return rates[plan]\n+def listed_plans() -> tuple[str, ...]:\n+    return (\"starter\", \"team\")",
+    "sha": "b7d9bbfbea266871e9d271a908fac7c8118de26f",
+    "status": "modified"
+   },
+   {
+    "additions": 12,
+    "changes": 12,
+    "deletions": 0,
+    "filename": "app/billing/invoices.py",
+    "patch": "@@ -1,7 +1,19 @@\n+from dataclasses import dataclass\n+\n from lib.catalog.rates import rate_for\n+\n+\n+@dataclass(frozen=True)\n+class InvoiceLine:\n+    description: str\n+    amount_cents: int\n \n \n def invoice_amount_cents(plan: str, seats: int) -> int:\n     if seats < 1:\n         raise ValueError(\"seats must be positive\")\n     return int(rate_for(plan) * seats * 100)\n+\n+\n+def invoice_line(plan: str, seats: int) -> InvoiceLine:\n+    return InvoiceLine(f\"{plan} plan, {seats} seats\", invoice_amount_cents(plan, seats))",
+    "sha": "f56d270d824eb86caaa411c44aaf6db7276e25da",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "4a3e6498136429b802e1f46a046b05f08d644da1"
+   },
+   "body": "Keeps catalog rates as integer minor units and adds invoice line notes.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_price_contract",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "4fec337b3193279d5e035ff13e8578a33fcfaafa"
+   },
+   "number": 190,
+   "state": "open",
+   "title": "Move catalog prices to minor units",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "4a3e6498136429b802e1f46a046b05f08d644da1": {
+    "app/billing/invoices.py": "from lib.catalog.rates import rate_for\n\n\ndef invoice_amount_cents(plan: str, seats: int) -> int:\n    if seats < 1:\n        raise ValueError(\"seats must be positive\")\n    return int(rate_for(plan) * seats * 100)\n",
+    "lib/catalog/rates.py": "from decimal import Decimal\n\n\ndef rate_for(plan: str) -> Decimal:\n    rates = {\"starter\": Decimal(\"12.50\"), \"team\": Decimal(\"29.00\")}\n    return rates[plan]\n"
+   },
+   "4fec337b3193279d5e035ff13e8578a33fcfaafa": {
+    "app/billing/invoices.py": "from dataclasses import dataclass\n\nfrom lib.catalog.rates import rate_for\n\n\n@dataclass(frozen=True)\nclass InvoiceLine:\n    description: str\n    amount_cents: int\n\n\ndef invoice_amount_cents(plan: str, seats: int) -> int:\n    if seats < 1:\n        raise ValueError(\"seats must be positive\")\n    return int(rate_for(plan) * seats * 100)\n\n\ndef invoice_line(plan: str, seats: int) -> InvoiceLine:\n    return InvoiceLine(f\"{plan} plan, {seats} seats\", invoice_amount_cents(plan, seats))\n",
+    "lib/catalog/rates.py": "def rate_for(plan: str) -> int:\n    rates_cents = {\"starter\": 1250, \"team\": 2900}\n    return rates_cents[plan]\n\n\ndef listed_plans() -> tuple[str, ...]:\n    return (\"starter\", \"team\")\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness"
+   ],
+   "category": "correctness",
+   "id": "rate-scaled-twice",
+   "lines": [
+    15
+   ],
+   "path": "app/billing/invoices.py",
+   "rationale": "The changed catalog contract returns cents, while the changed invoice caller still converts dollars to cents. Every new invoice is billed at one hundred times the catalog price.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"return int(rate_for(plan) * seats * 100)\", \"explanation\": \"The changed catalog contract returns cents, while the changed invoice caller still converts dollars to cents. Every new invoice is billed at one hundred times the catalog price.\", \"impact\": \"See explanation.\", \"line\": 15, \"path\": \"app/billing/invoices.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Invoice amount multiplies minor-unit rate by 100 again\"}], \"summary\": \"Mock review of ext_price_contract.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "api_contract",
+  "multi_file",
+  "numeric"
+ ],
+ "title": "Move catalog prices to minor units"
+}

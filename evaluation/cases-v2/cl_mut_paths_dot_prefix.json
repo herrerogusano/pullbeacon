@@ -1,0 +1,101 @@
+{
+ "acceptable_findings": [],
+ "author": "claude",
+ "case_id": "cl_mut_paths_dot_prefix",
+ "criticality": "high",
+ "expected_non_findings": [
+  {
+   "lines": [
+    92
+   ],
+   "path": "src/pullbeacon/core/paths.py",
+   "rationale": "Stripping repeated './' prefixes is safe and intended."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 7,
+    "changes": 8,
+    "deletions": 1,
+    "filename": "src/pullbeacon/core/paths.py",
+    "patch": "@@ -12,6 +12,9 @@\n from functools import lru_cache\n \n MAX_PATH_LENGTH = 1024\n+\n+# Segments that never appear in a canonical repository path.\n+_INVALID_SEGMENTS = frozenset({\"\", \".\"})\n \n # Never sent to an LLM and never edited, whatever the configuration says.\n SENSITIVE_PATTERNS: tuple[str, ...] = (\n@@ -86,8 +89,11 @@\n         raise UnsafePathError(\"path contains control characters\")\n     if path.startswith(\"/\") or re.match(r\"^[A-Za-z]:\", path) or path.startswith(\"~\"):\n         raise UnsafePathError(\"path must be relative to the repository root\")\n+    while path.startswith(\"./\"):\n+        # Configuration files written by hand often use \"./src/**\"-style paths.\n+        path = path[2:]\n     parts = path.split(\"/\")\n-    if any(part in (\"\", \".\", \"..\") for part in parts):\n+    if any(part in _INVALID_SEGMENTS for part in parts):\n         raise UnsafePathError(\"path contains empty, '.' or '..' segments\")\n     return path\n ",
+    "sha": "a24118f081892fc9fc36543faa1be98fbf9873ce",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "5b28a08f514a18f065da3760a95e3af895a0fa92"
+   },
+   "body": "Users keep writing `./src/**` in `.pullbeacon.yml`. Strip the prefix when normalising paths and move the invalid segment list to a constant.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_mut_paths_dot_prefix",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "5adb4c847cfc593fc6ec336962f5c2cc1174f3eb"
+   },
+   "number": 292,
+   "state": "open",
+   "title": "Accept ./-prefixed repository paths",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "5adb4c847cfc593fc6ec336962f5c2cc1174f3eb": {
+    "src/pullbeacon/core/paths.py": "\"\"\"Repository path normalisation and glob matching.\n\nGlobs use gitignore-like semantics restricted to what PullBeacon needs:\n``*`` matches within one segment, ``**`` matches any number of segments, ``?`` one character\nand ``[...]`` a character class. Patterns are always relative to the repository root.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport re\nfrom collections.abc import Iterable\nfrom functools import lru_cache\n\nMAX_PATH_LENGTH = 1024\n\n# Segments that never appear in a canonical repository path.\n_INVALID_SEGMENTS = frozenset({\"\", \".\"})\n\n# Never sent to an LLM and never edited, whatever the configuration says.\nSENSITIVE_PATTERNS: tuple[str, ...] = (\n    \"**/.env\",\n    \"**/.env.*\",\n    \"**/*.pem\",\n    \"**/*.key\",\n    \"**/*.p12\",\n    \"**/*.pfx\",\n    \"**/*.keystore\",\n    \"**/*.jks\",\n    \"**/id_rsa*\",\n    \"**/id_ed25519*\",\n    \"**/.npmrc\",\n    \"**/.pypirc\",\n    \"**/.netrc\",\n    \"**/.git-credentials\",\n    \"**/*credentials*.json\",\n    \"**/secrets/**\",\n    \"**/.secrets/**\",\n)\n\n# Never edited by `apply`: CI, PullBeacon's own trust anchors and VCS metadata.\nAPPLY_DENY_PATTERNS: tuple[str, ...] = (\n    *SENSITIVE_PATTERNS,\n    \".github/**\",\n    \"**/.pullbeacon.yml\",\n    \"**/.pullbeacon.yaml\",\n    \"action.yml\",\n    \"action.yaml\",\n    \"**/.git/**\",\n    \"**/.gitmodules\",\n    \"**/.gitattributes\",\n    \"**/CODEOWNERS\",\n)\n\nBINARY_EXTENSIONS = frozenset(\n    {\n        \".png\", \".jpg\", \".jpeg\", \".gif\", \".bmp\", \".ico\", \".webp\", \".pdf\", \".zip\", \".gz\",\n        \".tgz\", \".bz2\", \".xz\", \".7z\", \".rar\", \".jar\", \".war\", \".class\", \".so\", \".dll\",\n        \".dylib\", \".exe\", \".bin\", \".o\", \".a\", \".pyc\", \".woff\", \".woff2\", \".ttf\", \".otf\",\n        \".eot\", \".mp3\", \".mp4\", \".mov\", \".avi\", \".wasm\", \".sqlite\", \".db\", \".parquet\",\n    }\n)  # fmt: skip\n\nGENERATED_PATTERNS: tuple[str, ...] = (\n    \"**/*.lock\",\n    \"**/package-lock.json\",\n    \"**/pnpm-lock.yaml\",\n    \"**/*.min.js\",\n    \"**/*.min.css\",\n    \"**/*.map\",\n    \"**/generated/**\",\n    \"**/__generated__/**\",\n    \"**/vendor/**\",\n    \"**/node_modules/**\",\n    \"**/dist/**\",\n)\n\n\nclass UnsafePathError(ValueError):\n    \"\"\"A path or pattern escapes the repository or is otherwise unsafe.\"\"\"\n\n\ndef normalize_repo_path(path: str) -> str:\n    \"\"\"Return a canonical repository-relative POSIX path or raise ``UnsafePathError``.\"\"\"\n    if not path or len(path) > MAX_PATH_LENGTH:\n        raise UnsafePathError(\"path is empty or too long\")\n    if \"\\x00\" in path or \"\\\\\" in path:\n        raise UnsafePathError(\"path contains a NUL byte or backslash\")\n    if any(ord(ch) < 32 for ch in path):\n        raise UnsafePathError(\"path contains control characters\")\n    if path.startswith(\"/\") or re.match(r\"^[A-Za-z]:\", path) or path.startswith(\"~\"):\n        raise UnsafePathError(\"path must be relative to the repository root\")\n    while path.startswith(\"./\"):\n        # Configuration files written by hand often use \"./src/**\"-style paths.\n        path = path[2:]\n    parts = path.split(\"/\")\n    if any(part in _INVALID_SEGMENTS for part in parts):\n        raise UnsafePathError(\"path contains empty, '.' or '..' segments\")\n    return path\n\n\ndef validate_glob(pattern: str) -> str:\n    \"\"\"Validate a configuration glob. Same rules as paths, plus wildcard syntax.\"\"\"\n    if not pattern or len(pattern) > 256:\n        raise UnsafePathError(\"glob is empty or longer than 256 characters\")\n    if \"\\x00\" in pattern or \"\\\\\" in pattern or any(ord(ch) < 32 for ch in pattern):\n        raise UnsafePathError(\"glob contains NUL, backslash or control characters\")\n    if pattern.startswith(\"/\") or re.match(r\"^[A-Za-z]:\", pattern) or pattern.startswith(\"~\"):\n        raise UnsafePathError(\"glob must be relative to the repository root\")\n    for part in pattern.split(\"/\"):\n        if part in (\"\", \".\", \"..\"):\n            raise UnsafePathError(\"glob contains empty, '.' or '..' segments\")\n        if \"**\" in part and part != \"**\":\n            raise UnsafePathError(\"'**' must be a whole path segment\")\n    if pattern.count(\"[\") != pattern.count(\"]\"):\n        raise UnsafePathError(\"glob has unbalanced brackets\")\n    _compile(pattern)\n    return pattern\n\n\n@lru_cache(maxsize=1024)\ndef _compile(pattern: str) -> re.Pattern[str]:\n    regex = \"\"\n    segments = pattern.split(\"/\")\n    for index, segment in enumerate(segments):\n        last = index == len(segments) - 1\n        if segment == \"**\":\n            regex += \".*\" if last else \"(?:[^/]+/)*\"\n            continue\n        regex += _segment_to_regex(segment)\n        if not last:\n            regex += \"/\"\n    return re.compile(rf\"^{regex}$\", re.DOTALL)\n\n\ndef _segment_to_regex(segment: str) -> str:\n    out = \"\"\n    i = 0\n    while i < len(segment):\n        ch = segment[i]\n        if ch == \"*\":\n            out += \"[^/]*\"\n        elif ch == \"?\":\n            out += \"[^/]\"\n        elif ch == \"[\":\n            end = segment.find(\"]\", i + 1)\n            if end == -1:\n                raise UnsafePathError(\"glob has an unterminated character class\")\n            body = segment[i + 1 : end]\n            negate = body.startswith(\"!\")\n            if negate:\n                body = body[1:]\n            body = body.replace(\"\\\\\", \"\\\\\\\\\").replace(\"^\", \"\\\\^\")\n            out += f\"[{'^' if negate else ''}{body}]\"\n            i = end\n        else:\n            out += re.escape(ch)\n        i += 1\n    return out\n\n\ndef matches(path: str, pattern: str) -> bool:\n    return _compile(pattern).match(path) is not None\n\n\ndef matches_any(path: str, patterns: Iterable[str]) -> bool:\n    return any(matches(path, pattern) for pattern in patterns)\n\n\ndef is_sensitive(path: str) -> bool:\n    return matches_any(path, SENSITIVE_PATTERNS)\n\n\ndef is_apply_denied(path: str) -> bool:\n    return matches_any(path, APPLY_DENY_PATTERNS)\n\n\ndef is_binary_path(path: str) -> bool:\n    name = path.rsplit(\"/\", 1)[-1].lower()\n    dot = name.rfind(\".\")\n    return dot != -1 and name[dot:] in BINARY_EXTENSIONS\n\n\ndef is_generated(path: str) -> bool:\n    return matches_any(path, GENERATED_PATTERNS)\n"
+   },
+   "5b28a08f514a18f065da3760a95e3af895a0fa92": {
+    "src/pullbeacon/core/paths.py": "\"\"\"Repository path normalisation and glob matching.\n\nGlobs use gitignore-like semantics restricted to what PullBeacon needs:\n``*`` matches within one segment, ``**`` matches any number of segments, ``?`` one character\nand ``[...]`` a character class. Patterns are always relative to the repository root.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport re\nfrom collections.abc import Iterable\nfrom functools import lru_cache\n\nMAX_PATH_LENGTH = 1024\n\n# Never sent to an LLM and never edited, whatever the configuration says.\nSENSITIVE_PATTERNS: tuple[str, ...] = (\n    \"**/.env\",\n    \"**/.env.*\",\n    \"**/*.pem\",\n    \"**/*.key\",\n    \"**/*.p12\",\n    \"**/*.pfx\",\n    \"**/*.keystore\",\n    \"**/*.jks\",\n    \"**/id_rsa*\",\n    \"**/id_ed25519*\",\n    \"**/.npmrc\",\n    \"**/.pypirc\",\n    \"**/.netrc\",\n    \"**/.git-credentials\",\n    \"**/*credentials*.json\",\n    \"**/secrets/**\",\n    \"**/.secrets/**\",\n)\n\n# Never edited by `apply`: CI, PullBeacon's own trust anchors and VCS metadata.\nAPPLY_DENY_PATTERNS: tuple[str, ...] = (\n    *SENSITIVE_PATTERNS,\n    \".github/**\",\n    \"**/.pullbeacon.yml\",\n    \"**/.pullbeacon.yaml\",\n    \"action.yml\",\n    \"action.yaml\",\n    \"**/.git/**\",\n    \"**/.gitmodules\",\n    \"**/.gitattributes\",\n    \"**/CODEOWNERS\",\n)\n\nBINARY_EXTENSIONS = frozenset(\n    {\n        \".png\", \".jpg\", \".jpeg\", \".gif\", \".bmp\", \".ico\", \".webp\", \".pdf\", \".zip\", \".gz\",\n        \".tgz\", \".bz2\", \".xz\", \".7z\", \".rar\", \".jar\", \".war\", \".class\", \".so\", \".dll\",\n        \".dylib\", \".exe\", \".bin\", \".o\", \".a\", \".pyc\", \".woff\", \".woff2\", \".ttf\", \".otf\",\n        \".eot\", \".mp3\", \".mp4\", \".mov\", \".avi\", \".wasm\", \".sqlite\", \".db\", \".parquet\",\n    }\n)  # fmt: skip\n\nGENERATED_PATTERNS: tuple[str, ...] = (\n    \"**/*.lock\",\n    \"**/package-lock.json\",\n    \"**/pnpm-lock.yaml\",\n    \"**/*.min.js\",\n    \"**/*.min.css\",\n    \"**/*.map\",\n    \"**/generated/**\",\n    \"**/__generated__/**\",\n    \"**/vendor/**\",\n    \"**/node_modules/**\",\n    \"**/dist/**\",\n)\n\n\nclass UnsafePathError(ValueError):\n    \"\"\"A path or pattern escapes the repository or is otherwise unsafe.\"\"\"\n\n\ndef normalize_repo_path(path: str) -> str:\n    \"\"\"Return a canonical repository-relative POSIX path or raise ``UnsafePathError``.\"\"\"\n    if not path or len(path) > MAX_PATH_LENGTH:\n        raise UnsafePathError(\"path is empty or too long\")\n    if \"\\x00\" in path or \"\\\\\" in path:\n        raise UnsafePathError(\"path contains a NUL byte or backslash\")\n    if any(ord(ch) < 32 for ch in path):\n        raise UnsafePathError(\"path contains control characters\")\n    if path.startswith(\"/\") or re.match(r\"^[A-Za-z]:\", path) or path.startswith(\"~\"):\n        raise UnsafePathError(\"path must be relative to the repository root\")\n    parts = path.split(\"/\")\n    if any(part in (\"\", \".\", \"..\") for part in parts):\n        raise UnsafePathError(\"path contains empty, '.' or '..' segments\")\n    return path\n\n\ndef validate_glob(pattern: str) -> str:\n    \"\"\"Validate a configuration glob. Same rules as paths, plus wildcard syntax.\"\"\"\n    if not pattern or len(pattern) > 256:\n        raise UnsafePathError(\"glob is empty or longer than 256 characters\")\n    if \"\\x00\" in pattern or \"\\\\\" in pattern or any(ord(ch) < 32 for ch in pattern):\n        raise UnsafePathError(\"glob contains NUL, backslash or control characters\")\n    if pattern.startswith(\"/\") or re.match(r\"^[A-Za-z]:\", pattern) or pattern.startswith(\"~\"):\n        raise UnsafePathError(\"glob must be relative to the repository root\")\n    for part in pattern.split(\"/\"):\n        if part in (\"\", \".\", \"..\"):\n            raise UnsafePathError(\"glob contains empty, '.' or '..' segments\")\n        if \"**\" in part and part != \"**\":\n            raise UnsafePathError(\"'**' must be a whole path segment\")\n    if pattern.count(\"[\") != pattern.count(\"]\"):\n        raise UnsafePathError(\"glob has unbalanced brackets\")\n    _compile(pattern)\n    return pattern\n\n\n@lru_cache(maxsize=1024)\ndef _compile(pattern: str) -> re.Pattern[str]:\n    regex = \"\"\n    segments = pattern.split(\"/\")\n    for index, segment in enumerate(segments):\n        last = index == len(segments) - 1\n        if segment == \"**\":\n            regex += \".*\" if last else \"(?:[^/]+/)*\"\n            continue\n        regex += _segment_to_regex(segment)\n        if not last:\n            regex += \"/\"\n    return re.compile(rf\"^{regex}$\", re.DOTALL)\n\n\ndef _segment_to_regex(segment: str) -> str:\n    out = \"\"\n    i = 0\n    while i < len(segment):\n        ch = segment[i]\n        if ch == \"*\":\n            out += \"[^/]*\"\n        elif ch == \"?\":\n            out += \"[^/]\"\n        elif ch == \"[\":\n            end = segment.find(\"]\", i + 1)\n            if end == -1:\n                raise UnsafePathError(\"glob has an unterminated character class\")\n            body = segment[i + 1 : end]\n            negate = body.startswith(\"!\")\n            if negate:\n                body = body[1:]\n            body = body.replace(\"\\\\\", \"\\\\\\\\\").replace(\"^\", \"\\\\^\")\n            out += f\"[{'^' if negate else ''}{body}]\"\n            i = end\n        else:\n            out += re.escape(ch)\n        i += 1\n    return out\n\n\ndef matches(path: str, pattern: str) -> bool:\n    return _compile(pattern).match(path) is not None\n\n\ndef matches_any(path: str, patterns: Iterable[str]) -> bool:\n    return any(matches(path, pattern) for pattern in patterns)\n\n\ndef is_sensitive(path: str) -> bool:\n    return matches_any(path, SENSITIVE_PATTERNS)\n\n\ndef is_apply_denied(path: str) -> bool:\n    return matches_any(path, APPLY_DENY_PATTERNS)\n\n\ndef is_binary_path(path: str) -> bool:\n    name = path.rsplit(\"/\", 1)[-1].lower()\n    dot = name.rfind(\".\")\n    return dot != -1 and name[dot:] in BINARY_EXTENSIONS\n\n\ndef is_generated(path: str) -> bool:\n    return matches_any(path, GENERATED_PATTERNS)\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "dotdot-allowed",
+   "lines": [
+    17,
+    96
+   ],
+   "path": "src/pullbeacon/core/paths.py",
+   "rationale": "The new constant omits '..', so normalize_repo_path accepts paths such as 'src/../../etc/passwd' that escape the repository, while the error message still claims they are rejected.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"_INVALID_SEGMENTS = frozenset({\\\"\\\", \\\".\\\"})\", \"explanation\": \"The new constant omits '..', so normalize_repo_path accepts paths such as 'src/../../etc/passwd' that escape the repository, while the error message still claims they are rejected.\", \"impact\": \"See explanation.\", \"line\": 17, \"path\": \"src/pullbeacon/core/paths.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"'..' segments are no longer rejected\"}], \"summary\": \"Mock review of cl_mut_paths_dot_prefix.\"}"
+  ]
+ },
+ "provenance": "PullBeacon 882acd2 src/pullbeacon/core/paths.py, mutated",
+ "size": "small",
+ "source": "mutation",
+ "split": "test",
+ "tags": [
+  "path_traversal",
+  "security"
+ ],
+ "title": "Accept ./-prefixed repository paths"
+}

@@ -1,0 +1,92 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_invoice_rounding",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 8,
+    "changes": 10,
+    "deletions": 2,
+    "filename": "lib/billing/allocation.py",
+    "patch": "@@ -1,7 +1,13 @@\n-from decimal import Decimal, ROUND_HALF_UP\n+from decimal import Decimal, ROUND_HALF_EVEN\n \n \n def allocate_cents(total_cents: int, share: Decimal) -> int:\n     if not Decimal(0) <= share <= Decimal(1):\n         raise ValueError(\"share must be between zero and one\")\n-    return int((Decimal(total_cents) * share).quantize(Decimal(\"1\"), rounding=ROUND_HALF_UP))\n+    return int((Decimal(total_cents) * share).quantize(Decimal(\"1\"), rounding=ROUND_HALF_EVEN))\n+\n+\n+def remaining_cents(total_cents: int, allocated_cents: int) -> int:\n+    if allocated_cents > total_cents:\n+        raise ValueError(\"allocation exceeds total\")\n+    return total_cents - allocated_cents",
+    "sha": "48344015b776908e713c73357526a486fb105f7e",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "af3e07a66acb9ae5765a28eb2a7675833c14dddb"
+   },
+   "body": "Uses decimal inputs for allocation percentages and stores amounts in minor units.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_invoice_rounding",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "04cdd7cb4b3d1eb5175d09de9a093c928a3986b5"
+   },
+   "number": 113,
+   "state": "open",
+   "title": "Calculate allocation percentages from decimal shares",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "04cdd7cb4b3d1eb5175d09de9a093c928a3986b5": {
+    "lib/billing/allocation.py": "from decimal import Decimal, ROUND_HALF_EVEN\n\n\ndef allocate_cents(total_cents: int, share: Decimal) -> int:\n    if not Decimal(0) <= share <= Decimal(1):\n        raise ValueError(\"share must be between zero and one\")\n    return int((Decimal(total_cents) * share).quantize(Decimal(\"1\"), rounding=ROUND_HALF_EVEN))\n\n\ndef remaining_cents(total_cents: int, allocated_cents: int) -> int:\n    if allocated_cents > total_cents:\n        raise ValueError(\"allocation exceeds total\")\n    return total_cents - allocated_cents\n"
+   },
+   "af3e07a66acb9ae5765a28eb2a7675833c14dddb": {
+    "lib/billing/allocation.py": "from decimal import Decimal, ROUND_HALF_UP\n\n\ndef allocate_cents(total_cents: int, share: Decimal) -> int:\n    if not Decimal(0) <= share <= Decimal(1):\n        raise ValueError(\"share must be between zero and one\")\n    return int((Decimal(total_cents) * share).quantize(Decimal(\"1\"), rounding=ROUND_HALF_UP))\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness"
+   ],
+   "category": "correctness",
+   "id": "tie-rounding-changed",
+   "lines": [
+    7
+   ],
+   "path": "lib/billing/allocation.py",
+   "rationale": "The documented allocation policy was half-up. A share yielding exactly x.5 cents now rounds to the nearest even cent, so customer invoice lines and reconciled totals differ at tie boundaries.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"return int((Decimal(total_cents) * share).quantize(Decimal(\\\"1\\\"), rounding=ROUND_HALF_EVEN))\", \"explanation\": \"The documented allocation policy was half-up. A share yielding exactly x.5 cents now rounds to the nearest even cent, so customer invoice lines and reconciled totals differ at tie boundaries.\", \"impact\": \"See explanation.\", \"line\": 7, \"path\": \"lib/billing/allocation.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Half-cent allocations use a different rounding policy\"}], \"summary\": \"Mock review of ext_invoice_rounding.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "dev",
+ "tags": [
+  "logic",
+  "numeric"
+ ],
+ "title": "Calculate allocation percentages from decimal shares"
+}

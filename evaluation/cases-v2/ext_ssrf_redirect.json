@@ -1,0 +1,94 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_ssrf_redirect",
+ "criticality": "critical",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 155,
+    "changes": 161,
+    "deletions": 6,
+    "filename": "app/webhooks/delivery.py",
+    "patch": "@@ -1,24 +1,173 @@\n-from dataclasses import dataclass\n+import asyncio\n+from dataclasses import dataclass, field\n+from datetime import datetime, timezone\n+from hashlib import sha256\n+import hmac\n+import json\n+import logging\n+from typing import Mapping\n from urllib.parse import urlsplit\n \n import httpx\n+\n+logger = logging.getLogger(__name__)\n \n \n @dataclass(frozen=True)\n class Destination:\n     url: str\n     allowed_hosts: frozenset[str]\n+    signing_key: bytes = field(repr=False)\n+    enabled: bool = True\n+    max_attempts: int = 4\n+\n+\n+@dataclass(frozen=True)\n+class Delivery:\n+    event_id: str\n+    event_type: str\n+    tenant_id: str\n+    data: Mapping[str, object]\n+    created_at: datetime\n+\n+\n+@dataclass(frozen=True)\n+class Attempt:\n+    event_id: str\n+    number: int\n+    status_code: int | None\n+    retryable: bool\n+    message: str\n \n \n def validate_destination(destination: Destination) -> None:\n     parsed = urlsplit(destination.url)\n     if parsed.scheme != \"https\" or parsed.hostname not in destination.allowed_hosts:\n         raise ValueError(\"destination is outside the tenant allowlist\")\n+    if parsed.username or parsed.password or parsed.fragment:\n+        raise ValueError(\"destination URL contains unsupported components\")\n \n \n-async def deliver(destination: Destination, payload: bytes) -> int:\n+def encode_event(delivery: Delivery) -> bytes:\n+    if delivery.created_at.tzinfo is None:\n+        raise ValueError(\"event timestamp must be timezone-aware\")\n+    envelope = {\n+        \"id\": delivery.event_id,\n+        \"type\": delivery.event_type,\n+        \"tenant\": delivery.tenant_id,\n+        \"created_at\": delivery.created_at.astimezone(timezone.utc).isoformat(),\n+        \"data\": dict(delivery.data),\n+    }\n+    return json.dumps(envelope, sort_keys=True, separators=(\",\", \":\")).encode(\"utf-8\")\n+\n+\n+def signature_for(key: bytes, timestamp: int, body: bytes) -> str:\n+    signed = str(timestamp).encode(\"ascii\") + b\".\" + body\n+    return hmac.new(key, signed, sha256).hexdigest()\n+\n+\n+def headers_for(destination: Destination, delivery: Delivery, body: bytes) -> dict[str, str]:\n+    timestamp = int(datetime.now(timezone.utc).timestamp())\n+    return {\n+        \"Content-Type\": \"application/json\",\n+        \"X-Event-Id\": delivery.event_id,\n+        \"X-Event-Type\": delivery.event_type,\n+        \"X-Delivery-Timestamp\": str(timestamp),\n+        \"X-Delivery-Signature\": signature_for(destination.signing_key, timestamp, body),\n+        \"User-Agent\": \"Acme-Events/2\",\n+    }\n+\n+\n+def should_retry(status_code: int | None) -> bool:\n+    return status_code is None or status_code in {408, 425, 429} or status_code >= 500\n+\n+\n+def retry_delay(attempt: int, retry_after: str | None) -> float:\n+    if retry_after and retry_after.isdecimal():\n+        return min(float(retry_after), 60.0)\n+    return min(float(2 ** (attempt - 1)), 30.0)\n+\n+\n+def classify_response(event_id: str, number: int, response: httpx.Response) -> Attempt:\n+    status_code = response.status_code\n+    if 200 <= status_code < 300:\n+        return Attempt(event_id, number, status_code, False, \"delivered\")\n+    return Attempt(\n+        event_id,\n+        number,\n+        status_code,\n+        should_retry(status_code),\n+        f\"remote returned HTTP {status_code}\",\n+    )\n+\n+\n+def classify_exception(event_id: str, number: int, exc: httpx.RequestError) -> Attempt:\n+    logger.warning(\"delivery transport failed for event %s: %s\", event_id, type(exc).__name__)\n+    return Attempt(event_id, number, None, True, type(exc).__name__)\n+\n+\n+async def send_once(\n+    destination: Destination,\n+    delivery: Delivery,\n+    body: bytes,\n+    number: int,\n+) -> tuple[Attempt, float]:\n+    headers = headers_for(destination, delivery, body)\n+    try:\n+        async with httpx.AsyncClient(follow_redirects=True, timeout=8.0) as client:\n+            response = await client.post(destination.url, content=body, headers=headers)\n+    except httpx.RequestError as exc:\n+        return classify_exception(delivery.event_id, number, exc), retry_delay(number, None)\n+    attempt = classify_response(delivery.event_id, number, response)\n+    delay = retry_delay(number, response.headers.get(\"Retry-After\")) if attempt.retryable else 0.0\n+    return attempt, delay\n+\n+\n+async def deliver(destination: Destination, delivery: Delivery) -> list[Attempt]:\n+    if not destination.enabled:\n+        return []\n     validate_destination(destination)\n-    async with httpx.AsyncClient(follow_redirects=False, timeout=8.0) as client:\n-        response = await client.post(destination.url, content=payload)\n-    response.raise_for_status()\n-    return response.status_code\n+    body = encode_event(delivery)\n+    attempts: list[Attempt] = []\n+    for number in range(1, destination.max_attempts + 1):\n+        result, delay = await send_once(destination, delivery, body, number)\n+        attempts.append(result)\n+        if not result.retryable:\n+            break\n+        if number < destination.max_attempts:\n+            await asyncio.sleep(delay)\n+    return attempts\n+\n+\n+def delivery_summary(attempts: list[Attempt]) -> dict[str, object]:\n+    if not attempts:\n+        return {\"state\": \"skipped\", \"attempts\": 0}\n+    last = attempts[-1]\n+    if last.message == \"delivered\":\n+        state = \"delivered\"\n+    elif last.retryable:\n+        state = \"exhausted\"\n+    else:\n+        state = \"rejected\"\n+    return {\n+        \"state\": state,\n+        \"attempts\": len(attempts),\n+        \"last_status\": last.status_code,\n+        \"event_id\": last.event_id,\n+    }\n+\n+\n+def redact_url(destination: Destination) -> str:\n+    parsed = urlsplit(destination.url)\n+    host = parsed.hostname or \"invalid\"\n+    return f\"{parsed.scheme}://{host}/...\"\n+\n+\n+def log_summary(destination: Destination, attempts: list[Attempt]) -> None:\n+    summary = delivery_summary(attempts)\n+    logger.info(\n+        \"delivery %s to %s after %d attempts\",\n+        summary[\"state\"],\n+        redact_url(destination),\n+        summary[\"attempts\"],\n+    )",
+    "sha": "0175421d8eff6c6636190c44a93507c5dedca791",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "0cb6c96d6355f6030a3eaea38ecf04a6388e64c6"
+   },
+   "body": "Adds structured event envelopes, retries, and delivery summaries for tenant webhooks.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_ssrf_redirect",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "06de7ea69081bb4d76f973e8680cb94873309089"
+   },
+   "number": 217,
+   "state": "open",
+   "title": "Add signed delivery attempts and response reporting",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "06de7ea69081bb4d76f973e8680cb94873309089": {
+    "app/webhooks/delivery.py": "import asyncio\nfrom dataclasses import dataclass, field\nfrom datetime import datetime, timezone\nfrom hashlib import sha256\nimport hmac\nimport json\nimport logging\nfrom typing import Mapping\nfrom urllib.parse import urlsplit\n\nimport httpx\n\nlogger = logging.getLogger(__name__)\n\n\n@dataclass(frozen=True)\nclass Destination:\n    url: str\n    allowed_hosts: frozenset[str]\n    signing_key: bytes = field(repr=False)\n    enabled: bool = True\n    max_attempts: int = 4\n\n\n@dataclass(frozen=True)\nclass Delivery:\n    event_id: str\n    event_type: str\n    tenant_id: str\n    data: Mapping[str, object]\n    created_at: datetime\n\n\n@dataclass(frozen=True)\nclass Attempt:\n    event_id: str\n    number: int\n    status_code: int | None\n    retryable: bool\n    message: str\n\n\ndef validate_destination(destination: Destination) -> None:\n    parsed = urlsplit(destination.url)\n    if parsed.scheme != \"https\" or parsed.hostname not in destination.allowed_hosts:\n        raise ValueError(\"destination is outside the tenant allowlist\")\n    if parsed.username or parsed.password or parsed.fragment:\n        raise ValueError(\"destination URL contains unsupported components\")\n\n\ndef encode_event(delivery: Delivery) -> bytes:\n    if delivery.created_at.tzinfo is None:\n        raise ValueError(\"event timestamp must be timezone-aware\")\n    envelope = {\n        \"id\": delivery.event_id,\n        \"type\": delivery.event_type,\n        \"tenant\": delivery.tenant_id,\n        \"created_at\": delivery.created_at.astimezone(timezone.utc).isoformat(),\n        \"data\": dict(delivery.data),\n    }\n    return json.dumps(envelope, sort_keys=True, separators=(\",\", \":\")).encode(\"utf-8\")\n\n\ndef signature_for(key: bytes, timestamp: int, body: bytes) -> str:\n    signed = str(timestamp).encode(\"ascii\") + b\".\" + body\n    return hmac.new(key, signed, sha256).hexdigest()\n\n\ndef headers_for(destination: Destination, delivery: Delivery, body: bytes) -> dict[str, str]:\n    timestamp = int(datetime.now(timezone.utc).timestamp())\n    return {\n        \"Content-Type\": \"application/json\",\n        \"X-Event-Id\": delivery.event_id,\n        \"X-Event-Type\": delivery.event_type,\n        \"X-Delivery-Timestamp\": str(timestamp),\n        \"X-Delivery-Signature\": signature_for(destination.signing_key, timestamp, body),\n        \"User-Agent\": \"Acme-Events/2\",\n    }\n\n\ndef should_retry(status_code: int | None) -> bool:\n    return status_code is None or status_code in {408, 425, 429} or status_code >= 500\n\n\ndef retry_delay(attempt: int, retry_after: str | None) -> float:\n    if retry_after and retry_after.isdecimal():\n        return min(float(retry_after), 60.0)\n    return min(float(2 ** (attempt - 1)), 30.0)\n\n\ndef classify_response(event_id: str, number: int, response: httpx.Response) -> Attempt:\n    status_code = response.status_code\n    if 200 <= status_code < 300:\n        return Attempt(event_id, number, status_code, False, \"delivered\")\n    return Attempt(\n        event_id,\n        number,\n        status_code,\n        should_retry(status_code),\n        f\"remote returned HTTP {status_code}\",\n    )\n\n\ndef classify_exception(event_id: str, number: int, exc: httpx.RequestError) -> Attempt:\n    logger.warning(\"delivery transport failed for event %s: %s\", event_id, type(exc).__name__)\n    return Attempt(event_id, number, None, True, type(exc).__name__)\n\n\nasync def send_once(\n    destination: Destination,\n    delivery: Delivery,\n    body: bytes,\n    number: int,\n) -> tuple[Attempt, float]:\n    headers = headers_for(destination, delivery, body)\n    try:\n        async with httpx.AsyncClient(follow_redirects=True, timeout=8.0) as client:\n            response = await client.post(destination.url, content=body, headers=headers)\n    except httpx.RequestError as exc:\n        return classify_exception(delivery.event_id, number, exc), retry_delay(number, None)\n    attempt = classify_response(delivery.event_id, number, response)\n    delay = retry_delay(number, response.headers.get(\"Retry-After\")) if attempt.retryable else 0.0\n    return attempt, delay\n\n\nasync def deliver(destination: Destination, delivery: Delivery) -> list[Attempt]:\n    if not destination.enabled:\n        return []\n    validate_destination(destination)\n    body = encode_event(delivery)\n    attempts: list[Attempt] = []\n    for number in range(1, destination.max_attempts + 1):\n        result, delay = await send_once(destination, delivery, body, number)\n        attempts.append(result)\n        if not result.retryable:\n            break\n        if number < destination.max_attempts:\n            await asyncio.sleep(delay)\n    return attempts\n\n\ndef delivery_summary(attempts: list[Attempt]) -> dict[str, object]:\n    if not attempts:\n        return {\"state\": \"skipped\", \"attempts\": 0}\n    last = attempts[-1]\n    if last.message == \"delivered\":\n        state = \"delivered\"\n    elif last.retryable:\n        state = \"exhausted\"\n    else:\n        state = \"rejected\"\n    return {\n        \"state\": state,\n        \"attempts\": len(attempts),\n        \"last_status\": last.status_code,\n        \"event_id\": last.event_id,\n    }\n\n\ndef redact_url(destination: Destination) -> str:\n    parsed = urlsplit(destination.url)\n    host = parsed.hostname or \"invalid\"\n    return f\"{parsed.scheme}://{host}/...\"\n\n\ndef log_summary(destination: Destination, attempts: list[Attempt]) -> None:\n    summary = delivery_summary(attempts)\n    logger.info(\n        \"delivery %s to %s after %d attempts\",\n        summary[\"state\"],\n        redact_url(destination),\n        summary[\"attempts\"],\n    )\n"
+   },
+   "0cb6c96d6355f6030a3eaea38ecf04a6388e64c6": {
+    "app/webhooks/delivery.py": "from dataclasses import dataclass\nfrom urllib.parse import urlsplit\n\nimport httpx\n\n\n@dataclass(frozen=True)\nclass Destination:\n    url: str\n    allowed_hosts: frozenset[str]\n\n\ndef validate_destination(destination: Destination) -> None:\n    parsed = urlsplit(destination.url)\n    if parsed.scheme != \"https\" or parsed.hostname not in destination.allowed_hosts:\n        raise ValueError(\"destination is outside the tenant allowlist\")\n\n\nasync def deliver(destination: Destination, payload: bytes) -> int:\n    validate_destination(destination)\n    async with httpx.AsyncClient(follow_redirects=False, timeout=8.0) as client:\n        response = await client.post(destination.url, content=payload)\n    response.raise_for_status()\n    return response.status_code\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "redirect-bypasses-host",
+   "lines": [
+    117
+   ],
+   "path": "app/webhooks/delivery.py",
+   "rationale": "A tenant-controlled allowlisted endpoint can return a redirect to an arbitrary HTTPS or internal URL. The client follows it after validating only the original host, and forwards the signed event body and headers to the redirect target.",
+   "severity": "critical"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"async with httpx.AsyncClient(follow_redirects=True, timeout=8.0) as client:\", \"explanation\": \"A tenant-controlled allowlisted endpoint can return a redirect to an arbitrary HTTPS or internal URL. The client follows it after validating only the original host, and forwards the signed event body and headers to the redirect target.\", \"impact\": \"See explanation.\", \"line\": 117, \"path\": \"app/webhooks/delivery.py\", \"severity\": \"critical\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Redirects can leave the validated webhook host\"}], \"summary\": \"Mock review of ext_ssrf_redirect.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "medium",
+ "source": "external",
+ "split": "dev",
+ "tags": [
+  "async",
+  "buried",
+  "security",
+  "ssrf"
+ ],
+ "title": "Add signed delivery attempts and response reporting"
+}

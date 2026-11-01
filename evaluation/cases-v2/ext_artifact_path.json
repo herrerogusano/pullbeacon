@@ -1,0 +1,92 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_artifact_path",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 5,
+    "changes": 7,
+    "deletions": 2,
+    "filename": "app/builds/artifacts.py",
+    "patch": "@@ -3,8 +3,11 @@\n \n \n def save_artifact(root: Path, build_id: UUID, name: str, content: bytes) -> Path:\n-    safe_name = Path(name).name\n-    target = root / str(build_id) / safe_name\n+    target = root / str(build_id) / name\n     target.parent.mkdir(parents=True, exist_ok=True)\n     target.write_bytes(content)\n     return target\n+\n+\n+def artifact_location(root: Path, build_id: UUID, name: str) -> str:\n+    return str(root / str(build_id) / name)",
+    "sha": "e3f0b19fc9a4c5ab4dc69cd625d8c7a78c9fd498",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "635a8e13839507cb3cbd063e3cee58ce08b95a48"
+   },
+   "body": "Preserves client filenames under each build's artifact directory for easier browsing.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_artifact_path",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "b351d9147453be18a2149f1e6b886473df49230d"
+   },
+   "number": 783,
+   "state": "open",
+   "title": "Organize build artifacts by upload name",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "635a8e13839507cb3cbd063e3cee58ce08b95a48": {
+    "app/builds/artifacts.py": "from pathlib import Path\nfrom uuid import UUID\n\n\ndef save_artifact(root: Path, build_id: UUID, name: str, content: bytes) -> Path:\n    safe_name = Path(name).name\n    target = root / str(build_id) / safe_name\n    target.parent.mkdir(parents=True, exist_ok=True)\n    target.write_bytes(content)\n    return target\n"
+   },
+   "b351d9147453be18a2149f1e6b886473df49230d": {
+    "app/builds/artifacts.py": "from pathlib import Path\nfrom uuid import UUID\n\n\ndef save_artifact(root: Path, build_id: UUID, name: str, content: bytes) -> Path:\n    target = root / str(build_id) / name\n    target.parent.mkdir(parents=True, exist_ok=True)\n    target.write_bytes(content)\n    return target\n\n\ndef artifact_location(root: Path, build_id: UUID, name: str) -> str:\n    return str(root / str(build_id) / name)\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "upload-escapes-build",
+   "lines": [
+    6
+   ],
+   "path": "app/builds/artifacts.py",
+   "rationale": "The upload name is client-controlled and now retains ../ components. A name such as ../../config.json writes outside the build's artifact directory, potentially overwriting files writable by the service.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"target = root / str(build_id) / name\", \"explanation\": \"The upload name is client-controlled and now retains ../ components. A name such as ../../config.json writes outside the build's artifact directory, potentially overwriting files writable by the service.\", \"impact\": \"See explanation.\", \"line\": 6, \"path\": \"app/builds/artifacts.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Upload filename can escape the build directory\"}], \"summary\": \"Mock review of ext_artifact_path.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "path_traversal",
+  "security"
+ ],
+ "title": "Organize build artifacts by upload name"
+}

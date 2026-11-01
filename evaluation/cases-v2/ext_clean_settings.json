@@ -1,0 +1,100 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_clean_settings",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    171
+   ],
+   "path": "lib/config/settings.py",
+   "rationale": "json.loads parses JSON data and does not execute code."
+  },
+  {
+   "lines": [
+    123
+   ],
+   "path": "lib/config/settings.py",
+   "rationale": "The resolved path is accepted only when it is the base or a descendant; traversal is rejected."
+  },
+  {
+   "lines": [
+    173
+   ],
+   "path": "lib/config/settings.py",
+   "rationale": "The broad handler logs the failure and immediately re-raises, so malformed settings cannot be silently accepted."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 221,
+    "changes": 229,
+    "deletions": 8,
+    "filename": "lib/config/settings.py",
+    "patch": "@@ -1,9 +1,222 @@\n+from dataclasses import dataclass, field\n+import json\n+import logging\n from pathlib import Path\n-import json\n-\n-\n-def load_settings(path: Path) -> dict[str, object]:\n-    data = json.loads(path.read_text(encoding=\"utf-8\"))\n-    if not isinstance(data, dict):\n-        raise ValueError(\"settings must be an object\")\n-    return data\n+from typing import Any, Mapping\n+\n+logger = logging.getLogger(__name__)\n+\n+\n+@dataclass(frozen=True)\n+class DatabaseSettings:\n+    host: str\n+    port: int\n+    name: str\n+    pool_size: int\n+    connect_timeout: float\n+\n+\n+@dataclass(frozen=True)\n+class CacheSettings:\n+    enabled: bool\n+    ttl_seconds: int\n+    namespace: str\n+    max_entries: int\n+\n+\n+@dataclass(frozen=True)\n+class MailSettings:\n+    sender: str\n+    retry_count: int\n+    batch_size: int\n+    dry_run: bool\n+\n+\n+@dataclass(frozen=True)\n+class StorageSettings:\n+    root: Path\n+    max_upload_bytes: int\n+    accepted_types: frozenset[str]\n+\n+\n+@dataclass(frozen=True)\n+class Settings:\n+    database: DatabaseSettings\n+    cache: CacheSettings\n+    mail: MailSettings\n+    storage: StorageSettings\n+    feature_flags: Mapping[str, bool] = field(default_factory=dict)\n+\n+\n+def object_value(value: object, field_name: str) -> dict[str, object]:\n+    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):\n+        raise ValueError(f\"{field_name} must be an object\")\n+    return value\n+\n+\n+def string_value(value: object, field_name: str) -> str:\n+    if not isinstance(value, str) or not value.strip():\n+        raise ValueError(f\"{field_name} must be a non-empty string\")\n+    return value.strip()\n+\n+\n+def integer_value(value: object, field_name: str, minimum: int, maximum: int) -> int:\n+    if isinstance(value, bool) or not isinstance(value, int):\n+        raise ValueError(f\"{field_name} must be an integer\")\n+    if not minimum <= value <= maximum:\n+        raise ValueError(f\"{field_name} is out of range\")\n+    return value\n+\n+\n+def float_value(value: object, field_name: str, minimum: float, maximum: float) -> float:\n+    if isinstance(value, bool) or not isinstance(value, (int, float)):\n+        raise ValueError(f\"{field_name} must be a number\")\n+    result = float(value)\n+    if not minimum <= result <= maximum:\n+        raise ValueError(f\"{field_name} is out of range\")\n+    return result\n+\n+\n+def boolean_value(value: object, field_name: str) -> bool:\n+    if not isinstance(value, bool):\n+        raise ValueError(f\"{field_name} must be a boolean\")\n+    return value\n+\n+\n+def parse_database(raw: object) -> DatabaseSettings:\n+    data = object_value(raw, \"database\")\n+    return DatabaseSettings(\n+        host=string_value(data.get(\"host\"), \"database.host\"),\n+        port=integer_value(data.get(\"port\", 5432), \"database.port\", 1, 65535),\n+        name=string_value(data.get(\"name\"), \"database.name\"),\n+        pool_size=integer_value(data.get(\"pool_size\", 10), \"database.pool_size\", 1, 100),\n+        connect_timeout=float_value(\n+            data.get(\"connect_timeout\", 5.0), \"database.connect_timeout\", 0.1, 60.0\n+        ),\n+    )\n+\n+\n+def parse_cache(raw: object) -> CacheSettings:\n+    data = object_value(raw, \"cache\")\n+    return CacheSettings(\n+        enabled=boolean_value(data.get(\"enabled\", True), \"cache.enabled\"),\n+        ttl_seconds=integer_value(data.get(\"ttl_seconds\", 300), \"cache.ttl_seconds\", 1, 86400),\n+        namespace=string_value(data.get(\"namespace\", \"app\"), \"cache.namespace\"),\n+        max_entries=integer_value(data.get(\"max_entries\", 10000), \"cache.max_entries\", 1, 1000000),\n+    )\n+\n+\n+def parse_mail(raw: object) -> MailSettings:\n+    data = object_value(raw, \"mail\")\n+    return MailSettings(\n+        sender=string_value(data.get(\"sender\"), \"mail.sender\"),\n+        retry_count=integer_value(data.get(\"retry_count\", 3), \"mail.retry_count\", 0, 20),\n+        batch_size=integer_value(data.get(\"batch_size\", 100), \"mail.batch_size\", 1, 1000),\n+        dry_run=boolean_value(data.get(\"dry_run\", False), \"mail.dry_run\"),\n+    )\n+\n+\n+def resolve_storage_root(config_path: Path, value: object) -> Path:\n+    raw = Path(string_value(value, \"storage.root\"))\n+    base = config_path.parent.resolve()\n+    resolved = (base / raw).resolve()\n+    if base not in resolved.parents and resolved != base:\n+        raise ValueError(\"storage.root must stay beneath the config directory\")\n+    return resolved\n+\n+\n+def parse_storage(raw: object, config_path: Path) -> StorageSettings:\n+    data = object_value(raw, \"storage\")\n+    types = data.get(\"accepted_types\", [\"image/png\", \"image/jpeg\"])\n+    if not isinstance(types, list) or not all(isinstance(item, str) for item in types):\n+        raise ValueError(\"storage.accepted_types must be a list of strings\")\n+    return StorageSettings(\n+        root=resolve_storage_root(config_path, data.get(\"root\", \"uploads\")),\n+        max_upload_bytes=integer_value(\n+            data.get(\"max_upload_bytes\", 10000000), \"storage.max_upload_bytes\", 1, 100000000\n+        ),\n+        accepted_types=frozenset(types),\n+    )\n+\n+\n+def parse_feature_flags(raw: object) -> dict[str, bool]:\n+    data = object_value(raw, \"feature_flags\")\n+    parsed: dict[str, bool] = {}\n+    for name, value in data.items():\n+        parsed[name] = boolean_value(value, f\"feature_flags.{name}\")\n+    return parsed\n+\n+\n+def check_unknown_keys(data: Mapping[str, object]) -> None:\n+    allowed = {\"database\", \"cache\", \"mail\", \"storage\", \"feature_flags\"}\n+    unknown = set(data) - allowed\n+    if unknown:\n+        raise ValueError(f\"unknown settings sections: {', '.join(sorted(unknown))}\")\n+\n+\n+def parse_settings(raw: object, path: Path) -> Settings:\n+    data = object_value(raw, \"settings\")\n+    check_unknown_keys(data)\n+    return Settings(\n+        database=parse_database(data.get(\"database\")),\n+        cache=parse_cache(data.get(\"cache\", {})),\n+        mail=parse_mail(data.get(\"mail\")),\n+        storage=parse_storage(data.get(\"storage\", {}), path),\n+        feature_flags=parse_feature_flags(data.get(\"feature_flags\", {})),\n+    )\n+\n+\n+def load_settings(path: Path) -> Settings:\n+    try:\n+        raw: Any = json.loads(path.read_text(encoding=\"utf-8\"))\n+        return parse_settings(raw, path)\n+    except Exception:\n+        logger.exception(\"failed to load application settings from %s\", path)\n+        raise\n+\n+\n+def cache_is_enabled(settings: Settings) -> bool:\n+    return settings.cache.enabled and settings.cache.max_entries > 0\n+\n+\n+def allowed_upload_type(settings: Settings, content_type: str) -> bool:\n+    return content_type in settings.storage.accepted_types\n+\n+\n+def mail_batch_count(settings: Settings, message_count: int) -> int:\n+    if message_count < 0:\n+        raise ValueError(\"message count cannot be negative\")\n+    size = settings.mail.batch_size\n+    return (message_count + size - 1) // size\n+\n+\n+def database_dsn_parts(settings: Settings) -> tuple[str, int, str]:\n+    database = settings.database\n+    return database.host, database.port, database.name\n+\n+\n+def as_public_dict(settings: Settings) -> dict[str, object]:\n+    return {\n+        \"database\": {\n+            \"host\": settings.database.host,\n+            \"port\": settings.database.port,\n+            \"name\": settings.database.name,\n+            \"pool_size\": settings.database.pool_size,\n+        },\n+        \"cache\": {\n+            \"enabled\": settings.cache.enabled,\n+            \"ttl_seconds\": settings.cache.ttl_seconds,\n+            \"namespace\": settings.cache.namespace,\n+        },\n+        \"mail\": {\n+            \"sender\": settings.mail.sender,\n+            \"batch_size\": settings.mail.batch_size,\n+            \"dry_run\": settings.mail.dry_run,\n+        },\n+        \"storage\": {\n+            \"root\": str(settings.storage.root),\n+            \"max_upload_bytes\": settings.storage.max_upload_bytes,\n+            \"accepted_types\": sorted(settings.storage.accepted_types),\n+        },\n+        \"feature_flags\": dict(settings.feature_flags),\n+    }",
+    "sha": "f2d7e5f433dd7cd9bb9eed75e0dbb548cfe6f949",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "0f0b28a2c847477ecfc4f21504062a97ce5614da"
+   },
+   "body": "Refactors JSON settings into validated typed sections and adds helpers for common consumers.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_clean_settings",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "4368c363bb88782aca5cb579ca0ce7ae3a4a259a"
+   },
+   "number": 284,
+   "state": "open",
+   "title": "Add typed settings sections",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "0f0b28a2c847477ecfc4f21504062a97ce5614da": {
+    "lib/config/settings.py": "from pathlib import Path\nimport json\n\n\ndef load_settings(path: Path) -> dict[str, object]:\n    data = json.loads(path.read_text(encoding=\"utf-8\"))\n    if not isinstance(data, dict):\n        raise ValueError(\"settings must be an object\")\n    return data\n"
+   },
+   "4368c363bb88782aca5cb579ca0ce7ae3a4a259a": {
+    "lib/config/settings.py": "from dataclasses import dataclass, field\nimport json\nimport logging\nfrom pathlib import Path\nfrom typing import Any, Mapping\n\nlogger = logging.getLogger(__name__)\n\n\n@dataclass(frozen=True)\nclass DatabaseSettings:\n    host: str\n    port: int\n    name: str\n    pool_size: int\n    connect_timeout: float\n\n\n@dataclass(frozen=True)\nclass CacheSettings:\n    enabled: bool\n    ttl_seconds: int\n    namespace: str\n    max_entries: int\n\n\n@dataclass(frozen=True)\nclass MailSettings:\n    sender: str\n    retry_count: int\n    batch_size: int\n    dry_run: bool\n\n\n@dataclass(frozen=True)\nclass StorageSettings:\n    root: Path\n    max_upload_bytes: int\n    accepted_types: frozenset[str]\n\n\n@dataclass(frozen=True)\nclass Settings:\n    database: DatabaseSettings\n    cache: CacheSettings\n    mail: MailSettings\n    storage: StorageSettings\n    feature_flags: Mapping[str, bool] = field(default_factory=dict)\n\n\ndef object_value(value: object, field_name: str) -> dict[str, object]:\n    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):\n        raise ValueError(f\"{field_name} must be an object\")\n    return value\n\n\ndef string_value(value: object, field_name: str) -> str:\n    if not isinstance(value, str) or not value.strip():\n        raise ValueError(f\"{field_name} must be a non-empty string\")\n    return value.strip()\n\n\ndef integer_value(value: object, field_name: str, minimum: int, maximum: int) -> int:\n    if isinstance(value, bool) or not isinstance(value, int):\n        raise ValueError(f\"{field_name} must be an integer\")\n    if not minimum <= value <= maximum:\n        raise ValueError(f\"{field_name} is out of range\")\n    return value\n\n\ndef float_value(value: object, field_name: str, minimum: float, maximum: float) -> float:\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise ValueError(f\"{field_name} must be a number\")\n    result = float(value)\n    if not minimum <= result <= maximum:\n        raise ValueError(f\"{field_name} is out of range\")\n    return result\n\n\ndef boolean_value(value: object, field_name: str) -> bool:\n    if not isinstance(value, bool):\n        raise ValueError(f\"{field_name} must be a boolean\")\n    return value\n\n\ndef parse_database(raw: object) -> DatabaseSettings:\n    data = object_value(raw, \"database\")\n    return DatabaseSettings(\n        host=string_value(data.get(\"host\"), \"database.host\"),\n        port=integer_value(data.get(\"port\", 5432), \"database.port\", 1, 65535),\n        name=string_value(data.get(\"name\"), \"database.name\"),\n        pool_size=integer_value(data.get(\"pool_size\", 10), \"database.pool_size\", 1, 100),\n        connect_timeout=float_value(\n            data.get(\"connect_timeout\", 5.0), \"database.connect_timeout\", 0.1, 60.0\n        ),\n    )\n\n\ndef parse_cache(raw: object) -> CacheSettings:\n    data = object_value(raw, \"cache\")\n    return CacheSettings(\n        enabled=boolean_value(data.get(\"enabled\", True), \"cache.enabled\"),\n        ttl_seconds=integer_value(data.get(\"ttl_seconds\", 300), \"cache.ttl_seconds\", 1, 86400),\n        namespace=string_value(data.get(\"namespace\", \"app\"), \"cache.namespace\"),\n        max_entries=integer_value(data.get(\"max_entries\", 10000), \"cache.max_entries\", 1, 1000000),\n    )\n\n\ndef parse_mail(raw: object) -> MailSettings:\n    data = object_value(raw, \"mail\")\n    return MailSettings(\n        sender=string_value(data.get(\"sender\"), \"mail.sender\"),\n        retry_count=integer_value(data.get(\"retry_count\", 3), \"mail.retry_count\", 0, 20),\n        batch_size=integer_value(data.get(\"batch_size\", 100), \"mail.batch_size\", 1, 1000),\n        dry_run=boolean_value(data.get(\"dry_run\", False), \"mail.dry_run\"),\n    )\n\n\ndef resolve_storage_root(config_path: Path, value: object) -> Path:\n    raw = Path(string_value(value, \"storage.root\"))\n    base = config_path.parent.resolve()\n    resolved = (base / raw).resolve()\n    if base not in resolved.parents and resolved != base:\n        raise ValueError(\"storage.root must stay beneath the config directory\")\n    return resolved\n\n\ndef parse_storage(raw: object, config_path: Path) -> StorageSettings:\n    data = object_value(raw, \"storage\")\n    types = data.get(\"accepted_types\", [\"image/png\", \"image/jpeg\"])\n    if not isinstance(types, list) or not all(isinstance(item, str) for item in types):\n        raise ValueError(\"storage.accepted_types must be a list of strings\")\n    return StorageSettings(\n        root=resolve_storage_root(config_path, data.get(\"root\", \"uploads\")),\n        max_upload_bytes=integer_value(\n            data.get(\"max_upload_bytes\", 10000000), \"storage.max_upload_bytes\", 1, 100000000\n        ),\n        accepted_types=frozenset(types),\n    )\n\n\ndef parse_feature_flags(raw: object) -> dict[str, bool]:\n    data = object_value(raw, \"feature_flags\")\n    parsed: dict[str, bool] = {}\n    for name, value in data.items():\n        parsed[name] = boolean_value(value, f\"feature_flags.{name}\")\n    return parsed\n\n\ndef check_unknown_keys(data: Mapping[str, object]) -> None:\n    allowed = {\"database\", \"cache\", \"mail\", \"storage\", \"feature_flags\"}\n    unknown = set(data) - allowed\n    if unknown:\n        raise ValueError(f\"unknown settings sections: {', '.join(sorted(unknown))}\")\n\n\ndef parse_settings(raw: object, path: Path) -> Settings:\n    data = object_value(raw, \"settings\")\n    check_unknown_keys(data)\n    return Settings(\n        database=parse_database(data.get(\"database\")),\n        cache=parse_cache(data.get(\"cache\", {})),\n        mail=parse_mail(data.get(\"mail\")),\n        storage=parse_storage(data.get(\"storage\", {}), path),\n        feature_flags=parse_feature_flags(data.get(\"feature_flags\", {})),\n    )\n\n\ndef load_settings(path: Path) -> Settings:\n    try:\n        raw: Any = json.loads(path.read_text(encoding=\"utf-8\"))\n        return parse_settings(raw, path)\n    except Exception:\n        logger.exception(\"failed to load application settings from %s\", path)\n        raise\n\n\ndef cache_is_enabled(settings: Settings) -> bool:\n    return settings.cache.enabled and settings.cache.max_entries > 0\n\n\ndef allowed_upload_type(settings: Settings, content_type: str) -> bool:\n    return content_type in settings.storage.accepted_types\n\n\ndef mail_batch_count(settings: Settings, message_count: int) -> int:\n    if message_count < 0:\n        raise ValueError(\"message count cannot be negative\")\n    size = settings.mail.batch_size\n    return (message_count + size - 1) // size\n\n\ndef database_dsn_parts(settings: Settings) -> tuple[str, int, str]:\n    database = settings.database\n    return database.host, database.port, database.name\n\n\ndef as_public_dict(settings: Settings) -> dict[str, object]:\n    return {\n        \"database\": {\n            \"host\": settings.database.host,\n            \"port\": settings.database.port,\n            \"name\": settings.database.name,\n            \"pool_size\": settings.database.pool_size,\n        },\n        \"cache\": {\n            \"enabled\": settings.cache.enabled,\n            \"ttl_seconds\": settings.cache.ttl_seconds,\n            \"namespace\": settings.cache.namespace,\n        },\n        \"mail\": {\n            \"sender\": settings.mail.sender,\n            \"batch_size\": settings.mail.batch_size,\n            \"dry_run\": settings.mail.dry_run,\n        },\n        \"storage\": {\n            \"root\": str(settings.storage.root),\n            \"max_upload_bytes\": settings.storage.max_upload_bytes,\n            \"accepted_types\": sorted(settings.storage.accepted_types),\n        },\n        \"feature_flags\": dict(settings.feature_flags),\n    }\n"
+   }
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of ext_clean_settings.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "medium",
+ "source": "external",
+ "split": "dev",
+ "tags": [
+  "refactor",
+  "suspicious_but_correct"
+ ],
+ "title": "Add typed settings sections"
+}

@@ -1,0 +1,42 @@
+{
+ "case_id": "cl_clean_ts_price_format",
+ "title": "Locale-aware price formatting",
+ "pr_body": "Uses Intl.NumberFormat (cached per locale/currency), integer cents totals and an attribute escaping helper for the price badge.",
+ "language": "typescript",
+ "kind": "clean",
+ "criticality": "none",
+ "split": "test",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "suspicious_but_correct",
+  "numeric"
+ ],
+ "files": [
+  {
+   "path": "web/price.ts",
+   "before": "export function formatPrice(cents: number, currency: string): string {\n  return `${(cents / 100).toFixed(2)} ${currency}`;\n}\n",
+   "after": "const formatters = new Map<string, Intl.NumberFormat>();\n\nfunction formatterFor(locale: string, currency: string): Intl.NumberFormat {\n  const key = `${locale}|${currency}`;\n  let formatter = formatters.get(key);\n  if (!formatter) {\n    formatter = new Intl.NumberFormat(locale, { style: \"currency\", currency });\n    formatters.set(key, formatter);\n  }\n  return formatter;\n}\n\nexport function formatPrice(cents: number, currency: string, locale = \"en-US\"): string {\n  if (!Number.isSafeInteger(cents)) {\n    throw new RangeError(`cents must be a safe integer, got ${cents}`);\n  }\n  return formatterFor(locale, currency).format(cents / 100);\n}\n\nexport function sumCents(items: ReadonlyArray<{ cents: number; quantity: number }>): number {\n  let total = 0;\n  for (const item of items) {\n    total += item.cents * item.quantity;\n  }\n  if (!Number.isSafeInteger(total)) {\n    throw new RangeError(\"total exceeds the safe integer range\");\n  }\n  return total;\n}\n\nexport function escapeForAttribute(value: string): string {\n  return value.replace(/[&<>\"']/g, (ch) => `&#${ch.charCodeAt(0)};`);\n}\n"
+  }
+ ],
+ "traps": [
+  {
+   "path": "web/price.ts",
+   "anchor": "  return formatterFor(locale, currency).format(cents / 100);",
+   "rationale": "Division happens only for display; arithmetic stays in integer cents."
+  },
+  {
+   "path": "web/price.ts",
+   "anchor": "  return value.replace(/[&<>\"']/g, (ch) => `&#${ch.charCodeAt(0)};`);",
+   "rationale": "Numeric character references for all five characters are a correct escape."
+  },
+  {
+   "path": "web/price.ts",
+   "anchor": "const formatters = new Map<string, Intl.NumberFormat>();",
+   "rationale": "Bounded by the number of locale/currency pairs actually used."
+  }
+ ],
+ "author": "claude",
+ "acceptable": [],
+ "bugs": []
+}

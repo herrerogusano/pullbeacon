@@ -1,0 +1,92 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_report_authz",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 12,
+    "changes": 16,
+    "deletions": 4,
+    "filename": "app/reports/download.py",
+    "patch": "@@ -7,14 +7,22 @@\n     id: str\n     tenant_id: str\n     data: bytes\n+    filename: str\n+\n+\n+@dataclass(frozen=True)\n+class Download:\n+    body: bytes\n+    filename: str\n+    content_type: str\n \n \n class Reports(Protocol):\n-    def get_for_tenant(self, report_id: str, tenant_id: str) -> Report | None: ...\n+    def get(self, report_id: str) -> Report | None: ...\n \n \n-def download(report_id: str, tenant_id: str, reports: Reports) -> bytes:\n-    report = reports.get_for_tenant(report_id, tenant_id)\n+def download(report_id: str, tenant_id: str, reports: Reports) -> Download:\n+    report = reports.get(report_id)\n     if report is None:\n         raise LookupError(\"report not found\")\n-    return report.data\n+    return Download(report.data, report.filename, \"text/csv\")",
+    "sha": "b9c3c686b068ff5143c2f49674c22254bd0d875d",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "316b2a12fb92507cd6e1346c84c0beed47cfa31a"
+   },
+   "body": "Adds a generated filename and content type to report downloads.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_report_authz",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "74a98f26555f2f42b3c9f3f8469eb15c3c337834"
+   },
+   "number": 159,
+   "state": "open",
+   "title": "Add report download metadata",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "316b2a12fb92507cd6e1346c84c0beed47cfa31a": {
+    "app/reports/download.py": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Report:\n    id: str\n    tenant_id: str\n    data: bytes\n\n\nclass Reports(Protocol):\n    def get_for_tenant(self, report_id: str, tenant_id: str) -> Report | None: ...\n\n\ndef download(report_id: str, tenant_id: str, reports: Reports) -> bytes:\n    report = reports.get_for_tenant(report_id, tenant_id)\n    if report is None:\n        raise LookupError(\"report not found\")\n    return report.data\n"
+   },
+   "74a98f26555f2f42b3c9f3f8469eb15c3c337834": {
+    "app/reports/download.py": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Report:\n    id: str\n    tenant_id: str\n    data: bytes\n    filename: str\n\n\n@dataclass(frozen=True)\nclass Download:\n    body: bytes\n    filename: str\n    content_type: str\n\n\nclass Reports(Protocol):\n    def get(self, report_id: str) -> Report | None: ...\n\n\ndef download(report_id: str, tenant_id: str, reports: Reports) -> Download:\n    report = reports.get(report_id)\n    if report is None:\n        raise LookupError(\"report not found\")\n    return Download(report.data, report.filename, \"text/csv\")\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "report-cross-tenant",
+   "lines": [
+    25
+   ],
+   "path": "app/reports/download.py",
+   "rationale": "A caller with a valid tenant session can supply a report ID from another tenant. The new repository lookup ignores tenant_id and returns that report's data.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"report = reports.get(report_id)\", \"explanation\": \"A caller with a valid tenant session can supply a report ID from another tenant. The new repository lookup ignores tenant_id and returns that report's data.\", \"impact\": \"See explanation.\", \"line\": 25, \"path\": \"app/reports/download.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Report lookup no longer enforces tenant ownership\"}], \"summary\": \"Mock review of ext_report_authz.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "authz",
+  "security"
+ ],
+ "title": "Add report download metadata"
+}

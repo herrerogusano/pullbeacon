@@ -1,0 +1,108 @@
+{
+ "acceptable_findings": [
+  {
+   "lines": [
+    37
+   ],
+   "path": "app/webhooks.py",
+   "rationale": "No idempotency/replay protection within the tolerance window; malformed data raises 500."
+  }
+ ],
+ "author": "claude",
+ "case_id": "cl_syn_webhook_timing_compare",
+ "criticality": "medium",
+ "expected_non_findings": [
+  {
+   "lines": [
+    28
+   ],
+   "path": "app/webhooks.py",
+   "rationale": "Timestamp check is correct and short-circuits before int()."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 33,
+    "changes": 33,
+    "deletions": 0,
+    "filename": "app/webhooks.py",
+    "patch": "@@ -2,4 +2,37 @@\n \n from __future__ import annotations\n \n+import hashlib\n+import hmac\n+import json\n+import logging\n+import time\n+\n from app.http import Response\n+from app.payments import mark_paid, mark_refunded\n+from app.settings import WEBHOOK_SECRET\n+\n+log = logging.getLogger(__name__)\n+TOLERANCE_SECONDS = 300\n+HANDLERS = {\"payment.succeeded\": mark_paid, \"payment.refunded\": mark_refunded}\n+\n+\n+def _expected_signature(timestamp: str, body: bytes) -> str:\n+    message = timestamp.encode() + b\".\" + body\n+    return hmac.new(WEBHOOK_SECRET.encode(), message, hashlib.sha256).hexdigest()\n+\n+\n+def handle_webhook(request) -> Response:\n+    timestamp = request.headers.get(\"X-Signature-Timestamp\", \"\")\n+    signature = request.headers.get(\"X-Signature\", \"\")\n+    if not timestamp.isdigit() or abs(time.time() - int(timestamp)) > TOLERANCE_SECONDS:\n+        return Response(status=400)\n+    if signature != _expected_signature(timestamp, request.body):\n+        log.warning(\"invalid webhook signature\")\n+        return Response(status=401)\n+    event = json.loads(request.body)\n+    handler = HANDLERS.get(event.get(\"type\"))\n+    if handler is None:\n+        return Response(status=204)\n+    handler(event[\"data\"][\"payment_id\"])\n+    return Response(status=200)",
+    "sha": "66e5035caff7a60b6dab0e699cd4890650516fb5",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "e52cc82a2c8a68f0a757c5d3f9754c86343a36f9"
+   },
+   "body": "Verifies the HMAC signature and timestamp, then dispatches payment events.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_syn_webhook_timing_compare",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "c9349ab60c947f96166e00abf704c9fdd307b045"
+   },
+   "number": 592,
+   "state": "open",
+   "title": "Verify and process payment webhooks",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "c9349ab60c947f96166e00abf704c9fdd307b045": {
+    "app/webhooks.py": "\"\"\"Incoming webhooks from the payment provider.\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport hmac\nimport json\nimport logging\nimport time\n\nfrom app.http import Response\nfrom app.payments import mark_paid, mark_refunded\nfrom app.settings import WEBHOOK_SECRET\n\nlog = logging.getLogger(__name__)\nTOLERANCE_SECONDS = 300\nHANDLERS = {\"payment.succeeded\": mark_paid, \"payment.refunded\": mark_refunded}\n\n\ndef _expected_signature(timestamp: str, body: bytes) -> str:\n    message = timestamp.encode() + b\".\" + body\n    return hmac.new(WEBHOOK_SECRET.encode(), message, hashlib.sha256).hexdigest()\n\n\ndef handle_webhook(request) -> Response:\n    timestamp = request.headers.get(\"X-Signature-Timestamp\", \"\")\n    signature = request.headers.get(\"X-Signature\", \"\")\n    if not timestamp.isdigit() or abs(time.time() - int(timestamp)) > TOLERANCE_SECONDS:\n        return Response(status=400)\n    if signature != _expected_signature(timestamp, request.body):\n        log.warning(\"invalid webhook signature\")\n        return Response(status=401)\n    event = json.loads(request.body)\n    handler = HANDLERS.get(event.get(\"type\"))\n    if handler is None:\n        return Response(status=204)\n    handler(event[\"data\"][\"payment_id\"])\n    return Response(status=200)\n"
+   },
+   "e52cc82a2c8a68f0a757c5d3f9754c86343a36f9": {
+    "app/webhooks.py": "\"\"\"Incoming webhooks from the payment provider.\"\"\"\n\nfrom __future__ import annotations\n\nfrom app.http import Response\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "non-constant-time-compare",
+   "lines": [
+    30
+   ],
+   "path": "app/webhooks.py",
+   "rationale": "String comparison returns at the first differing byte, which leaks how much of a forged signature is correct through timing; use hmac.compare_digest.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"if signature != _expected_signature(timestamp, request.body):\", \"explanation\": \"String comparison returns at the first differing byte, which leaks how much of a forged signature is correct through timing; use hmac.compare_digest.\", \"impact\": \"See explanation.\", \"line\": 30, \"path\": \"app/webhooks.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Signature compared with a non-constant-time operator\"}], \"summary\": \"Mock review of cl_syn_webhook_timing_compare.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "crypto",
+  "security"
+ ],
+ "title": "Verify and process payment webhooks"
+}

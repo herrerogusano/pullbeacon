@@ -1,0 +1,93 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_daily_window",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 149,
+    "changes": 150,
+    "deletions": 1,
+    "filename": "app/reporting/daily_sales.py",
+    "patch": "@@ -1,9 +1,157 @@\n+from collections import defaultdict\n+from dataclasses import dataclass\n from datetime import date, datetime, time, timedelta, timezone\n+from decimal import Decimal\n+from typing import Iterable\n from zoneinfo import ZoneInfo\n+\n+\n+@dataclass(frozen=True)\n+class Sale:\n+    order_id: str\n+    store_id: str\n+    occurred_at: datetime\n+    gross: Decimal\n+    tax: Decimal\n+    refunded: bool = False\n+\n+\n+@dataclass(frozen=True)\n+class DailyTotals:\n+    day: date\n+    store_id: str\n+    order_count: int\n+    gross: Decimal\n+    tax: Decimal\n+    refunds: Decimal\n \n \n def utc_bounds(day: date, zone_name: str) -> tuple[datetime, datetime]:\n     zone = ZoneInfo(zone_name)\n     start = datetime.combine(day, time.min, zone).astimezone(timezone.utc)\n-    end = datetime.combine(day + timedelta(days=1), time.min, zone).astimezone(timezone.utc)\n+    end = start + timedelta(days=1)\n     return start, end\n+\n+\n+def validate_sale(sale: Sale) -> None:\n+    if sale.occurred_at.tzinfo is None:\n+        raise ValueError(\"sale timestamp must be timezone-aware\")\n+    if sale.gross < 0 or sale.tax < 0:\n+        raise ValueError(\"sale values cannot be negative\")\n+    if sale.tax > sale.gross:\n+        raise ValueError(\"tax cannot exceed gross\")\n+\n+\n+def belongs_to_day(sale: Sale, day: date, zone_name: str) -> bool:\n+    start, end = utc_bounds(day, zone_name)\n+    instant = sale.occurred_at.astimezone(timezone.utc)\n+    return start <= instant < end\n+\n+\n+def calculate_totals(\n+    sales: Iterable[Sale],\n+    day: date,\n+    store_id: str,\n+    zone_name: str,\n+) -> DailyTotals:\n+    gross = Decimal(\"0\")\n+    tax = Decimal(\"0\")\n+    refunds = Decimal(\"0\")\n+    count = 0\n+    for sale in sales:\n+        validate_sale(sale)\n+        if sale.store_id != store_id or not belongs_to_day(sale, day, zone_name):\n+            continue\n+        if sale.refunded:\n+            refunds += sale.gross\n+        else:\n+            gross += sale.gross\n+            tax += sale.tax\n+            count += 1\n+    return DailyTotals(day, store_id, count, gross, tax, refunds)\n+\n+\n+def net_total(totals: DailyTotals) -> Decimal:\n+    return totals.gross - totals.refunds\n+\n+\n+def average_order(totals: DailyTotals) -> Decimal:\n+    if totals.order_count == 0:\n+        return Decimal(\"0\")\n+    return totals.gross / Decimal(totals.order_count)\n+\n+\n+def totals_by_store(\n+    sales: Iterable[Sale],\n+    day: date,\n+    store_zones: dict[str, str],\n+) -> dict[str, DailyTotals]:\n+    records = list(sales)\n+    return {\n+        store_id: calculate_totals(records, day, store_id, zone_name)\n+        for store_id, zone_name in store_zones.items()\n+    }\n+\n+\n+def aggregate_week(\n+    sales: Iterable[Sale],\n+    first_day: date,\n+    store_id: str,\n+    zone_name: str,\n+) -> list[DailyTotals]:\n+    records = list(sales)\n+    return [\n+        calculate_totals(records, first_day + timedelta(days=offset), store_id, zone_name)\n+        for offset in range(7)\n+    ]\n+\n+\n+def monthly_gross(daily: Iterable[DailyTotals]) -> dict[tuple[int, int], Decimal]:\n+    result: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal(\"0\"))\n+    for totals in daily:\n+        result[(totals.day.year, totals.day.month)] += totals.gross\n+    return dict(result)\n+\n+\n+def monthly_refunds(daily: Iterable[DailyTotals]) -> dict[tuple[int, int], Decimal]:\n+    result: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal(\"0\"))\n+    for totals in daily:\n+        result[(totals.day.year, totals.day.month)] += totals.refunds\n+    return dict(result)\n+\n+\n+def encode_totals(totals: DailyTotals) -> dict[str, object]:\n+    return {\n+        \"date\": totals.day.isoformat(),\n+        \"store\": totals.store_id,\n+        \"orders\": totals.order_count,\n+        \"gross\": str(totals.gross),\n+        \"tax\": str(totals.tax),\n+        \"refunds\": str(totals.refunds),\n+        \"net\": str(net_total(totals)),\n+    }\n+\n+\n+def merge_totals(left: DailyTotals, right: DailyTotals) -> DailyTotals:\n+    if (left.day, left.store_id) != (right.day, right.store_id):\n+        raise ValueError(\"totals must refer to the same store and day\")\n+    return DailyTotals(\n+        day=left.day,\n+        store_id=left.store_id,\n+        order_count=left.order_count + right.order_count,\n+        gross=left.gross + right.gross,\n+        tax=left.tax + right.tax,\n+        refunds=left.refunds + right.refunds,\n+    )\n+\n+\n+def fiscal_quarter(day: date) -> tuple[int, int]:\n+    return day.year, ((day.month - 1) // 3) + 1\n+\n+\n+def report_label(day: date, store_id: str) -> str:\n+    return f\"{store_id}:{day.isoformat()}\"\n+\n+\n+def report_range(days: Iterable[date], zone_name: str) -> list[tuple[datetime, datetime]]:\n+    return [utc_bounds(day, zone_name) for day in days]",
+    "sha": "7d9db6ff433633606461bf7bbe52d8a6642026c1",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "96bf9035f6c49e01405fbd306597afe1880730b2"
+   },
+   "body": "Extends daily reporting with totals, refunds, weekly aggregates, and exports.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_daily_window",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "addcb60ca9a902f67e8256f578922b2aa1c6fa23"
+   },
+   "number": 751,
+   "state": "open",
+   "title": "Add store-local sales rollups",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "96bf9035f6c49e01405fbd306597afe1880730b2": {
+    "app/reporting/daily_sales.py": "from datetime import date, datetime, time, timedelta, timezone\nfrom zoneinfo import ZoneInfo\n\n\ndef utc_bounds(day: date, zone_name: str) -> tuple[datetime, datetime]:\n    zone = ZoneInfo(zone_name)\n    start = datetime.combine(day, time.min, zone).astimezone(timezone.utc)\n    end = datetime.combine(day + timedelta(days=1), time.min, zone).astimezone(timezone.utc)\n    return start, end\n"
+   },
+   "addcb60ca9a902f67e8256f578922b2aa1c6fa23": {
+    "app/reporting/daily_sales.py": "from collections import defaultdict\nfrom dataclasses import dataclass\nfrom datetime import date, datetime, time, timedelta, timezone\nfrom decimal import Decimal\nfrom typing import Iterable\nfrom zoneinfo import ZoneInfo\n\n\n@dataclass(frozen=True)\nclass Sale:\n    order_id: str\n    store_id: str\n    occurred_at: datetime\n    gross: Decimal\n    tax: Decimal\n    refunded: bool = False\n\n\n@dataclass(frozen=True)\nclass DailyTotals:\n    day: date\n    store_id: str\n    order_count: int\n    gross: Decimal\n    tax: Decimal\n    refunds: Decimal\n\n\ndef utc_bounds(day: date, zone_name: str) -> tuple[datetime, datetime]:\n    zone = ZoneInfo(zone_name)\n    start = datetime.combine(day, time.min, zone).astimezone(timezone.utc)\n    end = start + timedelta(days=1)\n    return start, end\n\n\ndef validate_sale(sale: Sale) -> None:\n    if sale.occurred_at.tzinfo is None:\n        raise ValueError(\"sale timestamp must be timezone-aware\")\n    if sale.gross < 0 or sale.tax < 0:\n        raise ValueError(\"sale values cannot be negative\")\n    if sale.tax > sale.gross:\n        raise ValueError(\"tax cannot exceed gross\")\n\n\ndef belongs_to_day(sale: Sale, day: date, zone_name: str) -> bool:\n    start, end = utc_bounds(day, zone_name)\n    instant = sale.occurred_at.astimezone(timezone.utc)\n    return start <= instant < end\n\n\ndef calculate_totals(\n    sales: Iterable[Sale],\n    day: date,\n    store_id: str,\n    zone_name: str,\n) -> DailyTotals:\n    gross = Decimal(\"0\")\n    tax = Decimal(\"0\")\n    refunds = Decimal(\"0\")\n    count = 0\n    for sale in sales:\n        validate_sale(sale)\n        if sale.store_id != store_id or not belongs_to_day(sale, day, zone_name):\n            continue\n        if sale.refunded:\n            refunds += sale.gross\n        else:\n            gross += sale.gross\n            tax += sale.tax\n            count += 1\n    return DailyTotals(day, store_id, count, gross, tax, refunds)\n\n\ndef net_total(totals: DailyTotals) -> Decimal:\n    return totals.gross - totals.refunds\n\n\ndef average_order(totals: DailyTotals) -> Decimal:\n    if totals.order_count == 0:\n        return Decimal(\"0\")\n    return totals.gross / Decimal(totals.order_count)\n\n\ndef totals_by_store(\n    sales: Iterable[Sale],\n    day: date,\n    store_zones: dict[str, str],\n) -> dict[str, DailyTotals]:\n    records = list(sales)\n    return {\n        store_id: calculate_totals(records, day, store_id, zone_name)\n        for store_id, zone_name in store_zones.items()\n    }\n\n\ndef aggregate_week(\n    sales: Iterable[Sale],\n    first_day: date,\n    store_id: str,\n    zone_name: str,\n) -> list[DailyTotals]:\n    records = list(sales)\n    return [\n        calculate_totals(records, first_day + timedelta(days=offset), store_id, zone_name)\n        for offset in range(7)\n    ]\n\n\ndef monthly_gross(daily: Iterable[DailyTotals]) -> dict[tuple[int, int], Decimal]:\n    result: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal(\"0\"))\n    for totals in daily:\n        result[(totals.day.year, totals.day.month)] += totals.gross\n    return dict(result)\n\n\ndef monthly_refunds(daily: Iterable[DailyTotals]) -> dict[tuple[int, int], Decimal]:\n    result: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal(\"0\"))\n    for totals in daily:\n        result[(totals.day.year, totals.day.month)] += totals.refunds\n    return dict(result)\n\n\ndef encode_totals(totals: DailyTotals) -> dict[str, object]:\n    return {\n        \"date\": totals.day.isoformat(),\n        \"store\": totals.store_id,\n        \"orders\": totals.order_count,\n        \"gross\": str(totals.gross),\n        \"tax\": str(totals.tax),\n        \"refunds\": str(totals.refunds),\n        \"net\": str(net_total(totals)),\n    }\n\n\ndef merge_totals(left: DailyTotals, right: DailyTotals) -> DailyTotals:\n    if (left.day, left.store_id) != (right.day, right.store_id):\n        raise ValueError(\"totals must refer to the same store and day\")\n    return DailyTotals(\n        day=left.day,\n        store_id=left.store_id,\n        order_count=left.order_count + right.order_count,\n        gross=left.gross + right.gross,\n        tax=left.tax + right.tax,\n        refunds=left.refunds + right.refunds,\n    )\n\n\ndef fiscal_quarter(day: date) -> tuple[int, int]:\n    return day.year, ((day.month - 1) // 3) + 1\n\n\ndef report_label(day: date, store_id: str) -> str:\n    return f\"{store_id}:{day.isoformat()}\"\n\n\ndef report_range(days: Iterable[date], zone_name: str) -> list[tuple[datetime, datetime]]:\n    return [utc_bounds(day, zone_name) for day in days]\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness"
+   ],
+   "category": "correctness",
+   "id": "dst-window-duration",
+   "lines": [
+    32
+   ],
+   "path": "app/reporting/daily_sales.py",
+   "rationale": "A local calendar day can be 23 or 25 hours. Adding 24 hours to its UTC start includes part of the next day or misses the last hour on DST transition dates, corrupting daily totals.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"end = start + timedelta(days=1)\", \"explanation\": \"A local calendar day can be 23 or 25 hours. Adding 24 hours to its UTC start includes part of the next day or misses the last hour on DST transition dates, corrupting daily totals.\", \"impact\": \"See explanation.\", \"line\": 32, \"path\": \"app/reporting/daily_sales.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Store-local day has the wrong UTC end at DST changes\"}], \"summary\": \"Mock review of ext_daily_window.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "medium",
+ "source": "external",
+ "split": "dev",
+ "tags": [
+  "buried",
+  "logic",
+  "timezone"
+ ],
+ "title": "Add store-local sales rollups"
+}

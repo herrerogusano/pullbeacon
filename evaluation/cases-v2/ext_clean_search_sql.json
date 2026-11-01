@@ -1,0 +1,100 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_clean_search_sql",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    33
+   ],
+   "path": "app/customers/search.py",
+   "rationale": "The joined clauses are fixed SQL fragments defined in this function; user values remain parameters."
+  },
+  {
+   "lines": [
+    34
+   ],
+   "path": "app/customers/search.py",
+   "rationale": "The sort key is checked against a fixed column allowlist before interpolation."
+  },
+  {
+   "lines": [
+    35
+   ],
+   "path": "app/customers/search.py",
+   "rationale": "Tenant, status, and date values are bound parameters, not SQL text."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 26,
+    "changes": 31,
+    "deletions": 5,
+    "filename": "app/customers/search.py",
+    "patch": "@@ -7,9 +7,30 @@\n     def fetchall(self) -> list[tuple[object, ...]]: ...\n \n \n-def search_customers(cursor: Cursor, tenant_id: str) -> list[tuple[object, ...]]:\n-    cursor.execute(\n-        \"SELECT id, name, status FROM customers WHERE tenant_id = %s\",\n-        (tenant_id,),\n-    )\n+ORDER_COLUMNS = {\n+    \"name\": \"name\",\n+    \"created\": \"created_at\",\n+}\n+\n+\n+def search_customers(\n+    cursor: Cursor,\n+    tenant_id: str,\n+    status: str | None = None,\n+    created_after: date | None = None,\n+    order_by: str = \"name\",\n+) -> list[tuple[object, ...]]:\n+    if order_by not in ORDER_COLUMNS:\n+        raise ValueError(\"unsupported sort column\")\n+    clauses = [\"tenant_id = %s\"]\n+    params: list[object] = [tenant_id]\n+    if status is not None:\n+        clauses.append(\"status = %s\")\n+        params.append(status)\n+    if created_after is not None:\n+        clauses.append(\"created_at >= %s\")\n+        params.append(created_after)\n+    query = \"SELECT id, name, status FROM customers WHERE \" + \" AND \".join(clauses)\n+    query += \" ORDER BY \" + ORDER_COLUMNS[order_by]\n+    cursor.execute(query, tuple(params))\n     return cursor.fetchall()",
+    "sha": "d6a4d20d0c1ad3a1da0d596b44c8ec1bc9eaf3dc",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "d056c52b91c5adaf78f54a52997252ccd7800329"
+   },
+   "body": "Supports status, date, and sort choices in the admin customer search.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_clean_search_sql",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "a4ccfc2dc6eaa4c2bcfa455998f4bf0483cb638c"
+   },
+   "number": 500,
+   "state": "open",
+   "title": "Add optional customer search filters",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "a4ccfc2dc6eaa4c2bcfa455998f4bf0483cb638c": {
+    "app/customers/search.py": "from datetime import date\nfrom typing import Protocol\n\n\nclass Cursor(Protocol):\n    def execute(self, sql: str, params: tuple[object, ...]) -> None: ...\n    def fetchall(self) -> list[tuple[object, ...]]: ...\n\n\nORDER_COLUMNS = {\n    \"name\": \"name\",\n    \"created\": \"created_at\",\n}\n\n\ndef search_customers(\n    cursor: Cursor,\n    tenant_id: str,\n    status: str | None = None,\n    created_after: date | None = None,\n    order_by: str = \"name\",\n) -> list[tuple[object, ...]]:\n    if order_by not in ORDER_COLUMNS:\n        raise ValueError(\"unsupported sort column\")\n    clauses = [\"tenant_id = %s\"]\n    params: list[object] = [tenant_id]\n    if status is not None:\n        clauses.append(\"status = %s\")\n        params.append(status)\n    if created_after is not None:\n        clauses.append(\"created_at >= %s\")\n        params.append(created_after)\n    query = \"SELECT id, name, status FROM customers WHERE \" + \" AND \".join(clauses)\n    query += \" ORDER BY \" + ORDER_COLUMNS[order_by]\n    cursor.execute(query, tuple(params))\n    return cursor.fetchall()\n"
+   },
+   "d056c52b91c5adaf78f54a52997252ccd7800329": {
+    "app/customers/search.py": "from datetime import date\nfrom typing import Protocol\n\n\nclass Cursor(Protocol):\n    def execute(self, sql: str, params: tuple[object, ...]) -> None: ...\n    def fetchall(self) -> list[tuple[object, ...]]: ...\n\n\ndef search_customers(cursor: Cursor, tenant_id: str) -> list[tuple[object, ...]]:\n    cursor.execute(\n        \"SELECT id, name, status FROM customers WHERE tenant_id = %s\",\n        (tenant_id,),\n    )\n    return cursor.fetchall()\n"
+   }
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of ext_clean_search_sql.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "refactor",
+  "suspicious_but_correct"
+ ],
+ "title": "Add optional customer search filters"
+}
