@@ -11,3 +11,5 @@ def _isolated_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in SECRET_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("LITELLM_LOCAL_MODEL_COST_MAP", "True")
+    # Tests that import litellm directly must not load a developer's .env either.
+    monkeypatch.setenv("LITELLM_MODE", "PRODUCTION")
