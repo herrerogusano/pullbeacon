@@ -1,0 +1,92 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_lease_release",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 10,
+    "changes": 15,
+    "deletions": 5,
+    "filename": "app/jobs/publish.py",
+    "patch": "@@ -6,6 +6,12 @@\n class Job:\n     id: str\n     body: bytes\n+\n+\n+@dataclass(frozen=True)\n+class Receipt:\n+    job_id: str\n+    published: bool\n \n \n class Store(Protocol):\n@@ -17,9 +23,8 @@\n     async def publish(self, job: Job) -> None: ...\n \n \n-async def publish_job(job: Job, store: Store, publisher: Publisher) -> None:\n+async def publish_job(job: Job, store: Store, publisher: Publisher) -> Receipt:\n     token = await store.lease(job.id)\n-    try:\n-        await publisher.publish(job)\n-    finally:\n-        await store.release(token)\n+    await publisher.publish(job)\n+    await store.release(token)\n+    return Receipt(job_id=job.id, published=True)",
+    "sha": "15d0f312caab742fc7b5519842765ea06c71d03b",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "2aaba598ebfbc9a32b8c4b63f15a5a34a036bd93"
+   },
+   "body": "Adds a delivery receipt and leaves unacknowledged jobs eligible for retry.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_lease_release",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "07af01364a5ed4aea0fd79b37430e0a9e203cac4"
+   },
+   "number": 273,
+   "state": "open",
+   "title": "Publish jobs with leased delivery records",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "07af01364a5ed4aea0fd79b37430e0a9e203cac4": {
+    "app/jobs/publish.py": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Job:\n    id: str\n    body: bytes\n\n\n@dataclass(frozen=True)\nclass Receipt:\n    job_id: str\n    published: bool\n\n\nclass Store(Protocol):\n    async def lease(self, job_id: str) -> str: ...\n    async def release(self, token: str) -> None: ...\n\n\nclass Publisher(Protocol):\n    async def publish(self, job: Job) -> None: ...\n\n\nasync def publish_job(job: Job, store: Store, publisher: Publisher) -> Receipt:\n    token = await store.lease(job.id)\n    await publisher.publish(job)\n    await store.release(token)\n    return Receipt(job_id=job.id, published=True)\n"
+   },
+   "2aaba598ebfbc9a32b8c4b63f15a5a34a036bd93": {
+    "app/jobs/publish.py": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Job:\n    id: str\n    body: bytes\n\n\nclass Store(Protocol):\n    async def lease(self, job_id: str) -> str: ...\n    async def release(self, token: str) -> None: ...\n\n\nclass Publisher(Protocol):\n    async def publish(self, job: Job) -> None: ...\n\n\nasync def publish_job(job: Job, store: Store, publisher: Publisher) -> None:\n    token = await store.lease(job.id)\n    try:\n        await publisher.publish(job)\n    finally:\n        await store.release(token)\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "reliability"
+   ],
+   "category": "reliability",
+   "id": "lease-not-released-on-error",
+   "lines": [
+    29
+   ],
+   "path": "app/jobs/publish.py",
+   "rationale": "If publisher.publish raises, release is skipped. The job stays leased until expiry and cannot be retried promptly, unlike the prior finally block.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"await store.release(token)\", \"explanation\": \"If publisher.publish raises, release is skipped. The job stays leased until expiry and cannot be retried promptly, unlike the prior finally block.\", \"impact\": \"See explanation.\", \"line\": 29, \"path\": \"app/jobs/publish.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Failed publish retains its lease\"}], \"summary\": \"Mock review of ext_lease_release.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "concurrency",
+  "error_handling"
+ ],
+ "title": "Publish jobs with leased delivery records"
+}

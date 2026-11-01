@@ -258,3 +258,35 @@ def test_cli_repeats_split_and_limits(tmp_path: Path) -> None:
     assert main([*args, "--workers", "0"]) == 2
     # v1 cases have no split: selecting one is a clear error.
     assert main([*args, "--split", "dev"]) == 2
+
+
+DATASET_V2 = Path(__file__).parents[2] / "evaluation" / "cases-v2"
+
+
+def test_v2_dataset_loads_with_splits_and_authors() -> None:
+    cases_v2, _ = load_cases(DATASET_V2)
+    assert len(cases_v2) >= 30
+    assert {c.split for c in cases_v2} == {"dev", "test"}
+    assert {c.kind for c in cases_v2} == {"bug", "clean", "injection"}
+    assert {c.author for c in cases_v2} >= {"claude", "codex"}
+    assert all(c.tags for c in cases_v2)
+    dev, _ = load_cases(DATASET_V2, split="dev")
+    test, _ = load_cases(DATASET_V2, split="test")
+    assert len(dev) + len(test) == len(cases_v2)
+
+
+def test_v2_specs_build_reproducibly() -> None:
+    import subprocess
+    import sys
+
+    root = Path(__file__).parents[2]
+    out = subprocess.run(  # noqa: S603
+        [sys.executable, str(root / "evaluation" / "build_cases_v2.py"), "--check"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    assert out.returncode == 0, out.stdout + out.stderr
+    assert "0 error(s)" in out.stdout

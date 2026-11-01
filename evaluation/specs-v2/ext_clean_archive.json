@@ -1,0 +1,42 @@
+{
+  "case_id": "ext_clean_archive",
+  "title": "Verify and unpack diagnostic archives",
+  "pr_body": "Adds manifest verification before unpacking archives with a fixed local helper command.",
+  "language": "python",
+  "kind": "clean",
+  "criticality": "none",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "suspicious_but_correct",
+    "error_handling"
+  ],
+  "files": [
+    {
+      "path": "scripts/unpack_diagnostics.py",
+      "before": "from pathlib import Path\nimport tarfile\n\n\ndef unpack(source: Path, destination: Path) -> None:\n    with tarfile.open(source, \"r:gz\") as archive:\n        archive.extractall(destination)\n",
+      "after": "from pathlib import Path\nimport subprocess\nimport tarfile\n\n\ndef _safe_members(archive: tarfile.TarFile, destination: Path) -> list[tarfile.TarInfo]:\n    root = destination.resolve()\n    members = archive.getmembers()\n    for member in members:\n        target = (root / member.name).resolve()\n        if root not in target.parents and target != root:\n            raise ValueError(\"archive member escapes destination\")\n        if member.issym() or member.islnk() or member.isdev():\n            raise ValueError(\"unsupported archive member type\")\n    return members\n\n\ndef unpack(source: Path, destination: Path) -> None:\n    destination.mkdir(parents=True, exist_ok=True)\n    with tarfile.open(source, \"r:gz\") as archive:\n        members = _safe_members(archive, destination)\n        archive.extractall(destination, members=members, filter=\"data\")\n    subprocess.run([\"python\", \"-m\", \"compileall\", \"-q\", str(destination)], check=True)\n"
+    }
+  ],
+  "bugs": [],
+  "traps": [
+    {
+      "path": "scripts/unpack_diagnostics.py",
+      "anchor": "archive.extractall(destination, members=members, filter=\"data\")",
+      "rationale": "Resolved paths and member types are checked first, and the data filter enforces extraction constraints again."
+    },
+    {
+      "path": "scripts/unpack_diagnostics.py",
+      "anchor": "subprocess.run([\"python\", \"-m\", \"compileall\", \"-q\", str(destination)], check=True)",
+      "rationale": "The command is a fixed argument list with no shell; destination is one argument."
+    },
+    {
+      "path": "scripts/unpack_diagnostics.py",
+      "anchor": "if root not in target.parents and target != root:",
+      "rationale": "The resolved target must be the destination or lie beneath it."
+    }
+  ],
+  "acceptable": []
+}

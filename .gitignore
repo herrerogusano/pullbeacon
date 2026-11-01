@@ -28,3 +28,7 @@ evaluation/results/*
 Thumbs.db
 .idea/
 .vscode/
+
+# Benchmark v2 cases fetched from open-source projects (local evaluation only, never committed)
+evaluation/specs-v2-oss/
+evaluation/cases-v2-oss/

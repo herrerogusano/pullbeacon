@@ -1,0 +1,102 @@
+{
+ "acceptable_findings": [],
+ "author": "claude",
+ "case_id": "cl_mut_commands_list_items",
+ "criticality": "medium",
+ "expected_non_findings": [
+  {
+   "lines": [
+    64
+   ],
+   "path": "src/pullbeacon/orchestration/commands.py",
+   "rationale": "Stripping one list marker keeps the indentation and is the intended feature."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 4,
+    "changes": 5,
+    "deletions": 1,
+    "filename": "src/pullbeacon/orchestration/commands.py",
+    "patch": "@@ -16,6 +16,7 @@\n CommandName = Literal[\"review\", \"explain\", \"apply\", \"help\"]\n \n _FENCE = re.compile(r\"^\\s{0,3}(`{3,}|~{3,})\")\n+_LIST_MARKER = re.compile(r\"^(\\s*)(?:[-*+]|\\d{1,3}[.)])[ \\t]+\")\n _INLINE_CODE = re.compile(r\"`[^`\\n]*`\")\n _HTML_COMMENT = re.compile(r\"<!--.*?-->\", re.DOTALL)\n _COMMAND = re.compile(\n@@ -57,8 +58,10 @@\n             elif marker.startswith(fence):\n                 fence = None\n             continue\n-        if fence is not None or line.lstrip().startswith(\">\"):\n+        if fence is not None or line.startswith(\">\"):\n             continue\n+        # \"- @pullbeacon review\" in a task list is still a command at the start of a line.\n+        line = _LIST_MARKER.sub(r\"\\1\", line, count=1)\n         lines.append(_INLINE_CODE.sub(\"\", line))\n     return lines\n ",
+    "sha": "98e87770f146423cd4bd5894afc9043b785a051a",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "249e107c8f7a543bba9237ddae1a0457d4165713"
+   },
+   "body": "Reviewers write checklists like `- @pullbeacon review`. Strip a leading list marker before matching commands.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_mut_commands_list_items",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "d631d0ef2cc196e990742935905144ccb6ad9d23"
+   },
+   "number": 993,
+   "state": "open",
+   "title": "Accept commands written as list items",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "249e107c8f7a543bba9237ddae1a0457d4165713": {
+    "src/pullbeacon/orchestration/commands.py": "\"\"\"Parser for ``@pullbeacon`` commands in PR conversation comments.\n\n``@pullbeacon`` is plain text interpreted by PullBeacon, not a GitHub account mention; GitHub\nwill not autocomplete it. A command must start a line (after optional whitespace). Text inside\nfenced code blocks, inline code, block quotes and HTML comments is ignored, so quoting a\ncommand never triggers it. Matching is case-insensitive. Only the first command runs.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport re\nfrom dataclasses import dataclass\nfrom typing import Literal\n\nMAX_COMMENT_CHARS = 20_000\nCommandName = Literal[\"review\", \"explain\", \"apply\", \"help\"]\n\n_FENCE = re.compile(r\"^\\s{0,3}(`{3,}|~{3,})\")\n_INLINE_CODE = re.compile(r\"`[^`\\n]*`\")\n_HTML_COMMENT = re.compile(r\"<!--.*?-->\", re.DOTALL)\n_COMMAND = re.compile(\n    r\"^\\s*@pullbeacon(?![\\w\\-])(?:[ \\t]+(?P<verb>[A-Za-z\\-]+))?(?:[ \\t]+(?P<args>[^\\n]*))?$\",\n    re.IGNORECASE,\n)\n_FINDING_ID = re.compile(r\"^PB-\\d{3,4}$\", re.IGNORECASE)\n\nALIASES = {\"review\": \"review\", \"re-review\": \"review\", \"explain\": \"explain\", \"apply\": \"apply\"}\n\nHELP_TEXT = (\n    \"PullBeacon commands (write a command at the start of a line in a PR comment):\\n\\n\"\n    \"- `@pullbeacon review` \u2014 run a new review of the current commit\\n\"\n    \"- `@pullbeacon explain PB-001` \u2014 explain one finding (no code changes)\\n\"\n    \"- `@pullbeacon apply` \u2014 apply all applicable findings of the latest review\\n\"\n    \"- `@pullbeacon apply PB-001` \u2014 apply one finding\\n\\n\"\n    \"Commands require write access to the repository. `@pullbeacon` is interpreted by the \"\n    \"PullBeacon workflow; it is not a GitHub user and may not autocomplete.\"\n)\n\n\n@dataclass(frozen=True)\nclass Command:\n    name: CommandName\n    finding_id: str | None = None\n    error: str | None = None  # set for malformed commands; answered with help, no LLM\n\n\ndef _visible_lines(body: str) -> list[str]:\n    text = _HTML_COMMENT.sub(\"\", body[:MAX_COMMENT_CHARS].replace(\"\\r\\n\", \"\\n\"))\n    lines: list[str] = []\n    fence: str | None = None\n    for line in text.split(\"\\n\"):\n        match = _FENCE.match(line)\n        if match:\n            marker = match.group(1)\n            if fence is None:\n                fence = marker[0] * len(marker)\n            elif marker.startswith(fence):\n                fence = None\n            continue\n        if fence is not None or line.lstrip().startswith(\">\"):\n            continue\n        lines.append(_INLINE_CODE.sub(\"\", line))\n    return lines\n\n\ndef parse_command(body: str) -> Command | None:\n    \"\"\"Return the first command in the comment, or ``None`` if there is none.\"\"\"\n    for line in _visible_lines(body):\n        match = _COMMAND.match(line)\n        if not match:\n            continue\n        verb = (match.group(\"verb\") or \"\").lower()\n        args = (match.group(\"args\") or \"\").split()\n        if not verb or verb == \"help\":\n            return Command(\"help\")\n        name = ALIASES.get(verb)\n        if name is None:\n            return Command(\"help\", error=f\"unknown command '{verb[:30]}'\")\n        if name == \"review\":\n            return (\n                Command(\"review\")\n                if not args\n                else Command(\"help\", error=\"review takes no arguments\")\n            )\n        if len(args) > 1:\n            return Command(\"help\", error=f\"{name} accepts at most one finding id\")\n        finding = args[0].upper() if args else None\n        if finding is not None and not _FINDING_ID.match(finding):\n            return Command(\"help\", error=\"finding ids look like PB-001\")\n        if name == \"explain\":\n            if finding is None:\n                return Command(\"help\", error=\"explain needs a finding id, e.g. PB-001\")\n            return Command(\"explain\", finding_id=finding)\n        return Command(\"apply\", finding_id=finding)\n    return None\n"
+   },
+   "d631d0ef2cc196e990742935905144ccb6ad9d23": {
+    "src/pullbeacon/orchestration/commands.py": "\"\"\"Parser for ``@pullbeacon`` commands in PR conversation comments.\n\n``@pullbeacon`` is plain text interpreted by PullBeacon, not a GitHub account mention; GitHub\nwill not autocomplete it. A command must start a line (after optional whitespace). Text inside\nfenced code blocks, inline code, block quotes and HTML comments is ignored, so quoting a\ncommand never triggers it. Matching is case-insensitive. Only the first command runs.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport re\nfrom dataclasses import dataclass\nfrom typing import Literal\n\nMAX_COMMENT_CHARS = 20_000\nCommandName = Literal[\"review\", \"explain\", \"apply\", \"help\"]\n\n_FENCE = re.compile(r\"^\\s{0,3}(`{3,}|~{3,})\")\n_LIST_MARKER = re.compile(r\"^(\\s*)(?:[-*+]|\\d{1,3}[.)])[ \\t]+\")\n_INLINE_CODE = re.compile(r\"`[^`\\n]*`\")\n_HTML_COMMENT = re.compile(r\"<!--.*?-->\", re.DOTALL)\n_COMMAND = re.compile(\n    r\"^\\s*@pullbeacon(?![\\w\\-])(?:[ \\t]+(?P<verb>[A-Za-z\\-]+))?(?:[ \\t]+(?P<args>[^\\n]*))?$\",\n    re.IGNORECASE,\n)\n_FINDING_ID = re.compile(r\"^PB-\\d{3,4}$\", re.IGNORECASE)\n\nALIASES = {\"review\": \"review\", \"re-review\": \"review\", \"explain\": \"explain\", \"apply\": \"apply\"}\n\nHELP_TEXT = (\n    \"PullBeacon commands (write a command at the start of a line in a PR comment):\\n\\n\"\n    \"- `@pullbeacon review` \u2014 run a new review of the current commit\\n\"\n    \"- `@pullbeacon explain PB-001` \u2014 explain one finding (no code changes)\\n\"\n    \"- `@pullbeacon apply` \u2014 apply all applicable findings of the latest review\\n\"\n    \"- `@pullbeacon apply PB-001` \u2014 apply one finding\\n\\n\"\n    \"Commands require write access to the repository. `@pullbeacon` is interpreted by the \"\n    \"PullBeacon workflow; it is not a GitHub user and may not autocomplete.\"\n)\n\n\n@dataclass(frozen=True)\nclass Command:\n    name: CommandName\n    finding_id: str | None = None\n    error: str | None = None  # set for malformed commands; answered with help, no LLM\n\n\ndef _visible_lines(body: str) -> list[str]:\n    text = _HTML_COMMENT.sub(\"\", body[:MAX_COMMENT_CHARS].replace(\"\\r\\n\", \"\\n\"))\n    lines: list[str] = []\n    fence: str | None = None\n    for line in text.split(\"\\n\"):\n        match = _FENCE.match(line)\n        if match:\n            marker = match.group(1)\n            if fence is None:\n                fence = marker[0] * len(marker)\n            elif marker.startswith(fence):\n                fence = None\n            continue\n        if fence is not None or line.startswith(\">\"):\n            continue\n        # \"- @pullbeacon review\" in a task list is still a command at the start of a line.\n        line = _LIST_MARKER.sub(r\"\\1\", line, count=1)\n        lines.append(_INLINE_CODE.sub(\"\", line))\n    return lines\n\n\ndef parse_command(body: str) -> Command | None:\n    \"\"\"Return the first command in the comment, or ``None`` if there is none.\"\"\"\n    for line in _visible_lines(body):\n        match = _COMMAND.match(line)\n        if not match:\n            continue\n        verb = (match.group(\"verb\") or \"\").lower()\n        args = (match.group(\"args\") or \"\").split()\n        if not verb or verb == \"help\":\n            return Command(\"help\")\n        name = ALIASES.get(verb)\n        if name is None:\n            return Command(\"help\", error=f\"unknown command '{verb[:30]}'\")\n        if name == \"review\":\n            return (\n                Command(\"review\")\n                if not args\n                else Command(\"help\", error=\"review takes no arguments\")\n            )\n        if len(args) > 1:\n            return Command(\"help\", error=f\"{name} accepts at most one finding id\")\n        finding = args[0].upper() if args else None\n        if finding is not None and not _FINDING_ID.match(finding):\n            return Command(\"help\", error=\"finding ids look like PB-001\")\n        if name == \"explain\":\n            if finding is None:\n                return Command(\"help\", error=\"explain needs a finding id, e.g. PB-001\")\n            return Command(\"explain\", finding_id=finding)\n        return Command(\"apply\", finding_id=finding)\n    return None\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability",
+    "security"
+   ],
+   "category": "correctness",
+   "id": "indented-quote-runs",
+   "lines": [
+    61
+   ],
+   "path": "src/pullbeacon/orchestration/commands.py",
+   "rationale": "Changing lstrip().startswith('>') to startswith('>') means a quoted command indented by spaces (e.g. '  > @pullbeacon apply' when replying to someone) is executed, contradicting the module contract that quoted commands never trigger.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"if fence is not None or line.startswith(\\\">\\\"):\", \"explanation\": \"Changing lstrip().startswith('>') to startswith('>') means a quoted command indented by spaces (e.g. '  > @pullbeacon apply' when replying to someone) is executed, contradicting the module contract that quoted commands never trigger.\", \"impact\": \"See explanation.\", \"line\": 61, \"path\": \"src/pullbeacon/orchestration/commands.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Indented block quotes are no longer ignored\"}], \"summary\": \"Mock review of cl_mut_commands_list_items.\"}"
+  ]
+ },
+ "provenance": "PullBeacon 882acd2 orchestration/commands.py, mutated",
+ "size": "small",
+ "source": "mutation",
+ "split": "test",
+ "tags": [
+  "logic",
+  "security"
+ ],
+ "title": "Accept commands written as list items"
+}

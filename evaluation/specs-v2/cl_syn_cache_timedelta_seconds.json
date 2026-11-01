@@ -1,0 +1,47 @@
+{
+ "case_id": "cl_syn_cache_timedelta_seconds",
+ "title": "Cache exchange rates for 15 minutes",
+ "pr_body": "The provider rate-limits us; cache rates in-process with a 15 minute TTL.",
+ "language": "python",
+ "kind": "bug",
+ "criticality": "high",
+ "split": "test",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "logic",
+  "numeric",
+  "timezone"
+ ],
+ "files": [
+  {
+   "path": "app/rates.py",
+   "before": "\"\"\"Small in-process cache for exchange rates fetched from the provider.\"\"\"\n\nfrom __future__ import annotations\n\nfrom app.rates_client import fetch_rate\n\n\ndef get_rate(base: str, quote: str) -> float:\n    return fetch_rate(base, quote)\n",
+   "after": "\"\"\"Small in-process cache for exchange rates fetched from the provider.\"\"\"\n\nfrom __future__ import annotations\n\nimport threading\nfrom dataclasses import dataclass\nfrom datetime import UTC, datetime\n\nfrom app.rates_client import fetch_rate\n\nRATE_TTL_SECONDS = 15 * 60\n\n\n@dataclass(frozen=True)\nclass _Entry:\n    rate: float\n    fetched_at: datetime\n\n\n_cache: dict[tuple[str, str], _Entry] = {}\n_lock = threading.Lock()\n\n\ndef _now() -> datetime:\n    return datetime.now(UTC)\n\n\ndef get_rate(base: str, quote: str) -> float:\n    \"\"\"Return the base->quote rate, refreshing it at most every RATE_TTL_SECONDS.\"\"\"\n    key = (base.upper(), quote.upper())\n    with _lock:\n        entry = _cache.get(key)\n        if entry is not None and (_now() - entry.fetched_at).seconds < RATE_TTL_SECONDS:\n            return entry.rate\n    rate = fetch_rate(*key)\n    with _lock:\n        _cache[key] = _Entry(rate=rate, fetched_at=_now())\n    return rate\n\n\ndef clear() -> None:\n    with _lock:\n        _cache.clear()\n"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "seconds-wraps-daily",
+   "path": "app/rates.py",
+   "anchor": "        if entry is not None and (_now() - entry.fetched_at).seconds < RATE_TTL_SECONDS:",
+   "category": "correctness",
+   "accepted": [
+    "reliability"
+   ],
+   "severity": "high",
+   "title": "timedelta.seconds ignores days",
+   "rationale": "timedelta.seconds is only the seconds component (0-86399), not the total. An entry fetched 1 day and 5 minutes ago has .seconds == 300 and is served as fresh, so stale exchange rates are returned for the first 15 minutes of every following day.",
+   "extra_anchors": []
+  }
+ ],
+ "acceptable": [
+  {
+   "path": "app/rates.py",
+   "anchor": "    rate = fetch_rate(*key)",
+   "rationale": "Concurrent misses fetch the same rate twice (thundering herd); minor."
+  }
+ ],
+ "author": "claude",
+ "traps": []
+}

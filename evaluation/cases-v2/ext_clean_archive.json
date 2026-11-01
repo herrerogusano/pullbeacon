@@ -1,0 +1,100 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_clean_archive",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    22
+   ],
+   "path": "scripts/unpack_diagnostics.py",
+   "rationale": "Resolved paths and member types are checked first, and the data filter enforces extraction constraints again."
+  },
+  {
+   "lines": [
+    23
+   ],
+   "path": "scripts/unpack_diagnostics.py",
+   "rationale": "The command is a fixed argument list with no shell; destination is one argument."
+  },
+  {
+   "lines": [
+    11
+   ],
+   "path": "scripts/unpack_diagnostics.py",
+   "rationale": "The resolved target must be the destination or lie beneath it."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 17,
+    "changes": 18,
+    "deletions": 1,
+    "filename": "scripts/unpack_diagnostics.py",
+    "patch": "@@ -1,7 +1,23 @@\n from pathlib import Path\n+import subprocess\n import tarfile\n \n \n+def _safe_members(archive: tarfile.TarFile, destination: Path) -> list[tarfile.TarInfo]:\n+    root = destination.resolve()\n+    members = archive.getmembers()\n+    for member in members:\n+        target = (root / member.name).resolve()\n+        if root not in target.parents and target != root:\n+            raise ValueError(\"archive member escapes destination\")\n+        if member.issym() or member.islnk() or member.isdev():\n+            raise ValueError(\"unsupported archive member type\")\n+    return members\n+\n+\n def unpack(source: Path, destination: Path) -> None:\n+    destination.mkdir(parents=True, exist_ok=True)\n     with tarfile.open(source, \"r:gz\") as archive:\n-        archive.extractall(destination)\n+        members = _safe_members(archive, destination)\n+        archive.extractall(destination, members=members, filter=\"data\")\n+    subprocess.run([\"python\", \"-m\", \"compileall\", \"-q\", str(destination)], check=True)",
+    "sha": "12a971347b4391e357c5099a481db57dc96456cb",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "598194de801c007d73ee56ec9626d32acb112b0d"
+   },
+   "body": "Adds manifest verification before unpacking archives with a fixed local helper command.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_clean_archive",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "8485083774ebc05a14788eca58978e626f4b1749"
+   },
+   "number": 413,
+   "state": "open",
+   "title": "Verify and unpack diagnostic archives",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "598194de801c007d73ee56ec9626d32acb112b0d": {
+    "scripts/unpack_diagnostics.py": "from pathlib import Path\nimport tarfile\n\n\ndef unpack(source: Path, destination: Path) -> None:\n    with tarfile.open(source, \"r:gz\") as archive:\n        archive.extractall(destination)\n"
+   },
+   "8485083774ebc05a14788eca58978e626f4b1749": {
+    "scripts/unpack_diagnostics.py": "from pathlib import Path\nimport subprocess\nimport tarfile\n\n\ndef _safe_members(archive: tarfile.TarFile, destination: Path) -> list[tarfile.TarInfo]:\n    root = destination.resolve()\n    members = archive.getmembers()\n    for member in members:\n        target = (root / member.name).resolve()\n        if root not in target.parents and target != root:\n            raise ValueError(\"archive member escapes destination\")\n        if member.issym() or member.islnk() or member.isdev():\n            raise ValueError(\"unsupported archive member type\")\n    return members\n\n\ndef unpack(source: Path, destination: Path) -> None:\n    destination.mkdir(parents=True, exist_ok=True)\n    with tarfile.open(source, \"r:gz\") as archive:\n        members = _safe_members(archive, destination)\n        archive.extractall(destination, members=members, filter=\"data\")\n    subprocess.run([\"python\", \"-m\", \"compileall\", \"-q\", str(destination)], check=True)\n"
+   }
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of ext_clean_archive.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "small",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "error_handling",
+  "suspicious_but_correct"
+ ],
+ "title": "Verify and unpack diagnostic archives"
+}

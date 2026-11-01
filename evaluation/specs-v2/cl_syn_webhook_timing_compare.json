@@ -1,0 +1,50 @@
+{
+ "case_id": "cl_syn_webhook_timing_compare",
+ "title": "Verify and process payment webhooks",
+ "pr_body": "Verifies the HMAC signature and timestamp, then dispatches payment events.",
+ "language": "python",
+ "kind": "bug",
+ "criticality": "medium",
+ "split": "test",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "security",
+  "crypto"
+ ],
+ "files": [
+  {
+   "path": "app/webhooks.py",
+   "before": "\"\"\"Incoming webhooks from the payment provider.\"\"\"\n\nfrom __future__ import annotations\n\nfrom app.http import Response\n",
+   "after": "\"\"\"Incoming webhooks from the payment provider.\"\"\"\n\nfrom __future__ import annotations\n\nimport hashlib\nimport hmac\nimport json\nimport logging\nimport time\n\nfrom app.http import Response\nfrom app.payments import mark_paid, mark_refunded\nfrom app.settings import WEBHOOK_SECRET\n\nlog = logging.getLogger(__name__)\nTOLERANCE_SECONDS = 300\nHANDLERS = {\"payment.succeeded\": mark_paid, \"payment.refunded\": mark_refunded}\n\n\ndef _expected_signature(timestamp: str, body: bytes) -> str:\n    message = timestamp.encode() + b\".\" + body\n    return hmac.new(WEBHOOK_SECRET.encode(), message, hashlib.sha256).hexdigest()\n\n\ndef handle_webhook(request) -> Response:\n    timestamp = request.headers.get(\"X-Signature-Timestamp\", \"\")\n    signature = request.headers.get(\"X-Signature\", \"\")\n    if not timestamp.isdigit() or abs(time.time() - int(timestamp)) > TOLERANCE_SECONDS:\n        return Response(status=400)\n    if signature != _expected_signature(timestamp, request.body):\n        log.warning(\"invalid webhook signature\")\n        return Response(status=401)\n    event = json.loads(request.body)\n    handler = HANDLERS.get(event.get(\"type\"))\n    if handler is None:\n        return Response(status=204)\n    handler(event[\"data\"][\"payment_id\"])\n    return Response(status=200)\n"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "non-constant-time-compare",
+   "path": "app/webhooks.py",
+   "anchor": "    if signature != _expected_signature(timestamp, request.body):",
+   "category": "security",
+   "accepted": [],
+   "severity": "medium",
+   "title": "Signature compared with a non-constant-time operator",
+   "rationale": "String comparison returns at the first differing byte, which leaks how much of a forged signature is correct through timing; use hmac.compare_digest.",
+   "extra_anchors": []
+  }
+ ],
+ "acceptable": [
+  {
+   "path": "app/webhooks.py",
+   "anchor": "    handler(event[\"data\"][\"payment_id\"])",
+   "rationale": "No idempotency/replay protection within the tolerance window; malformed data raises 500."
+  }
+ ],
+ "traps": [
+  {
+   "path": "app/webhooks.py",
+   "anchor": "    if not timestamp.isdigit() or abs(time.time() - int(timestamp)) > TOLERANCE_SECONDS:",
+   "rationale": "Timestamp check is correct and short-circuits before int()."
+  }
+ ],
+ "author": "claude"
+}

@@ -1,0 +1,44 @@
+{
+ "case_id": "cl_syn_ts_podium_sort",
+ "title": "Show a podium of the best three scores",
+ "pr_body": "Adds `podium()` for the results page; ties share a rank.",
+ "language": "typescript",
+ "kind": "bug",
+ "criticality": "medium",
+ "split": "dev",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "logic",
+  "types"
+ ],
+ "files": [
+  {
+   "path": "web/leaderboard.ts",
+   "before": "export interface Score {\n  player: string;\n  points: number;\n}\n\nexport function totalPoints(scores: Score[]): number {\n  return scores.reduce((sum, s) => sum + s.points, 0);\n}\n",
+   "after": "export interface Score {\n  player: string;\n  points: number;\n}\n\nexport interface PodiumEntry {\n  player: string;\n  best: number;\n  rank: 1 | 2 | 3;\n}\n\nexport function totalPoints(scores: Score[]): number {\n  return scores.reduce((sum, s) => sum + s.points, 0);\n}\n\nfunction bestByPlayer(scores: Score[]): Map<string, number> {\n  const best = new Map<string, number>();\n  for (const { player, points } of scores) {\n    const previous = best.get(player);\n    if (previous === undefined || points > previous) {\n      best.set(player, points);\n    }\n  }\n  return best;\n}\n\nexport function podium(scores: Score[]): PodiumEntry[] {\n  const best = bestByPlayer(scores);\n  const values = [...new Set(best.values())].sort().reverse().slice(0, 3);\n  const entries: PodiumEntry[] = [];\n  values.forEach((value, index) => {\n    for (const [player, points] of best) {\n      if (points === value) {\n        entries.push({ player, best: points, rank: (index + 1) as 1 | 2 | 3 });\n      }\n    }\n  });\n  return entries;\n}\n"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "lexicographic-sort",
+   "path": "web/leaderboard.ts",
+   "anchor": "  const values = [...new Set(best.values())].sort().reverse().slice(0, 3);",
+   "category": "correctness",
+   "accepted": [],
+   "severity": "medium",
+   "title": "Numbers sorted as strings",
+   "rationale": "Array.prototype.sort without a comparator sorts by string value, so [9, 10, 100] becomes [10, 100, 9] and reverse() puts 9 first: the podium shows the wrong players once scores have different digit counts.",
+   "extra_anchors": []
+  }
+ ],
+ "traps": [
+  {
+   "path": "web/leaderboard.ts",
+   "anchor": "    if (previous === undefined || points > previous) {",
+   "rationale": "Explicit undefined check handles a 0 score correctly."
+  }
+ ],
+ "author": "claude",
+ "acceptable": []
+}

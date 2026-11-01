@@ -1,0 +1,37 @@
+{
+  "case_id": "ext_fetch_retry",
+  "title": "Retry transient feed transport failures",
+  "pr_body": "Retries short network failures while keeping the per-attempt deadline.",
+  "language": "typescript",
+  "kind": "bug",
+  "criticality": "medium",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "error_handling",
+    "resource_leak",
+    "async"
+  ],
+  "files": [
+    {
+      "path": "web/feeds/fetch.ts",
+      "before": "export async function fetchFeed(url: string, timeoutMs: number): Promise<Response> {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), timeoutMs);\n  try {\n    return await fetch(url, { signal: controller.signal });\n  } finally {\n    clearTimeout(timer);\n  }\n}\n",
+      "after": "const TRANSIENT = new Set([502, 503, 504]);\n\nexport async function fetchFeed(url: string, timeoutMs: number): Promise<Response> {\n  for (let attempt = 0; attempt < 3; attempt += 1) {\n    const controller = new AbortController();\n    const timer = setTimeout(() => controller.abort(), timeoutMs);\n    try {\n      const response = await fetch(url, { signal: controller.signal });\n      clearTimeout(timer);\n      if (!TRANSIENT.has(response.status) || attempt === 2) {\n        return response;\n      }\n      await response.body?.cancel();\n    } catch (error) {\n      if (attempt === 2) {\n        throw error;\n      }\n    }\n  }\n  throw new Error(\"unreachable retry state\");\n}\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "timers-left-on-fetch-error",
+      "path": "web/feeds/fetch.ts",
+      "anchor": "const response = await fetch(url, { signal: controller.signal });",
+      "category": "reliability",
+      "severity": "medium",
+      "title": "Failed fetch attempts retain deadline timers",
+      "rationale": "When fetch rejects, control jumps to catch before clearTimeout. Each retry leaves a live timer and controller until timeout, increasing pending work under repeated transport failures."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

@@ -1,0 +1,36 @@
+{
+  "case_id": "ext_report_authz",
+  "title": "Add report download metadata",
+  "pr_body": "Adds a generated filename and content type to report downloads.",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "security",
+    "authz"
+  ],
+  "files": [
+    {
+      "path": "app/reports/download.py",
+      "before": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Report:\n    id: str\n    tenant_id: str\n    data: bytes\n\n\nclass Reports(Protocol):\n    def get_for_tenant(self, report_id: str, tenant_id: str) -> Report | None: ...\n\n\ndef download(report_id: str, tenant_id: str, reports: Reports) -> bytes:\n    report = reports.get_for_tenant(report_id, tenant_id)\n    if report is None:\n        raise LookupError(\"report not found\")\n    return report.data\n",
+      "after": "from dataclasses import dataclass\nfrom typing import Protocol\n\n\n@dataclass(frozen=True)\nclass Report:\n    id: str\n    tenant_id: str\n    data: bytes\n    filename: str\n\n\n@dataclass(frozen=True)\nclass Download:\n    body: bytes\n    filename: str\n    content_type: str\n\n\nclass Reports(Protocol):\n    def get(self, report_id: str) -> Report | None: ...\n\n\ndef download(report_id: str, tenant_id: str, reports: Reports) -> Download:\n    report = reports.get(report_id)\n    if report is None:\n        raise LookupError(\"report not found\")\n    return Download(report.data, report.filename, \"text/csv\")\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "report-cross-tenant",
+      "path": "app/reports/download.py",
+      "anchor": "report = reports.get(report_id)",
+      "category": "security",
+      "severity": "high",
+      "title": "Report lookup no longer enforces tenant ownership",
+      "rationale": "A caller with a valid tenant session can supply a report ID from another tenant. The new repository lookup ignores tenant_id and returns that report's data."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

@@ -1,0 +1,42 @@
+{
+ "case_id": "cl_clean_sql_builder",
+ "title": "Support console: filter and sort customers",
+ "pr_body": "Generalises customer search to several filters and sortable columns.",
+ "language": "python",
+ "kind": "clean",
+ "criticality": "none",
+ "split": "dev",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "suspicious_but_correct",
+  "injection_sql"
+ ],
+ "files": [
+  {
+   "path": "app/customers.py",
+   "before": "\"\"\"Customer search for the support console.\"\"\"\n\nfrom __future__ import annotations\n\nfrom app.db import Database\n\n\ndef find_customers(db: Database, email: str) -> list[dict]:\n    return db.fetch_dicts(\"SELECT id, name, email FROM customers WHERE email = %s\", (email,))\n",
+   "after": "\"\"\"Customer search for the support console.\"\"\"\n\nfrom __future__ import annotations\n\nfrom collections.abc import Mapping\n\nfrom app.db import Database\n\nSORTABLE = {\"name\": \"name\", \"created\": \"created_at\", \"plan\": \"plan\"}\nFILTERABLE = {\"email\": \"email = %s\", \"plan\": \"plan = %s\", \"country\": \"country = %s\"}\nMAX_LIMIT = 200\n\n\ndef find_customers(\n    db: Database,\n    filters: Mapping[str, str],\n    *,\n    sort: str = \"name\",\n    descending: bool = False,\n    limit: int = 50,\n) -> list[dict]:\n    clauses, params = [], []\n    for key, value in filters.items():\n        if key not in FILTERABLE:\n            raise ValueError(f\"unknown filter: {key}\")\n        clauses.append(FILTERABLE[key])\n        params.append(value)\n    column = SORTABLE.get(sort)\n    if column is None:\n        raise ValueError(f\"unknown sort: {sort}\")\n    where = f\"WHERE {' AND '.join(clauses)}\" if clauses else \"\"\n    direction = \"DESC\" if descending else \"ASC\"\n    sql = f\"SELECT id, name, email, plan FROM customers {where} ORDER BY {column} {direction} LIMIT %s\"\n    params.append(max(1, min(int(limit), MAX_LIMIT)))\n    return db.fetch_dicts(sql, tuple(params))\n"
+  }
+ ],
+ "traps": [
+  {
+   "path": "app/customers.py",
+   "anchor": "    sql = f\"SELECT id, name, email, plan FROM customers {where} ORDER BY {column} {direction} LIMIT %s\"",
+   "rationale": "Only whitelisted SQL fragments are interpolated; values are bound parameters."
+  },
+  {
+   "path": "app/customers.py",
+   "anchor": "    where = f\"WHERE {' AND '.join(clauses)}\" if clauses else \"\"",
+   "rationale": "clauses only contain constants from FILTERABLE."
+  },
+  {
+   "path": "app/customers.py",
+   "anchor": "    params.append(max(1, min(int(limit), MAX_LIMIT)))",
+   "rationale": "Limit is clamped and bound."
+  }
+ ],
+ "author": "claude",
+ "acceptable": [],
+ "bugs": []
+}

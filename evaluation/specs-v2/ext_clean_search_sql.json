@@ -1,0 +1,42 @@
+{
+  "case_id": "ext_clean_search_sql",
+  "title": "Add optional customer search filters",
+  "pr_body": "Supports status, date, and sort choices in the admin customer search.",
+  "language": "python",
+  "kind": "clean",
+  "criticality": "none",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "suspicious_but_correct",
+    "refactor"
+  ],
+  "files": [
+    {
+      "path": "app/customers/search.py",
+      "before": "from datetime import date\nfrom typing import Protocol\n\n\nclass Cursor(Protocol):\n    def execute(self, sql: str, params: tuple[object, ...]) -> None: ...\n    def fetchall(self) -> list[tuple[object, ...]]: ...\n\n\ndef search_customers(cursor: Cursor, tenant_id: str) -> list[tuple[object, ...]]:\n    cursor.execute(\n        \"SELECT id, name, status FROM customers WHERE tenant_id = %s\",\n        (tenant_id,),\n    )\n    return cursor.fetchall()\n",
+      "after": "from datetime import date\nfrom typing import Protocol\n\n\nclass Cursor(Protocol):\n    def execute(self, sql: str, params: tuple[object, ...]) -> None: ...\n    def fetchall(self) -> list[tuple[object, ...]]: ...\n\n\nORDER_COLUMNS = {\n    \"name\": \"name\",\n    \"created\": \"created_at\",\n}\n\n\ndef search_customers(\n    cursor: Cursor,\n    tenant_id: str,\n    status: str | None = None,\n    created_after: date | None = None,\n    order_by: str = \"name\",\n) -> list[tuple[object, ...]]:\n    if order_by not in ORDER_COLUMNS:\n        raise ValueError(\"unsupported sort column\")\n    clauses = [\"tenant_id = %s\"]\n    params: list[object] = [tenant_id]\n    if status is not None:\n        clauses.append(\"status = %s\")\n        params.append(status)\n    if created_after is not None:\n        clauses.append(\"created_at >= %s\")\n        params.append(created_after)\n    query = \"SELECT id, name, status FROM customers WHERE \" + \" AND \".join(clauses)\n    query += \" ORDER BY \" + ORDER_COLUMNS[order_by]\n    cursor.execute(query, tuple(params))\n    return cursor.fetchall()\n"
+    }
+  ],
+  "bugs": [],
+  "traps": [
+    {
+      "path": "app/customers/search.py",
+      "anchor": "\" AND \".join(clauses)",
+      "rationale": "The joined clauses are fixed SQL fragments defined in this function; user values remain parameters."
+    },
+    {
+      "path": "app/customers/search.py",
+      "anchor": "ORDER_COLUMNS[order_by]",
+      "rationale": "The sort key is checked against a fixed column allowlist before interpolation."
+    },
+    {
+      "path": "app/customers/search.py",
+      "anchor": "cursor.execute(query, tuple(params))",
+      "rationale": "Tenant, status, and date values are bound parameters, not SQL text."
+    }
+  ],
+  "acceptable": []
+}

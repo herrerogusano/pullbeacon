@@ -1,0 +1,127 @@
+{
+ "acceptable_findings": [
+  {
+   "lines": [
+    11
+   ],
+   "path": "tests/test_reports.py",
+   "rationale": "usage_page itself has no test, which would have caught the offset."
+  }
+ ],
+ "author": "claude",
+ "case_id": "cl_syn_reports_page_offset",
+ "criticality": "medium",
+ "expected_non_findings": [
+  {
+   "lines": [
+    43
+   ],
+   "path": "app/reports.py",
+   "rationale": "Ceiling division via negative floor division is correct."
+  },
+  {
+   "lines": [
+    127
+   ],
+   "path": "app/reports.py",
+   "rationale": "weekday() is 0 for Monday, so this is the Monday of the week."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 124,
+    "changes": 126,
+    "deletions": 2,
+    "filename": "app/reports.py",
+    "patch": "@@ -2,10 +2,18 @@\n \n from __future__ import annotations\n \n-from dataclasses import dataclass\n-from datetime import date\n+import csv\n+import io\n+from collections import defaultdict\n+from collections.abc import Iterable, Sequence\n+from dataclasses import dataclass, field\n+from datetime import date, timedelta\n+from decimal import ROUND_HALF_UP, Decimal\n \n from app.db import Database\n+\n+DEFAULT_PAGE_SIZE = 50\n+MAX_PAGE_SIZE = 500\n \n \n @dataclass(frozen=True)\n@@ -15,6 +23,47 @@\n     requests: int\n     errors: int\n \n+    @property\n+    def error_rate(self) -> Decimal:\n+        if self.requests == 0:\n+            return Decimal(\"0\")\n+        rate = Decimal(self.errors) / Decimal(self.requests)\n+        return rate.quantize(Decimal(\"0.0001\"), rounding=ROUND_HALF_UP)\n+\n+\n+@dataclass(frozen=True)\n+class Page:\n+    items: Sequence[UsageRow]\n+    page: int\n+    page_size: int\n+    total: int\n+\n+    @property\n+    def pages(self) -> int:\n+        return max(1, -(-self.total // self.page_size))\n+\n+    @property\n+    def has_next(self) -> bool:\n+        return self.page < self.pages\n+\n+\n+@dataclass\n+class AccountSummary:\n+    account_id: int\n+    days: int = 0\n+    requests: int = 0\n+    errors: int = 0\n+    worst_day: date | None = None\n+    worst_rate: Decimal = field(default_factory=lambda: Decimal(\"0\"))\n+\n+    def add(self, row: UsageRow) -> None:\n+        self.days += 1\n+        self.requests += row.requests\n+        self.errors += row.errors\n+        if row.error_rate > self.worst_rate:\n+            self.worst_rate = row.error_rate\n+            self.worst_day = row.day\n+\n \n def daily_usage(db: Database, account_id: int, since: date) -> list[UsageRow]:\n     rows = db.fetch_all(\n@@ -23,3 +72,76 @@\n         (account_id, since),\n     )\n     return [UsageRow(*row) for row in rows]\n+\n+\n+def _clamp_page_size(page_size: int | None) -> int:\n+    if page_size is None:\n+        return DEFAULT_PAGE_SIZE\n+    return max(1, min(page_size, MAX_PAGE_SIZE))\n+\n+\n+def usage_page(\n+    db: Database, since: date, *, page: int = 1, page_size: int | None = None\n+) -> Page:\n+    \"\"\"Return one page of usage rows for all accounts. Pages are numbered from 1.\"\"\"\n+    if page < 1:\n+        raise ValueError(\"page must be >= 1\")\n+    size = _clamp_page_size(page_size)\n+    total = db.fetch_value(\"SELECT count(*) FROM usage_daily WHERE day >= %s\", (since,))\n+    offset = page * size\n+    rows = db.fetch_all(\n+        \"SELECT account_id, day, requests, errors FROM usage_daily \"\n+        \"WHERE day >= %s ORDER BY day, account_id LIMIT %s OFFSET %s\",\n+        (since, size, offset),\n+    )\n+    return Page(items=[UsageRow(*row) for row in rows], page=page, page_size=size, total=total)\n+\n+\n+def summarize(rows: Iterable[UsageRow]) -> list[AccountSummary]:\n+    summaries: dict[int, AccountSummary] = {}\n+    for row in rows:\n+        summary = summaries.setdefault(row.account_id, AccountSummary(row.account_id))\n+        summary.add(row)\n+    return sorted(summaries.values(), key=lambda s: (-s.requests, s.account_id))\n+\n+\n+def fill_missing_days(rows: Sequence[UsageRow], start: date, end: date) -> list[UsageRow]:\n+    \"\"\"Return one row per account and day in [start, end], zero-filled.\"\"\"\n+    if end < start:\n+        return []\n+    by_key = {(row.account_id, row.day): row for row in rows}\n+    accounts = sorted({row.account_id for row in rows})\n+    filled: list[UsageRow] = []\n+    day = start\n+    while day <= end:\n+        for account in accounts:\n+            filled.append(by_key.get((account, day), UsageRow(account, day, 0, 0)))\n+        day += timedelta(days=1)\n+    return filled\n+\n+\n+def weekly_totals(rows: Iterable[UsageRow]) -> dict[date, int]:\n+    \"\"\"Total requests per ISO week, keyed by the Monday of the week.\"\"\"\n+    totals: dict[date, int] = defaultdict(int)\n+    for row in rows:\n+        monday = row.day - timedelta(days=row.day.weekday())\n+        totals[monday] += row.requests\n+    return dict(sorted(totals.items()))\n+\n+\n+def to_csv(summaries: Sequence[AccountSummary]) -> str:\n+    buffer = io.StringIO()\n+    writer = csv.writer(buffer, lineterminator=\"\\n\")\n+    writer.writerow([\"account_id\", \"days\", \"requests\", \"errors\", \"worst_day\", \"worst_rate\"])\n+    for s in summaries:\n+        writer.writerow(\n+            [\n+                s.account_id,\n+                s.days,\n+                s.requests,\n+                s.errors,\n+                s.worst_day.isoformat() if s.worst_day else \"\",\n+                f\"{s.worst_rate:.4f}\",\n+            ]\n+        )\n+    return buffer.getvalue()",
+    "sha": "01cbdc159a8da2932527f9990ea2297330170405",
+    "status": "modified"
+   },
+   {
+    "additions": 37,
+    "changes": 37,
+    "deletions": 0,
+    "filename": "tests/test_reports.py",
+    "patch": "@@ -0,0 +1,37 @@\n+from datetime import date\n+\n+from app.reports import AccountSummary, Page, UsageRow, fill_missing_days, summarize, weekly_totals\n+\n+\n+def test_error_rate_rounds_half_up():\n+    assert str(UsageRow(1, date(2026, 1, 1), 3, 1).error_rate) == \"0.3333\"\n+    assert str(UsageRow(1, date(2026, 1, 1), 0, 0).error_rate) == \"0\"\n+\n+\n+def test_page_count():\n+    assert Page(items=[], page=1, page_size=50, total=0).pages == 1\n+    assert Page(items=[], page=1, page_size=50, total=101).pages == 3\n+    assert not Page(items=[], page=3, page_size=50, total=101).has_next\n+\n+\n+def test_summarize_orders_by_requests():\n+    rows = [UsageRow(1, date(2026, 1, 1), 5, 0), UsageRow(2, date(2026, 1, 1), 9, 1)]\n+    assert [s.account_id for s in summarize(rows)] == [2, 1]\n+\n+\n+def test_fill_missing_days_zero_fills():\n+    rows = [UsageRow(1, date(2026, 1, 1), 5, 0)]\n+    filled = fill_missing_days(rows, date(2026, 1, 1), date(2026, 1, 3))\n+    assert [r.requests for r in filled] == [5, 0, 0]\n+\n+\n+def test_weekly_totals_keys_by_monday():\n+    rows = [UsageRow(1, date(2026, 1, 7), 2, 0), UsageRow(1, date(2026, 1, 9), 3, 0)]\n+    assert weekly_totals(rows) == {date(2026, 1, 5): 5}\n+\n+\n+def test_summary_tracks_worst_day():\n+    summary = AccountSummary(1)\n+    summary.add(UsageRow(1, date(2026, 1, 1), 10, 1))\n+    summary.add(UsageRow(1, date(2026, 1, 2), 10, 5))\n+    assert summary.worst_day == date(2026, 1, 2)",
+    "sha": "0437fb05e84700bb05e21a3b8ff330a263880139",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "16638aecefc9c07bad50deac8ef0fd4df2dedcee"
+   },
+   "body": "Adds paginated usage listing, per-account summaries, zero-filled daily series, weekly totals and CSV export for the admin dashboard. Unit tests included.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_syn_reports_page_offset",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "12f6d2f219aa398a7c46d17bf9b4fb62112a8d0c"
+   },
+   "number": 614,
+   "state": "open",
+   "title": "Admin usage reports: pagination, summaries and CSV export",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "12f6d2f219aa398a7c46d17bf9b4fb62112a8d0c": {
+    "app/reports.py": "\"\"\"Usage reports for the admin dashboard.\"\"\"\n\nfrom __future__ import annotations\n\nimport csv\nimport io\nfrom collections import defaultdict\nfrom collections.abc import Iterable, Sequence\nfrom dataclasses import dataclass, field\nfrom datetime import date, timedelta\nfrom decimal import ROUND_HALF_UP, Decimal\n\nfrom app.db import Database\n\nDEFAULT_PAGE_SIZE = 50\nMAX_PAGE_SIZE = 500\n\n\n@dataclass(frozen=True)\nclass UsageRow:\n    account_id: int\n    day: date\n    requests: int\n    errors: int\n\n    @property\n    def error_rate(self) -> Decimal:\n        if self.requests == 0:\n            return Decimal(\"0\")\n        rate = Decimal(self.errors) / Decimal(self.requests)\n        return rate.quantize(Decimal(\"0.0001\"), rounding=ROUND_HALF_UP)\n\n\n@dataclass(frozen=True)\nclass Page:\n    items: Sequence[UsageRow]\n    page: int\n    page_size: int\n    total: int\n\n    @property\n    def pages(self) -> int:\n        return max(1, -(-self.total // self.page_size))\n\n    @property\n    def has_next(self) -> bool:\n        return self.page < self.pages\n\n\n@dataclass\nclass AccountSummary:\n    account_id: int\n    days: int = 0\n    requests: int = 0\n    errors: int = 0\n    worst_day: date | None = None\n    worst_rate: Decimal = field(default_factory=lambda: Decimal(\"0\"))\n\n    def add(self, row: UsageRow) -> None:\n        self.days += 1\n        self.requests += row.requests\n        self.errors += row.errors\n        if row.error_rate > self.worst_rate:\n            self.worst_rate = row.error_rate\n            self.worst_day = row.day\n\n\ndef daily_usage(db: Database, account_id: int, since: date) -> list[UsageRow]:\n    rows = db.fetch_all(\n        \"SELECT account_id, day, requests, errors FROM usage_daily \"\n        \"WHERE account_id = %s AND day >= %s ORDER BY day\",\n        (account_id, since),\n    )\n    return [UsageRow(*row) for row in rows]\n\n\ndef _clamp_page_size(page_size: int | None) -> int:\n    if page_size is None:\n        return DEFAULT_PAGE_SIZE\n    return max(1, min(page_size, MAX_PAGE_SIZE))\n\n\ndef usage_page(\n    db: Database, since: date, *, page: int = 1, page_size: int | None = None\n) -> Page:\n    \"\"\"Return one page of usage rows for all accounts. Pages are numbered from 1.\"\"\"\n    if page < 1:\n        raise ValueError(\"page must be >= 1\")\n    size = _clamp_page_size(page_size)\n    total = db.fetch_value(\"SELECT count(*) FROM usage_daily WHERE day >= %s\", (since,))\n    offset = page * size\n    rows = db.fetch_all(\n        \"SELECT account_id, day, requests, errors FROM usage_daily \"\n        \"WHERE day >= %s ORDER BY day, account_id LIMIT %s OFFSET %s\",\n        (since, size, offset),\n    )\n    return Page(items=[UsageRow(*row) for row in rows], page=page, page_size=size, total=total)\n\n\ndef summarize(rows: Iterable[UsageRow]) -> list[AccountSummary]:\n    summaries: dict[int, AccountSummary] = {}\n    for row in rows:\n        summary = summaries.setdefault(row.account_id, AccountSummary(row.account_id))\n        summary.add(row)\n    return sorted(summaries.values(), key=lambda s: (-s.requests, s.account_id))\n\n\ndef fill_missing_days(rows: Sequence[UsageRow], start: date, end: date) -> list[UsageRow]:\n    \"\"\"Return one row per account and day in [start, end], zero-filled.\"\"\"\n    if end < start:\n        return []\n    by_key = {(row.account_id, row.day): row for row in rows}\n    accounts = sorted({row.account_id for row in rows})\n    filled: list[UsageRow] = []\n    day = start\n    while day <= end:\n        for account in accounts:\n            filled.append(by_key.get((account, day), UsageRow(account, day, 0, 0)))\n        day += timedelta(days=1)\n    return filled\n\n\ndef weekly_totals(rows: Iterable[UsageRow]) -> dict[date, int]:\n    \"\"\"Total requests per ISO week, keyed by the Monday of the week.\"\"\"\n    totals: dict[date, int] = defaultdict(int)\n    for row in rows:\n        monday = row.day - timedelta(days=row.day.weekday())\n        totals[monday] += row.requests\n    return dict(sorted(totals.items()))\n\n\ndef to_csv(summaries: Sequence[AccountSummary]) -> str:\n    buffer = io.StringIO()\n    writer = csv.writer(buffer, lineterminator=\"\\n\")\n    writer.writerow([\"account_id\", \"days\", \"requests\", \"errors\", \"worst_day\", \"worst_rate\"])\n    for s in summaries:\n        writer.writerow(\n            [\n                s.account_id,\n                s.days,\n                s.requests,\n                s.errors,\n                s.worst_day.isoformat() if s.worst_day else \"\",\n                f\"{s.worst_rate:.4f}\",\n            ]\n        )\n    return buffer.getvalue()\n",
+    "tests/test_reports.py": "from datetime import date\n\nfrom app.reports import AccountSummary, Page, UsageRow, fill_missing_days, summarize, weekly_totals\n\n\ndef test_error_rate_rounds_half_up():\n    assert str(UsageRow(1, date(2026, 1, 1), 3, 1).error_rate) == \"0.3333\"\n    assert str(UsageRow(1, date(2026, 1, 1), 0, 0).error_rate) == \"0\"\n\n\ndef test_page_count():\n    assert Page(items=[], page=1, page_size=50, total=0).pages == 1\n    assert Page(items=[], page=1, page_size=50, total=101).pages == 3\n    assert not Page(items=[], page=3, page_size=50, total=101).has_next\n\n\ndef test_summarize_orders_by_requests():\n    rows = [UsageRow(1, date(2026, 1, 1), 5, 0), UsageRow(2, date(2026, 1, 1), 9, 1)]\n    assert [s.account_id for s in summarize(rows)] == [2, 1]\n\n\ndef test_fill_missing_days_zero_fills():\n    rows = [UsageRow(1, date(2026, 1, 1), 5, 0)]\n    filled = fill_missing_days(rows, date(2026, 1, 1), date(2026, 1, 3))\n    assert [r.requests for r in filled] == [5, 0, 0]\n\n\ndef test_weekly_totals_keys_by_monday():\n    rows = [UsageRow(1, date(2026, 1, 7), 2, 0), UsageRow(1, date(2026, 1, 9), 3, 0)]\n    assert weekly_totals(rows) == {date(2026, 1, 5): 5}\n\n\ndef test_summary_tracks_worst_day():\n    summary = AccountSummary(1)\n    summary.add(UsageRow(1, date(2026, 1, 1), 10, 1))\n    summary.add(UsageRow(1, date(2026, 1, 2), 10, 5))\n    assert summary.worst_day == date(2026, 1, 2)\n"
+   },
+   "16638aecefc9c07bad50deac8ef0fd4df2dedcee": {
+    "app/reports.py": "\"\"\"Usage reports for the admin dashboard.\"\"\"\n\nfrom __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom datetime import date\n\nfrom app.db import Database\n\n\n@dataclass(frozen=True)\nclass UsageRow:\n    account_id: int\n    day: date\n    requests: int\n    errors: int\n\n\ndef daily_usage(db: Database, account_id: int, since: date) -> list[UsageRow]:\n    rows = db.fetch_all(\n        \"SELECT account_id, day, requests, errors FROM usage_daily \"\n        \"WHERE account_id = %s AND day >= %s ORDER BY day\",\n        (account_id, since),\n    )\n    return [UsageRow(*row) for row in rows]\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability"
+   ],
+   "category": "correctness",
+   "id": "first-page-skipped",
+   "lines": [
+    91
+   ],
+   "path": "app/reports.py",
+   "rationale": "Pages are documented and validated as starting at 1, but offset = page * size skips the first page of rows: page=1 returns rows 51-100 and the first 50 are unreachable.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"offset = page * size\", \"explanation\": \"Pages are documented and validated as starting at 1, but offset = page * size skips the first page of rows: page=1 returns rows 51-100 and the first 50 are unreachable.\", \"impact\": \"See explanation.\", \"line\": 91, \"path\": \"app/reports.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"1-based page used as a 0-based offset\"}], \"summary\": \"Mock review of cl_syn_reports_page_offset.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "medium",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "buried",
+  "logic",
+  "off_by_one"
+ ],
+ "title": "Admin usage reports: pagination, summaries and CSV export"
+}

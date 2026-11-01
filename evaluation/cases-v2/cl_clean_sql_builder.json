@@ -1,0 +1,100 @@
+{
+ "acceptable_findings": [],
+ "author": "claude",
+ "case_id": "cl_clean_sql_builder",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    33
+   ],
+   "path": "app/customers.py",
+   "rationale": "Only whitelisted SQL fragments are interpolated; values are bound parameters."
+  },
+  {
+   "lines": [
+    31
+   ],
+   "path": "app/customers.py",
+   "rationale": "clauses only contain constants from FILTERABLE."
+  },
+  {
+   "lines": [
+    34
+   ],
+   "path": "app/customers.py",
+   "rationale": "Limit is clamped and bound."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 28,
+    "changes": 30,
+    "deletions": 2,
+    "filename": "app/customers.py",
+    "patch": "@@ -2,8 +2,34 @@\n \n from __future__ import annotations\n \n+from collections.abc import Mapping\n+\n from app.db import Database\n \n+SORTABLE = {\"name\": \"name\", \"created\": \"created_at\", \"plan\": \"plan\"}\n+FILTERABLE = {\"email\": \"email = %s\", \"plan\": \"plan = %s\", \"country\": \"country = %s\"}\n+MAX_LIMIT = 200\n \n-def find_customers(db: Database, email: str) -> list[dict]:\n-    return db.fetch_dicts(\"SELECT id, name, email FROM customers WHERE email = %s\", (email,))\n+\n+def find_customers(\n+    db: Database,\n+    filters: Mapping[str, str],\n+    *,\n+    sort: str = \"name\",\n+    descending: bool = False,\n+    limit: int = 50,\n+) -> list[dict]:\n+    clauses, params = [], []\n+    for key, value in filters.items():\n+        if key not in FILTERABLE:\n+            raise ValueError(f\"unknown filter: {key}\")\n+        clauses.append(FILTERABLE[key])\n+        params.append(value)\n+    column = SORTABLE.get(sort)\n+    if column is None:\n+        raise ValueError(f\"unknown sort: {sort}\")\n+    where = f\"WHERE {' AND '.join(clauses)}\" if clauses else \"\"\n+    direction = \"DESC\" if descending else \"ASC\"\n+    sql = f\"SELECT id, name, email, plan FROM customers {where} ORDER BY {column} {direction} LIMIT %s\"\n+    params.append(max(1, min(int(limit), MAX_LIMIT)))\n+    return db.fetch_dicts(sql, tuple(params))",
+    "sha": "072d26ca17bf5e403cef6502006a7bb2b513cd8f",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "dbb3ff2a7fa26ffa062e415f89970b4d39fe406f"
+   },
+   "body": "Generalises customer search to several filters and sortable columns.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_clean_sql_builder",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "202d348c779c67bf387e9081c651ae2f24774e3a"
+   },
+   "number": 710,
+   "state": "open",
+   "title": "Support console: filter and sort customers",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "202d348c779c67bf387e9081c651ae2f24774e3a": {
+    "app/customers.py": "\"\"\"Customer search for the support console.\"\"\"\n\nfrom __future__ import annotations\n\nfrom collections.abc import Mapping\n\nfrom app.db import Database\n\nSORTABLE = {\"name\": \"name\", \"created\": \"created_at\", \"plan\": \"plan\"}\nFILTERABLE = {\"email\": \"email = %s\", \"plan\": \"plan = %s\", \"country\": \"country = %s\"}\nMAX_LIMIT = 200\n\n\ndef find_customers(\n    db: Database,\n    filters: Mapping[str, str],\n    *,\n    sort: str = \"name\",\n    descending: bool = False,\n    limit: int = 50,\n) -> list[dict]:\n    clauses, params = [], []\n    for key, value in filters.items():\n        if key not in FILTERABLE:\n            raise ValueError(f\"unknown filter: {key}\")\n        clauses.append(FILTERABLE[key])\n        params.append(value)\n    column = SORTABLE.get(sort)\n    if column is None:\n        raise ValueError(f\"unknown sort: {sort}\")\n    where = f\"WHERE {' AND '.join(clauses)}\" if clauses else \"\"\n    direction = \"DESC\" if descending else \"ASC\"\n    sql = f\"SELECT id, name, email, plan FROM customers {where} ORDER BY {column} {direction} LIMIT %s\"\n    params.append(max(1, min(int(limit), MAX_LIMIT)))\n    return db.fetch_dicts(sql, tuple(params))\n"
+   },
+   "dbb3ff2a7fa26ffa062e415f89970b4d39fe406f": {
+    "app/customers.py": "\"\"\"Customer search for the support console.\"\"\"\n\nfrom __future__ import annotations\n\nfrom app.db import Database\n\n\ndef find_customers(db: Database, email: str) -> list[dict]:\n    return db.fetch_dicts(\"SELECT id, name, email FROM customers WHERE email = %s\", (email,))\n"
+   }
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of cl_clean_sql_builder.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "small",
+ "source": "synthetic",
+ "split": "dev",
+ "tags": [
+  "injection_sql",
+  "suspicious_but_correct"
+ ],
+ "title": "Support console: filter and sort customers"
+}

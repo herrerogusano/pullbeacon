@@ -1,0 +1,93 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "ext_digest_cursor",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 155,
+    "changes": 160,
+    "deletions": 5,
+    "filename": "app/audit/feed.py",
+    "patch": "@@ -1,14 +1,164 @@\n from dataclasses import dataclass\n+from datetime import datetime\n+import base64\n+import binascii\n+import json\n+from typing import Callable, Iterable, Mapping\n+\n+\n+@dataclass(frozen=True)\n+class Event:\n+    event_id: str\n+    tenant_id: str\n+    occurred_at: datetime\n+    actor_id: str\n+    action: str\n+    payload: Mapping[str, object]\n+\n+\n+@dataclass(frozen=True)\n+class Query:\n+    tenant_id: str\n+    limit: int\n+    actions: frozenset[str] = frozenset()\n+    actor_id: str | None = None\n+    start_at: datetime | None = None\n+    end_at: datetime | None = None\n \n \n @dataclass(frozen=True)\n class Page:\n     rows: list[dict[str, object]]\n     next_cursor: str | None\n+    total_scanned: int\n \n \n-def page_rows(rows: list[dict[str, object]], limit: int, offset: int = 0) -> Page:\n-    selected = rows[offset:offset + limit]\n-    following = offset + len(selected)\n-    cursor = str(following) if following < len(rows) else None\n-    return Page(selected, cursor)\n+def validate_query(query: Query) -> None:\n+    if not 1 <= query.limit <= 500:\n+        raise ValueError(\"limit must be between 1 and 500\")\n+    if query.start_at and query.end_at and query.start_at >= query.end_at:\n+        raise ValueError(\"start must precede end\")\n+    if query.start_at and query.start_at.tzinfo is None:\n+        raise ValueError(\"start must be timezone-aware\")\n+    if query.end_at and query.end_at.tzinfo is None:\n+        raise ValueError(\"end must be timezone-aware\")\n+\n+\n+def encode_cursor(index: int, tenant_id: str) -> str:\n+    raw = json.dumps({\"index\": index, \"tenant\": tenant_id}, separators=(\",\", \":\"))\n+    return base64.urlsafe_b64encode(raw.encode(\"utf-8\")).decode(\"ascii\")\n+\n+\n+def decode_cursor(value: str | None, tenant_id: str) -> int:\n+    if value is None:\n+        return 0\n+    try:\n+        raw = base64.urlsafe_b64decode(value.encode(\"ascii\"))\n+        decoded = json.loads(raw)\n+        if decoded[\"tenant\"] != tenant_id:\n+            raise ValueError(\"cursor belongs to a different tenant\")\n+        index = decoded[\"index\"]\n+        if isinstance(index, bool) or not isinstance(index, int) or index < 0:\n+            raise ValueError(\"invalid cursor index\")\n+        return index\n+    except (KeyError, ValueError, TypeError, binascii.Error) as exc:\n+        raise ValueError(\"invalid cursor\") from exc\n+\n+\n+def matches(event: Event, query: Query) -> bool:\n+    if event.tenant_id != query.tenant_id:\n+        return False\n+    if query.actions and event.action not in query.actions:\n+        return False\n+    if query.actor_id and event.actor_id != query.actor_id:\n+        return False\n+    if query.start_at and event.occurred_at < query.start_at:\n+        return False\n+    if query.end_at and event.occurred_at >= query.end_at:\n+        return False\n+    return True\n+\n+\n+def public_row(event: Event) -> dict[str, object]:\n+    return {\n+        \"id\": event.event_id,\n+        \"at\": event.occurred_at.isoformat(),\n+        \"actor\": event.actor_id,\n+        \"action\": event.action,\n+        \"payload\": dict(event.payload),\n+    }\n+\n+\n+def count_by_action(events: Iterable[Event]) -> dict[str, int]:\n+    counts: dict[str, int] = {}\n+    for event in events:\n+        counts[event.action] = counts.get(event.action, 0) + 1\n+    return counts\n+\n+\n+def summarize_page(rows: list[dict[str, object]]) -> dict[str, object]:\n+    actions: dict[str, int] = {}\n+    actors: set[str] = set()\n+    for row in rows:\n+        action = str(row[\"action\"])\n+        actions[action] = actions.get(action, 0) + 1\n+        actors.add(str(row[\"actor\"]))\n+    return {\"rows\": len(rows), \"actions\": actions, \"actors\": len(actors)}\n+\n+\n+def page_events(events: list[Event], query: Query, cursor: str | None) -> Page:\n+    validate_query(query)\n+    filtered = [event for event in events if matches(event, query)]\n+    filtered.sort(key=lambda event: (event.occurred_at, event.event_id))\n+    start = decode_cursor(cursor, query.tenant_id)\n+    selected = filtered[start:start + query.limit]\n+    next_index = start + len(selected) + 1\n+    next_cursor = encode_cursor(next_index, query.tenant_id) if next_index < len(filtered) else None\n+    return Page([public_row(event) for event in selected], next_cursor, len(filtered))\n+\n+\n+def export_events(events: list[Event], query: Query, writer: Callable[[dict[str, object]], None]) -> int:\n+    validate_query(query)\n+    count = 0\n+    for event in sorted(events, key=lambda item: (item.occurred_at, item.event_id)):\n+        if matches(event, query):\n+            writer(public_row(event))\n+            count += 1\n+    return count\n+\n+\n+def query_description(query: Query) -> dict[str, object]:\n+    return {\n+        \"tenant\": query.tenant_id,\n+        \"limit\": query.limit,\n+        \"actions\": sorted(query.actions),\n+        \"actor\": query.actor_id,\n+        \"start\": query.start_at.isoformat() if query.start_at else None,\n+        \"end\": query.end_at.isoformat() if query.end_at else None,\n+    }\n+\n+\n+def page_metadata(page: Page) -> dict[str, object]:\n+    return {\n+        \"returned\": len(page.rows),\n+        \"scanned\": page.total_scanned,\n+        \"has_more\": page.next_cursor is not None,\n+        \"next_cursor\": page.next_cursor,\n+    }\n+\n+def action_facets(events: Iterable[Event], query: Query) -> list[dict[str, object]]:\n+    counts = count_by_action(event for event in events if matches(event, query))\n+    return [\n+        {\"action\": action, \"count\": count}\n+        for action, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))\n+    ]\n+\n+\n+def latest_event(events: Iterable[Event], query: Query) -> dict[str, object] | None:\n+    matching = (event for event in events if matches(event, query))\n+    latest = max(matching, key=lambda event: (event.occurred_at, event.event_id), default=None)\n+    return public_row(latest) if latest is not None else None\n+\n+\n+def actor_ids(events: Iterable[Event], query: Query) -> list[str]:\n+    return sorted({event.actor_id for event in events if matches(event, query)})",
+    "sha": "2ab3c5ae09967acc67d94fcf61e07e9274b901d8",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "cf0ac9a8f7d2922e8a8dacdeccf5bfc4c6c19846"
+   },
+   "body": "Moves the audit feed to opaque tenant-bound cursors and adds export helpers.",
+   "draft": false,
+   "head": {
+    "ref": "eval/ext_digest_cursor",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "e3fa1da8f9ff3cf70f2c1b7a7087a14e0332cdf9"
+   },
+   "number": 782,
+   "state": "open",
+   "title": "Add filtered audit event pagination",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "cf0ac9a8f7d2922e8a8dacdeccf5bfc4c6c19846": {
+    "app/audit/feed.py": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass Page:\n    rows: list[dict[str, object]]\n    next_cursor: str | None\n\n\ndef page_rows(rows: list[dict[str, object]], limit: int, offset: int = 0) -> Page:\n    selected = rows[offset:offset + limit]\n    following = offset + len(selected)\n    cursor = str(following) if following < len(rows) else None\n    return Page(selected, cursor)\n"
+   },
+   "e3fa1da8f9ff3cf70f2c1b7a7087a14e0332cdf9": {
+    "app/audit/feed.py": "from dataclasses import dataclass\nfrom datetime import datetime\nimport base64\nimport binascii\nimport json\nfrom typing import Callable, Iterable, Mapping\n\n\n@dataclass(frozen=True)\nclass Event:\n    event_id: str\n    tenant_id: str\n    occurred_at: datetime\n    actor_id: str\n    action: str\n    payload: Mapping[str, object]\n\n\n@dataclass(frozen=True)\nclass Query:\n    tenant_id: str\n    limit: int\n    actions: frozenset[str] = frozenset()\n    actor_id: str | None = None\n    start_at: datetime | None = None\n    end_at: datetime | None = None\n\n\n@dataclass(frozen=True)\nclass Page:\n    rows: list[dict[str, object]]\n    next_cursor: str | None\n    total_scanned: int\n\n\ndef validate_query(query: Query) -> None:\n    if not 1 <= query.limit <= 500:\n        raise ValueError(\"limit must be between 1 and 500\")\n    if query.start_at and query.end_at and query.start_at >= query.end_at:\n        raise ValueError(\"start must precede end\")\n    if query.start_at and query.start_at.tzinfo is None:\n        raise ValueError(\"start must be timezone-aware\")\n    if query.end_at and query.end_at.tzinfo is None:\n        raise ValueError(\"end must be timezone-aware\")\n\n\ndef encode_cursor(index: int, tenant_id: str) -> str:\n    raw = json.dumps({\"index\": index, \"tenant\": tenant_id}, separators=(\",\", \":\"))\n    return base64.urlsafe_b64encode(raw.encode(\"utf-8\")).decode(\"ascii\")\n\n\ndef decode_cursor(value: str | None, tenant_id: str) -> int:\n    if value is None:\n        return 0\n    try:\n        raw = base64.urlsafe_b64decode(value.encode(\"ascii\"))\n        decoded = json.loads(raw)\n        if decoded[\"tenant\"] != tenant_id:\n            raise ValueError(\"cursor belongs to a different tenant\")\n        index = decoded[\"index\"]\n        if isinstance(index, bool) or not isinstance(index, int) or index < 0:\n            raise ValueError(\"invalid cursor index\")\n        return index\n    except (KeyError, ValueError, TypeError, binascii.Error) as exc:\n        raise ValueError(\"invalid cursor\") from exc\n\n\ndef matches(event: Event, query: Query) -> bool:\n    if event.tenant_id != query.tenant_id:\n        return False\n    if query.actions and event.action not in query.actions:\n        return False\n    if query.actor_id and event.actor_id != query.actor_id:\n        return False\n    if query.start_at and event.occurred_at < query.start_at:\n        return False\n    if query.end_at and event.occurred_at >= query.end_at:\n        return False\n    return True\n\n\ndef public_row(event: Event) -> dict[str, object]:\n    return {\n        \"id\": event.event_id,\n        \"at\": event.occurred_at.isoformat(),\n        \"actor\": event.actor_id,\n        \"action\": event.action,\n        \"payload\": dict(event.payload),\n    }\n\n\ndef count_by_action(events: Iterable[Event]) -> dict[str, int]:\n    counts: dict[str, int] = {}\n    for event in events:\n        counts[event.action] = counts.get(event.action, 0) + 1\n    return counts\n\n\ndef summarize_page(rows: list[dict[str, object]]) -> dict[str, object]:\n    actions: dict[str, int] = {}\n    actors: set[str] = set()\n    for row in rows:\n        action = str(row[\"action\"])\n        actions[action] = actions.get(action, 0) + 1\n        actors.add(str(row[\"actor\"]))\n    return {\"rows\": len(rows), \"actions\": actions, \"actors\": len(actors)}\n\n\ndef page_events(events: list[Event], query: Query, cursor: str | None) -> Page:\n    validate_query(query)\n    filtered = [event for event in events if matches(event, query)]\n    filtered.sort(key=lambda event: (event.occurred_at, event.event_id))\n    start = decode_cursor(cursor, query.tenant_id)\n    selected = filtered[start:start + query.limit]\n    next_index = start + len(selected) + 1\n    next_cursor = encode_cursor(next_index, query.tenant_id) if next_index < len(filtered) else None\n    return Page([public_row(event) for event in selected], next_cursor, len(filtered))\n\n\ndef export_events(events: list[Event], query: Query, writer: Callable[[dict[str, object]], None]) -> int:\n    validate_query(query)\n    count = 0\n    for event in sorted(events, key=lambda item: (item.occurred_at, item.event_id)):\n        if matches(event, query):\n            writer(public_row(event))\n            count += 1\n    return count\n\n\ndef query_description(query: Query) -> dict[str, object]:\n    return {\n        \"tenant\": query.tenant_id,\n        \"limit\": query.limit,\n        \"actions\": sorted(query.actions),\n        \"actor\": query.actor_id,\n        \"start\": query.start_at.isoformat() if query.start_at else None,\n        \"end\": query.end_at.isoformat() if query.end_at else None,\n    }\n\n\ndef page_metadata(page: Page) -> dict[str, object]:\n    return {\n        \"returned\": len(page.rows),\n        \"scanned\": page.total_scanned,\n        \"has_more\": page.next_cursor is not None,\n        \"next_cursor\": page.next_cursor,\n    }\n\ndef action_facets(events: Iterable[Event], query: Query) -> list[dict[str, object]]:\n    counts = count_by_action(event for event in events if matches(event, query))\n    return [\n        {\"action\": action, \"count\": count}\n        for action, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))\n    ]\n\n\ndef latest_event(events: Iterable[Event], query: Query) -> dict[str, object] | None:\n    matching = (event for event in events if matches(event, query))\n    latest = max(matching, key=lambda event: (event.occurred_at, event.event_id), default=None)\n    return public_row(latest) if latest is not None else None\n\n\ndef actor_ids(events: Iterable[Event], query: Query) -> list[str]:\n    return sorted({event.actor_id for event in events if matches(event, query)})\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness"
+   ],
+   "category": "correctness",
+   "id": "cursor-skips-row",
+   "lines": [
+    115
+   ],
+   "path": "app/audit/feed.py",
+   "rationale": "The cursor points one position past the end of the selected slice. Whenever another page exists, the first event after the current page is never returned.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"next_index = start + len(selected) + 1\", \"explanation\": \"The cursor points one position past the end of the selected slice. Whenever another page exists, the first event after the current page is never returned.\", \"impact\": \"See explanation.\", \"line\": 115, \"path\": \"app/audit/feed.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Next audit page skips one event\"}], \"summary\": \"Mock review of ext_digest_cursor.\"}"
+  ]
+ },
+ "provenance": "Original synthetic production-style change authored for benchmark v2.",
+ "size": "medium",
+ "source": "external",
+ "split": "test",
+ "tags": [
+  "buried",
+  "logic",
+  "off_by_one"
+ ],
+ "title": "Add filtered audit event pagination"
+}

@@ -1,0 +1,100 @@
+{
+ "acceptable_findings": [],
+ "author": "claude",
+ "case_id": "cl_clean_ts_price_format",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    17
+   ],
+   "path": "web/price.ts",
+   "rationale": "Division happens only for display; arithmetic stays in integer cents."
+  },
+  {
+   "lines": [
+    32
+   ],
+   "path": "web/price.ts",
+   "rationale": "Numeric character references for all five characters are a correct escape."
+  },
+  {
+   "lines": [
+    1
+   ],
+   "path": "web/price.ts",
+   "rationale": "Bounded by the number of locale/currency pairs actually used."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 32,
+    "changes": 34,
+    "deletions": 2,
+    "filename": "web/price.ts",
+    "patch": "@@ -1,3 +1,33 @@\n-export function formatPrice(cents: number, currency: string): string {\n-  return `${(cents / 100).toFixed(2)} ${currency}`;\n+const formatters = new Map<string, Intl.NumberFormat>();\n+\n+function formatterFor(locale: string, currency: string): Intl.NumberFormat {\n+  const key = `${locale}|${currency}`;\n+  let formatter = formatters.get(key);\n+  if (!formatter) {\n+    formatter = new Intl.NumberFormat(locale, { style: \"currency\", currency });\n+    formatters.set(key, formatter);\n+  }\n+  return formatter;\n }\n+\n+export function formatPrice(cents: number, currency: string, locale = \"en-US\"): string {\n+  if (!Number.isSafeInteger(cents)) {\n+    throw new RangeError(`cents must be a safe integer, got ${cents}`);\n+  }\n+  return formatterFor(locale, currency).format(cents / 100);\n+}\n+\n+export function sumCents(items: ReadonlyArray<{ cents: number; quantity: number }>): number {\n+  let total = 0;\n+  for (const item of items) {\n+    total += item.cents * item.quantity;\n+  }\n+  if (!Number.isSafeInteger(total)) {\n+    throw new RangeError(\"total exceeds the safe integer range\");\n+  }\n+  return total;\n+}\n+\n+export function escapeForAttribute(value: string): string {\n+  return value.replace(/[&<>\"']/g, (ch) => `&#${ch.charCodeAt(0)};`);\n+}",
+    "sha": "92a820f2409390f4858f3e0c003bafd28ce38be0",
+    "status": "modified"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "e7193944941203cad912d6c34be20c2361507485"
+   },
+   "body": "Uses Intl.NumberFormat (cached per locale/currency), integer cents totals and an attribute escaping helper for the price badge.",
+   "draft": false,
+   "head": {
+    "ref": "eval/cl_clean_ts_price_format",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "0d13c001dae876e751c2c3b1ba52bbbb9cc54e16"
+   },
+   "number": 642,
+   "state": "open",
+   "title": "Locale-aware price formatting",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "0d13c001dae876e751c2c3b1ba52bbbb9cc54e16": {
+    "web/price.ts": "const formatters = new Map<string, Intl.NumberFormat>();\n\nfunction formatterFor(locale: string, currency: string): Intl.NumberFormat {\n  const key = `${locale}|${currency}`;\n  let formatter = formatters.get(key);\n  if (!formatter) {\n    formatter = new Intl.NumberFormat(locale, { style: \"currency\", currency });\n    formatters.set(key, formatter);\n  }\n  return formatter;\n}\n\nexport function formatPrice(cents: number, currency: string, locale = \"en-US\"): string {\n  if (!Number.isSafeInteger(cents)) {\n    throw new RangeError(`cents must be a safe integer, got ${cents}`);\n  }\n  return formatterFor(locale, currency).format(cents / 100);\n}\n\nexport function sumCents(items: ReadonlyArray<{ cents: number; quantity: number }>): number {\n  let total = 0;\n  for (const item of items) {\n    total += item.cents * item.quantity;\n  }\n  if (!Number.isSafeInteger(total)) {\n    throw new RangeError(\"total exceeds the safe integer range\");\n  }\n  return total;\n}\n\nexport function escapeForAttribute(value: string): string {\n  return value.replace(/[&<>\"']/g, (ch) => `&#${ch.charCodeAt(0)};`);\n}\n"
+   },
+   "e7193944941203cad912d6c34be20c2361507485": {
+    "web/price.ts": "export function formatPrice(cents: number, currency: string): string {\n  return `${(cents / 100).toFixed(2)} ${currency}`;\n}\n"
+   }
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "typescript",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of cl_clean_ts_price_format.\"}"
+  ]
+ },
+ "provenance": "written for this benchmark",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "numeric",
+  "suspicious_but_correct"
+ ],
+ "title": "Locale-aware price formatting"
+}

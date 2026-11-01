@@ -1,0 +1,42 @@
+{
+  "case_id": "ext_revision_contract",
+  "title": "Expose revision metadata to editor saves",
+  "pr_body": "The revisions API now returns both the opaque revision ID and ETag.",
+  "language": "typescript",
+  "kind": "bug",
+  "criticality": "medium",
+  "split": "dev",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "multi_file",
+    "api_contract",
+    "types"
+  ],
+  "files": [
+    {
+      "path": "src/api/revisions.ts",
+      "before": "export async function loadRevision(documentId: string): Promise<string> {\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/revision`);\n  if (!response.ok) throw new Error(\"Could not load revision\");\n  const data = (await response.json()) as { revision: string };\n  return data.revision;\n}\n",
+      "after": "export type Revision = { id: string; etag: string };\n\nexport async function loadRevision(documentId: string): Promise<Revision> {\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}/revision`);\n  if (!response.ok) throw new Error(\"Could not load revision\");\n  const data = (await response.json()) as { revision: string; etag: string };\n  return { id: data.revision, etag: data.etag };\n}\n"
+    },
+    {
+      "path": "web/editor/save.ts",
+      "before": "import { loadRevision } from \"../../src/api/revisions\";\n\nexport async function saveDocument(documentId: string, body: string): Promise<void> {\n  const revision = await loadRevision(documentId);\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, {\n    method: \"PUT\",\n    headers: { \"Content-Type\": \"text/plain\", \"If-Match\": revision },\n    body,\n  });\n  if (!response.ok) throw new Error(\"Could not save document\");\n}\n",
+      "after": "import { loadRevision } from \"../../src/api/revisions\";\n\nexport async function saveDocument(documentId: string, body: string): Promise<void> {\n  const revision = await loadRevision(documentId);\n  const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`, {\n    method: \"PUT\",\n    headers: { \"Content-Type\": \"text/plain\", \"If-Match\": String(revision) },\n    body,\n  });\n  if (response.status === 412) throw new Error(\"Document changed elsewhere\");\n  if (!response.ok) throw new Error(\"Could not save document\");\n}\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "object-etag-header",
+      "path": "web/editor/save.ts",
+      "anchor": "\"If-Match\": String(revision)",
+      "category": "correctness",
+      "severity": "medium",
+      "title": "Save request sends object text instead of an ETag",
+      "rationale": "loadRevision now returns an object. String(revision) serializes to [object Object], so If-Match never equals the document's ETag and normal saves fail with a conflict."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

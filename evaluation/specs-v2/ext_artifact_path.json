@@ -1,0 +1,36 @@
+{
+  "case_id": "ext_artifact_path",
+  "title": "Organize build artifacts by upload name",
+  "pr_body": "Preserves client filenames under each build's artifact directory for easier browsing.",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "security",
+    "path_traversal"
+  ],
+  "files": [
+    {
+      "path": "app/builds/artifacts.py",
+      "before": "from pathlib import Path\nfrom uuid import UUID\n\n\ndef save_artifact(root: Path, build_id: UUID, name: str, content: bytes) -> Path:\n    safe_name = Path(name).name\n    target = root / str(build_id) / safe_name\n    target.parent.mkdir(parents=True, exist_ok=True)\n    target.write_bytes(content)\n    return target\n",
+      "after": "from pathlib import Path\nfrom uuid import UUID\n\n\ndef save_artifact(root: Path, build_id: UUID, name: str, content: bytes) -> Path:\n    target = root / str(build_id) / name\n    target.parent.mkdir(parents=True, exist_ok=True)\n    target.write_bytes(content)\n    return target\n\n\ndef artifact_location(root: Path, build_id: UUID, name: str) -> str:\n    return str(root / str(build_id) / name)\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "upload-escapes-build",
+      "path": "app/builds/artifacts.py",
+      "anchor": "target = root / str(build_id) / name",
+      "category": "security",
+      "severity": "high",
+      "title": "Upload filename can escape the build directory",
+      "rationale": "The upload name is client-controlled and now retains ../ components. A name such as ../../config.json writes outside the build's artifact directory, potentially overwriting files writable by the service."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

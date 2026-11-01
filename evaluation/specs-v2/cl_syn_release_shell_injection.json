@@ -1,0 +1,52 @@
+{
+ "case_id": "cl_syn_release_shell_injection",
+ "title": "Release bot: changelog generation and tagging",
+ "pr_body": "Implements `/release <tag> <branch>` for the chat bot: builds the changelog from commit subjects and creates the annotated tag.",
+ "language": "python",
+ "kind": "bug",
+ "criticality": "critical",
+ "split": "test",
+ "source": "synthetic",
+ "provenance": "written for this benchmark",
+ "tags": [
+  "security",
+  "command_injection"
+ ],
+ "files": [
+  {
+   "path": "scripts/release.py",
+   "before": "\"\"\"Helpers used by the release bot.\"\"\"\n\nfrom __future__ import annotations\n\nimport subprocess\n\n\ndef current_commit() -> str:\n    out = subprocess.run([\"git\", \"rev-parse\", \"HEAD\"], capture_output=True, text=True, check=True)\n    return out.stdout.strip()\n",
+   "after": "\"\"\"Helpers used by the release bot.\"\"\"\n\nfrom __future__ import annotations\n\nimport re\nimport shlex\nimport subprocess\nfrom dataclasses import dataclass\n\nSEMVER = re.compile(r\"^v\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.]+)?$\")\n\n\n@dataclass(frozen=True)\nclass Changelog:\n    tag: str\n    previous: str | None\n    entries: list[str]\n\n    def render(self) -> str:\n        header = f\"## {self.tag}\"\n        if self.previous:\n            header += f\" (since {self.previous})\"\n        return \"\\n\".join([header, \"\", *(f\"- {e}\" for e in self.entries)]) + \"\\n\"\n\n\ndef current_commit() -> str:\n    out = subprocess.run([\"git\", \"rev-parse\", \"HEAD\"], capture_output=True, text=True, check=True)\n    return out.stdout.strip()\n\n\ndef latest_tag() -> str | None:\n    out = subprocess.run(\n        [\"git\", \"describe\", \"--tags\", \"--abbrev=0\"], capture_output=True, text=True, check=False\n    )\n    return out.stdout.strip() or None\n\n\ndef validate_tag(tag: str) -> str:\n    if not SEMVER.match(tag):\n        raise ValueError(f\"not a release tag: {tag!r}\")\n    return tag\n\n\ndef commits_between(previous: str | None, branch: str) -> list[str]:\n    \"\"\"Subjects of the commits on ``branch`` since ``previous`` (all commits if None).\"\"\"\n    revision = f\"{previous}..{branch}\" if previous else branch\n    out = subprocess.run(\n        f\"git log --no-merges --format=%s {revision}\",\n        shell=True,\n        capture_output=True,\n        text=True,\n        check=True,\n    )\n    return [line for line in out.stdout.splitlines() if line.strip()]\n\n\ndef build_changelog(tag: str, branch: str) -> Changelog:\n    \"\"\"Called by the chat bot for '/release <tag> <branch>'.\"\"\"\n    tag = validate_tag(tag)\n    previous = latest_tag()\n    return Changelog(tag=tag, previous=previous, entries=commits_between(previous, branch))\n\n\ndef create_tag(tag: str, message: str) -> None:\n    validate_tag(tag)\n    subprocess.run([\"git\", \"tag\", \"-a\", tag, \"-m\", message], check=True)\n    subprocess.run([\"git\", \"push\", \"origin\", shlex.quote(tag)], check=True)\n"
+  }
+ ],
+ "bugs": [
+  {
+   "id": "branch-shell-injection",
+   "path": "scripts/release.py",
+   "anchor": "        f\"git log --no-merges --format=%s {revision}\",",
+   "category": "security",
+   "accepted": [],
+   "severity": "critical",
+   "title": "Branch name from chat is run through a shell",
+   "rationale": "commits_between builds a shell string with the user-supplied branch (only the tag is validated) and runs it with shell=True: '/release v1.2.3 main;rm -rf ~' executes arbitrary commands on the bot host.",
+   "extra_anchors": [
+    "        shell=True,"
+   ]
+  }
+ ],
+ "acceptable": [
+  {
+   "path": "scripts/release.py",
+   "anchor": "    subprocess.run([\"git\", \"push\", \"origin\", shlex.quote(tag)], check=True)",
+   "rationale": "shlex.quote is pointless with list arguments (harmless after validation)."
+  }
+ ],
+ "traps": [
+  {
+   "path": "scripts/release.py",
+   "anchor": "    subprocess.run([\"git\", \"tag\", \"-a\", tag, \"-m\", message], check=True)",
+   "rationale": "List arguments without a shell; the tag is validated."
+  }
+ ],
+ "author": "claude"
+}

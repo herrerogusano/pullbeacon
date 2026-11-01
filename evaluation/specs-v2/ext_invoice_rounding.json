@@ -1,0 +1,36 @@
+{
+  "case_id": "ext_invoice_rounding",
+  "title": "Calculate allocation percentages from decimal shares",
+  "pr_body": "Uses decimal inputs for allocation percentages and stores amounts in minor units.",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "medium",
+  "split": "dev",
+  "source": "external",
+  "author": "codex",
+  "provenance": "Original synthetic production-style change authored for benchmark v2.",
+  "tags": [
+    "logic",
+    "numeric"
+  ],
+  "files": [
+    {
+      "path": "lib/billing/allocation.py",
+      "before": "from decimal import Decimal, ROUND_HALF_UP\n\n\ndef allocate_cents(total_cents: int, share: Decimal) -> int:\n    if not Decimal(0) <= share <= Decimal(1):\n        raise ValueError(\"share must be between zero and one\")\n    return int((Decimal(total_cents) * share).quantize(Decimal(\"1\"), rounding=ROUND_HALF_UP))\n",
+      "after": "from decimal import Decimal, ROUND_HALF_EVEN\n\n\ndef allocate_cents(total_cents: int, share: Decimal) -> int:\n    if not Decimal(0) <= share <= Decimal(1):\n        raise ValueError(\"share must be between zero and one\")\n    return int((Decimal(total_cents) * share).quantize(Decimal(\"1\"), rounding=ROUND_HALF_EVEN))\n\n\ndef remaining_cents(total_cents: int, allocated_cents: int) -> int:\n    if allocated_cents > total_cents:\n        raise ValueError(\"allocation exceeds total\")\n    return total_cents - allocated_cents\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "tie-rounding-changed",
+      "path": "lib/billing/allocation.py",
+      "anchor": "rounding=ROUND_HALF_EVEN",
+      "category": "correctness",
+      "severity": "medium",
+      "title": "Half-cent allocations use a different rounding policy",
+      "rationale": "The documented allocation policy was half-up. A share yielding exactly x.5 cents now rounds to the nearest even cent, so customer invoice lines and reconciled totals differ at tie boundaries."
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}
