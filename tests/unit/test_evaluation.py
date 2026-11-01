@@ -258,3 +258,29 @@ def test_cli_repeats_split_and_limits(tmp_path: Path) -> None:
     assert main([*args, "--workers", "0"]) == 2
     # v1 cases have no split: selecting one is a clear error.
     assert main([*args, "--split", "dev"]) == 2
+
+
+def test_failed_review_still_counts_its_spend(cases: list[EvalCase]) -> None:
+    """A review that fails after paid calls must still consume the evaluation budget."""
+    from pullbeacon.adapters.llm import FakeLLMClient
+    from pullbeacon.domain.models import Usage
+
+    class PaidGarbage(FakeLLMClient):
+        def complete(self, request: Any) -> Any:
+            response = super().complete(request)
+            return type(response)(
+                text="not json", usage=Usage(cost_usd=0.4, cost_source="litellm"), model=self.model
+            )
+
+    def factory(_case: EvalCase) -> Any:
+        return PaidGarbage(responses={"review": ["x", "x", "x"]})
+
+    run = run_evaluation(
+        cases[:3], [factory], dataset_sha256="x", mode="mock", total_budget_usd=1.0
+    )
+    results = next(iter(run.cases.values()))
+    assert results[0].error is not None
+    assert results[0].cost_usd == pytest.approx(0.8)  # first call + one retry for malformed JSON
+    assert results[1].error is not None
+    assert results[2].error == "total budget reached"
+    assert run.total_spent_usd == pytest.approx(1.6)
