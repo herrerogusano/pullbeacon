@@ -1,7 +1,9 @@
 # PullBeacon evaluation
 
-A small, reproducible benchmark of reviewers: issue detection, false positives on clean PRs,
-location quality, cost and latency. It runs the **real** PullBeacon pipeline (diff parsing,
+Two reproducible benchmarks of reviewers. **v1** (below) is small and saturated; **v2**
+([`SPEC_V2.md`](SPEC_V2.md), 58 cases from three independent sources, dev/test split) is the one to use
+for decisions. Both measure issue detection, false positives on clean PRs,
+location quality, cost and latency. They run the **real** PullBeacon pipeline (diff parsing,
 scope, prompts, validation) against an in-memory GitHub; only the LLM differs.
 
 ## Dataset (`evaluation/cases/`)
