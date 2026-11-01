@@ -29,7 +29,15 @@ def _live_factory(model_id: str) -> ClientFactory:
 
 def add_eval_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = sub.add_parser("eval", help="run the evaluation dataset (mock by default)")
-    parser.add_argument("--dataset", type=Path, default=Path("evaluation/cases"))
+    parser.add_argument(
+        "--dataset",
+        type=Path,
+        action="append",
+        help="case directory; repeat to combine several (default: evaluation/cases)",
+    )
+    parser.add_argument("--split", choices=["dev", "test"], help="only cases of this split")
+    parser.add_argument("--repeats", type=int, default=1, help="samples per case (1-5)")
+    parser.add_argument("--workers", type=int, default=1, help="parallel reviews (1-8)")
     parser.add_argument("--output", type=Path, default=Path("evaluation/results/mock.json"))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--mock-llm", action="store_true", help="canned responses (default)")
@@ -44,15 +52,20 @@ def add_eval_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) ->
 
 
 def run_eval(args: argparse.Namespace) -> int:
-    cases, digest = load_cases(args.dataset)
+    if not 1 <= args.repeats <= 5:
+        raise ConfigError("--repeats must be between 1 and 5")
+    if not 1 <= args.workers <= 8:
+        raise ConfigError("--workers must be between 1 and 8")
+    datasets = args.dataset or [Path("evaluation/cases")]
+    cases, digest = load_cases(datasets, split=args.split)
     if args.provider == "live":
         models = [m.strip() for m in args.models.split(",") if m.strip()]
         if not models:
             raise ConfigError("--provider live needs --models")
         if not args.confirm_spend:
             raise ConfigError(
-                f"live evaluation calls {len(models)} model(s) on {len(cases)} cases and costs "
-                "money; re-run with --confirm-spend"
+                f"live evaluation calls {len(models)} model(s) on {len(cases)} cases "
+                f"x {args.repeats} sample(s) and costs money; re-run with --confirm-spend"
             )
         if not 0 < args.max_total_cost_usd <= 20:
             raise ConfigError("--max-total-cost-usd must be between 0 and 20")
@@ -62,7 +75,14 @@ def run_eval(args: argparse.Namespace) -> int:
         factories = [mock_factory]
         mode = "mock"
     run = run_evaluation(
-        cases, factories, dataset_sha256=digest, mode=mode, total_budget_usd=args.max_total_cost_usd
+        cases,
+        factories,
+        dataset_sha256=digest,
+        mode=mode,
+        total_budget_usd=args.max_total_cost_usd,
+        repeats=args.repeats,
+        workers=args.workers,
+        split=args.split,
     )
     output: Path = args.output
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -73,6 +93,7 @@ def run_eval(args: argparse.Namespace) -> int:
         {
             "mode": run.mode,
             "output": str(output),
+            "total_spent_usd": run.total_spent_usd,
             "summaries": [s.model_dump(mode="json") for s in run.summaries],
         }
     )

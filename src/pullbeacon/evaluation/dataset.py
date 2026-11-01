@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
 
@@ -34,6 +35,14 @@ class ExpectedNonFinding(_Strict):
     rationale: str
 
 
+class AcceptableFinding(_Strict):
+    """A real but secondary issue: a finding here is neither required nor a false positive."""
+
+    path: str
+    lines: tuple[int, ...] = Field(min_length=1)
+    rationale: str
+
+
 class ApplyExpectation(_Strict):
     path: str
     expected_content: str
@@ -49,6 +58,13 @@ class EvalCase(_Strict):
     fixture: dict[str, Any]
     ground_truth: tuple[GroundTruthIssue, ...] = ()
     expected_non_findings: tuple[ExpectedNonFinding, ...] = ()
+    acceptable_findings: tuple[AcceptableFinding, ...] = ()
+    # Benchmark v2 metadata (optional so v1 cases keep loading unchanged).
+    split: Literal["dev", "test"] | None = None
+    source: str = "synthetic"
+    author: str = "claude"
+    provenance: str = ""
+    tags: tuple[str, ...] = ()
     mock_responses: dict[str, list[str]]
     apply_expectation: ApplyExpectation | None = None
 
@@ -64,9 +80,10 @@ class EvalCase(_Strict):
                 diffs[f["filename"]] = build_file_diff(f["filename"], f["status"], f["patch"])
             except (DiffParseError, KeyError) as exc:
                 raise ValueError(f"fixture file is not a valid diff: {exc}") from None
-        labels: list[GroundTruthIssue | ExpectedNonFinding] = [
+        labels: list[GroundTruthIssue | ExpectedNonFinding | AcceptableFinding] = [
             *self.ground_truth,
             *self.expected_non_findings,
+            *self.acceptable_findings,
         ]
         for issue in labels:
             diff = diffs.get(issue.path)
@@ -82,20 +99,34 @@ class EvalCase(_Strict):
         return self.kind != "clean"
 
 
-def load_cases(directory: Path) -> tuple[list[EvalCase], str]:
-    """Load all ``*.json`` cases (sorted). Returns ``(cases, dataset_sha256)``."""
-    files = sorted(directory.glob("*.json"))
+def load_cases(
+    directory: Path | Sequence[Path], *, split: str | None = None
+) -> tuple[list[EvalCase], str]:
+    """Load all ``*.json`` cases of one or more directories (sorted per directory).
+
+    ``split`` (``dev``/``test``) keeps only the cases of that split; the hash covers the
+    selected cases only. Returns ``(cases, dataset_sha256)``.
+    """
+    directories = [directory] if isinstance(directory, Path) else list(directory)
+    files = [path for d in directories for path in sorted(d.glob("*.json"))]
     if not files:
-        raise ConfigError(f"no evaluation cases found in {directory}")
+        raise ConfigError(f"no evaluation cases found in {', '.join(map(str, directories))}")
+    if split not in (None, "dev", "test"):
+        raise ConfigError("split must be dev or test")
     digest = hashlib.sha256()
     cases = []
     for path in files:
         raw = path.read_bytes()
-        digest.update(path.name.encode() + b"\0" + raw.replace(b"\r\n", b"\n"))
         try:
-            cases.append(EvalCase.model_validate(json.loads(raw)))
+            case = EvalCase.model_validate(json.loads(raw))
         except (ValueError, ValidationError) as exc:
             raise ConfigError(f"invalid evaluation case {path.name}: {exc}") from None
+        if split is not None and case.split != split:
+            continue
+        digest.update(path.name.encode() + b"\0" + raw.replace(b"\r\n", b"\n"))
+        cases.append(case)
+    if not cases:
+        raise ConfigError(f"no evaluation cases in split {split!r}")
     ids = [c.case_id for c in cases]
     if len(set(ids)) != len(ids):
         raise ConfigError("duplicate case_id in dataset")

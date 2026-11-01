@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import subprocess
+import threading
 import time
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -53,6 +55,9 @@ class EvalRun(BaseModel):
     config_hash: str
     temperature: float | None
     notes: tuple[str, ...]
+    repeats: int = 1
+    split: str | None = None
+    total_spent_usd: float | None = None
     summaries: tuple[ModelSummary, ...]
     cases: dict[str, tuple[CaseResult, ...]]
 
@@ -125,6 +130,40 @@ def _apply_check(
     )
 
 
+def _run_one(
+    case: EvalCase, llm: LLMClient, config: PullBeaconConfig, sample: int
+) -> tuple[CaseResult, float]:
+    """Review one case once; returns the scored result and the money it spent."""
+    fake = FakeGitHub.from_fixture(case.fixture)
+    number = int(case.fixture["pull_request"]["number"])
+    with GitHubClient(None, transport=fake.transport(), max_retries=0) as client:
+        snapshot = fetch_snapshot(client, fake.owner, fake.repo, number)
+    scope = select_scope(snapshot, config)
+    start = time.perf_counter()
+    try:
+        report = ReviewEngine(llm, config).review(snapshot, scope, mode="local")
+    except PullBeaconError as exc:
+        error = CaseResult(
+            case_id=case.case_id, kind=case.kind, sample=sample, error=f"{exc.code}: {exc.message}"
+        )
+        return error, 0.0
+    result = score_case(case, report, latency_s=time.perf_counter() - start, sample=sample)
+    spent = result.cost_usd or 0.0
+    outcome = _apply_check(case, llm, report, config, fake) if sample == 0 else ApplyOutcome()
+    spent += outcome.cost_usd
+    return (
+        result.model_copy(
+            update={
+                "apply_attempted": outcome.attempted,
+                "apply_valid": outcome.valid,
+                "apply_exact": outcome.exact,
+                "apply_reason": outcome.reason,
+            }
+        ),
+        spent,
+    )
+
+
 def evaluate_model(
     cases: Sequence[EvalCase],
     factory: ClientFactory,
@@ -133,46 +172,40 @@ def evaluate_model(
     mode: str,
     total_budget_usd: float,
     spent_usd: float = 0.0,
+    repeats: int = 1,
+    workers: int = 1,
 ) -> tuple[ModelSummary, tuple[CaseResult, ...], float]:
-    results: list[CaseResult] = []
-    provider = model = "unknown"
-    for case in cases:
-        llm = factory(case)
-        provider, model = llm.provider, llm.model
-        if spent_usd >= total_budget_usd:
-            results.append(
-                CaseResult(case_id=case.case_id, kind=case.kind, error="total budget reached")
+    """Run every case ``repeats`` times. The apply check runs on the first sample only.
+
+    With ``workers > 1`` reviews run in threads; the budget is checked before each review
+    starts, so a run may exceed it by at most ``workers`` reviews already in flight.
+    """
+    jobs = [(case, sample) for sample in range(repeats) for case in cases]
+    first = factory(cases[0]) if cases else None
+    provider, model = (first.provider, first.model) if first else ("unknown", "unknown")
+    lock = threading.Lock()
+    spent = [spent_usd]
+
+    def job(item: tuple[EvalCase, int]) -> CaseResult:
+        case, sample = item
+        with lock:
+            over = spent[0] >= total_budget_usd
+        if over:
+            return CaseResult(
+                case_id=case.case_id, kind=case.kind, sample=sample, error="total budget reached"
             )
-            continue
-        fake = FakeGitHub.from_fixture(case.fixture)
-        number = int(case.fixture["pull_request"]["number"])
-        with GitHubClient(None, transport=fake.transport(), max_retries=0) as client:
-            snapshot = fetch_snapshot(client, fake.owner, fake.repo, number)
-        scope = select_scope(snapshot, config)
-        start = time.perf_counter()
-        try:
-            report = ReviewEngine(llm, config).review(snapshot, scope, mode="local")
-        except PullBeaconError as exc:
-            results.append(
-                CaseResult(case_id=case.case_id, kind=case.kind, error=f"{exc.code}: {exc.message}")
-            )
-            continue
-        result = score_case(case, report, latency_s=time.perf_counter() - start)
-        spent_usd += result.cost_usd or 0.0
-        outcome = _apply_check(case, llm, report, config, fake)
-        spent_usd += outcome.cost_usd
-        results.append(
-            result.model_copy(
-                update={
-                    "apply_attempted": outcome.attempted,
-                    "apply_valid": outcome.valid,
-                    "apply_exact": outcome.exact,
-                    "apply_reason": outcome.reason,
-                }
-            )
-        )
+        result, cost = _run_one(case, factory(case), config, sample)
+        with lock:
+            spent[0] += cost
+        return result
+
+    if workers <= 1:
+        results = [job(item) for item in jobs]
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(job, jobs))
     summary = summarize(results, cases, provider=provider, model=model, mode=mode)
-    return summary, tuple(results), spent_usd
+    return summary, tuple(results), spent[0]
 
 
 def run_evaluation(
@@ -183,6 +216,9 @@ def run_evaluation(
     mode: str,
     total_budget_usd: float = 2.0,
     config: PullBeaconConfig | None = None,
+    repeats: int = 1,
+    workers: int = 1,
+    split: str | None = None,
 ) -> EvalRun:
     config = config or parse_config(EVAL_CONFIG)
     summaries: list[ModelSummary] = []
@@ -196,6 +232,8 @@ def run_evaluation(
             mode=mode,
             total_budget_usd=total_budget_usd,
             spent_usd=spent,
+            repeats=repeats,
+            workers=workers,
         )
         summaries.append(summary)
         per_case[summary.model] = results
@@ -206,8 +244,8 @@ def run_evaluation(
         )
         if mode == "mock"
         else (
-            "Live run: single sample per case at the configured temperature; small synthetic "
-            "dataset, so differences of one or two cases are not statistically meaningful.",
+            f"Live run: {repeats} sample(s) per case at the configured temperature. Small "
+            "datasets: differences of one or two cases are not statistically meaningful.",
         )
     )
     return EvalRun(
@@ -220,6 +258,9 @@ def run_evaluation(
         config_hash=config.config_hash(),
         temperature=0.0,
         notes=notes,
+        repeats=repeats,
+        split=split,
+        total_spent_usd=round(spent, 6),
         summaries=tuple(summaries),
         cases=per_case,
     )

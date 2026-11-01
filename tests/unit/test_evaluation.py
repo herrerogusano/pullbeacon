@@ -190,6 +190,71 @@ def test_case_results_keep_finding_summaries_and_apply_reasons(cases: list[EvalC
     run = run_evaluation(cases, [mock_factory], dataset_sha256="x", mode="mock")
     by_case = {r.case_id: r for r in run.cases["mock/deterministic"]}
     summary = by_case["py_missing_authz"].finding_summaries[0]
-    assert summary.startswith("PB-001 critical/security app/invoices.py:")
+    assert summary.startswith("[TP:missing-owner-check] PB-001 critical/security app/invoices.py:")
     assert by_case["py_unbounded_limit"].apply_valid
     assert by_case["py_missing_authz"].apply_reason == ""
+
+
+def test_acceptable_findings_are_neither_tp_nor_fp(cases: list[EvalCase]) -> None:
+    case = next(c for c in cases if c.case_id == "py_missing_authz")
+    issue = case.ground_truth[0]
+    data = json.loads(case.model_dump_json())
+    data["acceptable_findings"] = [
+        {"path": issue.path, "lines": list(issue.lines), "rationale": "secondary issue"}
+    ]
+    with_acceptable = EvalCase.model_validate(data)
+    report = _report([_finding(line=issue.lines[0], category="performance")])
+    result = score_case(with_acceptable, report, latency_s=0)
+    assert (result.tp, result.fp, result.fn, result.acceptable) == (0, 0, 1, 1)
+    assert result.finding_summaries[0].startswith("[ACCEPTABLE]")
+
+
+def test_split_filter_and_multiple_directories(cases: list[EvalCase], tmp_path: Path) -> None:
+    dev, test = tmp_path / "dev", tmp_path / "test"
+    dev.mkdir()
+    test.mkdir()
+    for directory, split, case in ((dev, "dev", cases[0]), (test, "test", cases[1])):
+        data = json.loads(case.model_dump_json())
+        data.update(split=split, tags=["logic"])
+        (directory / f"{case.case_id}.json").write_text(json.dumps(data), encoding="utf-8")
+    both, _ = load_cases([dev, test])
+    assert [c.case_id for c in both] == [cases[0].case_id, cases[1].case_id]
+    only_test, digest_test = load_cases([dev, test], split="test")
+    assert [c.case_id for c in only_test] == [cases[1].case_id]
+    assert digest_test != load_cases([dev, test])[1]
+    with pytest.raises(ConfigError, match="no evaluation cases in split"):
+        load_cases(dev, split="test")
+
+
+def test_repeats_and_workers_aggregate_samples(cases: list[EvalCase]) -> None:
+    single = run_evaluation(cases, [mock_factory], dataset_sha256="x", mode="mock")
+    repeated = run_evaluation(
+        cases, [mock_factory], dataset_sha256="x", mode="mock", repeats=2, workers=4
+    )
+    (one,), (two,) = single.summaries, repeated.summaries
+    assert two.samples == 2
+    assert repeated.repeats == 2
+    assert two.cases == one.cases == len(cases)
+    assert (two.tp, two.fp, two.fn) == (2 * one.tp, 2 * one.fp, 2 * one.fn)
+    assert two.recall == one.recall
+    # Deterministic mock: every outcome identical in both samples.
+    assert two.consistency == 1.0
+    # The apply check only runs on the first sample.
+    assert two.apply_attempted == one.apply_attempted
+    results = repeated.cases["mock/deterministic"]
+    assert sorted({r.sample for r in results}) == [0, 1]
+    assert one.recall_severe is not None
+    assert one.injection_cases == 1
+    assert one.injection_missed == 0
+
+
+def test_cli_repeats_split_and_limits(tmp_path: Path) -> None:
+    out = tmp_path / "mock.json"
+    args = ["eval", "--dataset", str(DATASET), "--mock-llm", "--output", str(out)]
+    assert main([*args, "--repeats", "2", "--workers", "2"]) == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["repeats"] == 2
+    assert main([*args, "--repeats", "9"]) == 2
+    assert main([*args, "--workers", "0"]) == 2
+    # v1 cases have no split: selecting one is a clear error.
+    assert main([*args, "--split", "dev"]) == 2
