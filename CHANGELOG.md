@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- LiteLLM is now imported with `LITELLM_MODE=PRODUCTION` (unless already set). In its default
+  `DEV` mode LiteLLM calls `load_dotenv()` at import time, so provider keys in a `.env` file of the
+  current directory were picked up silently when running the CLI locally. Keys now come only from
+  the environment PullBeacon is started with (e.g. `uv run --env-file .env ...`). GitHub Actions
+  runs were not affected in practice: the action never checks out pull request files.
+
 ## 0.1.0 (2026-10-29)
 
 First stable MVP release. Same code as 0.1.0rc1 plus the fixes listed under it; verified live on

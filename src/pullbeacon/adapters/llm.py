@@ -110,6 +110,10 @@ def _import_litellm() -> Any:
     # Use the cost map bundled with the installed version: no network fetch at import time
     # and a pricing source that is pinned by the lockfile.
     os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
+    # LiteLLM calls python-dotenv's load_dotenv() at import time unless LITELLM_MODE is not
+    # "DEV": provider keys in a .env of the current directory would be used silently. Keys must
+    # only come from the environment PullBeacon was started with.
+    os.environ.setdefault("LITELLM_MODE", "PRODUCTION")
     import litellm
 
     litellm.telemetry = False

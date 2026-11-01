@@ -125,3 +125,29 @@ def test_parse_json_object() -> None:
     assert parse_json_object('```json\n{"a": 1}\n```') == {"a": 1}
     with pytest.raises(ValueError, match="not an object"):
         parse_json_object("[1, 2]")
+
+
+def test_importing_litellm_never_loads_a_dotenv_file(tmp_path: Any) -> None:
+    """LiteLLM loads ./.env at import time in its default DEV mode; PullBeacon must not."""
+    import os
+    import subprocess
+    import sys
+
+    (tmp_path / ".env").write_text("ANTHROPIC_API_KEY=from-dotenv\n", encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "LITELLM_MODE")}
+    code = (
+        "import os\n"
+        "from pullbeacon.adapters.llm import _import_litellm\n"
+        "_import_litellm()\n"
+        "print(os.environ.get('ANTHROPIC_API_KEY', 'absent'))\n"
+    )
+    out = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", code],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=True,
+    )
+    assert out.stdout.strip() == "absent"
