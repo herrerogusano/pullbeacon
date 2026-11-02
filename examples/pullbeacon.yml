@@ -48,7 +48,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: <OWNER>/<REPO>@<COMMIT_SHA> # pullbeacon v0.1.0
+      - uses: <OWNER>/<REPO>@<COMMIT_SHA> # pullbeacon v0.2.0
         with:
           mode: review
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -68,7 +68,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: <OWNER>/<REPO>@<COMMIT_SHA> # pullbeacon v0.1.0
+      - uses: <OWNER>/<REPO>@<COMMIT_SHA> # pullbeacon v0.2.0
         with:
           mode: apply
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
