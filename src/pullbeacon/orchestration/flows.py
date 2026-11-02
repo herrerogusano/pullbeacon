@@ -173,7 +173,11 @@ def run_review(
             usage=report.usage,
             details={"report": canonical_json(report, indent=None)},
         )
-    publisher = ReviewPublisher(client, apply_available=config.policy.apply_enabled)
+    publisher = ReviewPublisher(
+        client,
+        apply_available=config.policy.apply_enabled,
+        min_severity=config.policy.min_inline_severity,
+    )
     published = publisher.publish(snapshot, report, trigger=trigger)
     status = RunStatus.PARTIAL if (published.degraded or report.truncated) else RunStatus.COMPLETED
     return RunResult(
@@ -186,6 +190,7 @@ def run_review(
             "findings": len(report.findings),
             "inline_posted": published.inline_posted,
             "not_inline": [list(item) for item in published.not_inline],
+            "collapsed": published.collapsed,
             "truncated": report.truncated,
         },
     )

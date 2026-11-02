@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from pullbeacon.core.paths import UnsafePathError, is_sensitive, validate_glob
 from pullbeacon.domain.errors import ConfigError
-from pullbeacon.domain.models import canonical_json
+from pullbeacon.domain.models import Severity, canonical_json
 
 CONFIG_FILENAMES = (".pullbeacon.yml", ".pullbeacon.yaml")
 MAX_CONFIG_BYTES = 64 * 1024
@@ -75,6 +75,9 @@ class PolicyConfig(_Strict):
     exclude: tuple[str, ...] = ()
     # Literal base-branch paths (no wildcards) the reviewer may read as extra context.
     context_files: tuple[str, ...] = Field(default=(), max_length=20)
+    # Findings below this severity are not posted as inline comments; they are listed in a
+    # collapsed section of the review summary instead (benchmark v2: most low findings are noise).
+    min_inline_severity: Severity = Severity.MEDIUM
     apply_enabled: bool = False
     allowed_apply_paths: tuple[str, ...] = ()
     min_apply_confidence: float = Field(default=0.8, ge=0.0, le=1.0)

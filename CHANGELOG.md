@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Changed
+
+- **Less noise on pull requests.** New `policy.min_inline_severity` (default `medium`): findings
+  below it are no longer posted as inline comments but listed in a collapsed section of the review
+  summary (they stay in the marker, so `explain`/`apply` by id still work). Set it to `low` for the
+  0.1 behaviour. Benchmark v2 showed that most `low` findings were generic or low-value remarks.
+- Review prompt `review-v2`: no generic "add tests" remarks (at most one, naming the untested
+  case), no comments on minor behaviour changes the PR describes as intended (PR text is an
+  unverified claim: security issues and defects are always reported), no claims that depend on
+  code outside the diff, and an explicit check of resource/timer release on error paths,
+  input-dependent regex or loop cost and shared state.
+- `pullbeacon eval`: findings below `min_inline_severity` are scored as *collapsed* (neither TP nor
+  FP); `--min-inline-severity` overrides the floor.
+
 ### Security
 
 - LiteLLM is now imported with `LITELLM_MODE=PRODUCTION` (unless already set). In its default

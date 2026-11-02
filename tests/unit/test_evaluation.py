@@ -8,12 +8,13 @@ from typing import Any
 import pytest
 
 from pullbeacon.cli import main
+from pullbeacon.config import PullBeaconConfig, parse_config
 from pullbeacon.domain.errors import ConfigError
-from pullbeacon.domain.models import Finding, ReviewReport
+from pullbeacon.domain.models import Finding, ReviewReport, Severity
 from pullbeacon.evaluation.dataset import EvalCase, load_cases
 from pullbeacon.evaluation.metrics import score_case
 from pullbeacon.evaluation.report import to_csv, to_markdown
-from pullbeacon.evaluation.runner import mock_factory, run_evaluation
+from pullbeacon.evaluation.runner import EVAL_CONFIG, mock_factory, run_evaluation
 
 DATASET = Path(__file__).parents[2] / "evaluation" / "cases"
 
@@ -54,8 +55,16 @@ def test_invalid_labels_are_rejected(cases: list[EvalCase], tmp_path: Path) -> N
         load_cases(tmp_path)
 
 
+def _floor(severity: str) -> PullBeaconConfig:
+    config = parse_config(EVAL_CONFIG)
+    policy = config.policy.model_copy(update={"min_inline_severity": Severity(severity)})
+    return config.model_copy(update={"policy": policy})
+
+
 def test_mock_run_metrics_are_exact(cases: list[EvalCase]) -> None:
-    run = run_evaluation(cases, [mock_factory], dataset_sha256="x", mode="mock")
+    run = run_evaluation(
+        cases, [mock_factory], dataset_sha256="x", mode="mock", config=_floor("low")
+    )
     (summary,) = run.summaries
     # 12 labelled issues; the mock misses one (N+1), adds a trap FP on a clean PR and an
     # unlocated finding, and emits one duplicate that validation discards.
@@ -130,6 +139,45 @@ def test_scoring_rules(cases: list[EvalCase]) -> None:
         case, _report([_finding(line=line), _finding(line=line, fingerprint="e" * 16)]), latency_s=0
     )
     assert (twice.tp, twice.fp) == (1, 1)
+
+
+def test_default_floor_collapses_low_findings(cases: list[EvalCase]) -> None:
+    run = run_evaluation(cases, [mock_factory], dataset_sha256="x", mode="mock")
+    (summary,) = run.summaries
+    # The mock's low-severity trap hit and its low duplicate are listed collapsed, not scored.
+    assert summary.min_inline_severity == "medium"
+    assert (summary.tp, summary.fp, summary.fn) == (11, 1, 1)
+    assert summary.collapsed_findings == 1
+    assert summary.false_positives_per_clean_pr == 0.0
+    by_case = {r.case_id: r for r in run.cases["mock/deterministic"]}
+    clean = by_case["clean_extract_function"]
+    assert (clean.fp, clean.collapsed) == (0, 1)
+    assert clean.finding_summaries[0].startswith("[COLLAPSED:FP:TRAP]")
+
+
+def test_collapsed_findings_never_count_or_steal_a_match(cases: list[EvalCase]) -> None:
+    case = next(c for c in cases if c.case_id == "py_missing_authz")
+    line = case.ground_truth[0].lines[0]
+    low_hit = _finding(line=line, severity="low", id="PB-002", fingerprint="1" * 16)
+    only_low = score_case(case, _report([low_hit]), latency_s=0, min_severity=Severity.MEDIUM)
+    assert (only_low.tp, only_low.fp, only_low.fn, only_low.collapsed) == (0, 0, 1, 1)
+    assert only_low.finding_summaries[0].startswith("[COLLAPSED:TP:")
+    both = score_case(
+        case, _report([low_hit, _finding(line=line)]), latency_s=0, min_severity=Severity.MEDIUM
+    )
+    assert (both.tp, both.fp, both.fn, both.collapsed) == (1, 0, 0, 1)
+    unfiltered = score_case(case, _report([low_hit]), latency_s=0)
+    assert (unfiltered.tp, unfiltered.collapsed) == (1, 0)
+
+
+def test_cli_min_inline_severity_override(tmp_path: Path) -> None:
+    out = tmp_path / "low.json"
+    args = ["eval", "--dataset", str(DATASET), "--mock-llm", "--output", str(out)]
+    assert main([*args, "--min-inline-severity", "low"]) == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["summaries"][0]["min_inline_severity"] == "low"
+    assert data["summaries"][0]["collapsed_findings"] == 0
+    assert "min_inline_severity: low" in out.with_suffix(".md").read_text(encoding="utf-8")
 
 
 def test_clean_case_false_positive_and_trap(cases: list[EvalCase]) -> None:
