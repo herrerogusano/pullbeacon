@@ -71,6 +71,8 @@ GitHub), `BLOCKED_BY_AUTH` (needs a human action), `IN_PROGRESS`, `NOT_STARTED`.
 | D39 | gitleaks downloaded in CI by exact version and verified against a SHA256 recorded on 2026-10-28 | no third-party action with repo write scope needed | gitleaks-action |
 | D40 | Evaluation stores per-finding summaries (no code) and apply rejection reasons; apply-call cost counts against the total budget | the plan requires manual review of disagreements, impossible with counts only; first live run showed it | re-running blind |
 | D41 | Dogfood uses `anthropic/claude-haiku-5-5` | same recall as Sonnet on the benchmark, ~13× cheaper per review | Sonnet 5.5 (better precision, higher recurring cost) |
+| D42 | A model answer whose `finish_reason` is `length` raises `LLMOutputTruncated` (`llm_output_truncated`) and is never parsed or retried; an empty (non-truncated) answer gets the same single correction retry as invalid JSON; `content_filter` fails without retry | observed on a 3,761-line PR (`max_output_tokens: 4096`): `llm_invalid_json`, a second paid call with the same budget, then a misleading "empty response". LiteLLM already maps Anthropic `max_tokens` and Gemini `MAX_TOKENS` to `length`, so one check covers the three providers | retrying a truncated answer (same budget, same limit, paid twice); treating the empty answer as a fatal adapter error (lost its usage) |
+| D43 | No automatic "split the batch and retry" on truncation (yet): fail closed with an actionable message | a split costs one wasted call plus two more, with no way to know how often it happens (≈1 in 140 Haiku reviews on 400+ line PRs); it needs recursion in the batch loop, interacts with `max_batches` and the per-run budget, and a single oversized file cannot be split; the fix for the user is a one-line config change | one-level split-and-retry for multi-file batches (proposal: build it if truncation shows up repeatedly in real use); degrading to a partial review for later batches (would hide a failed batch behind a warning) |
 | D9 | Planning documents stay at the repository root with their original names | required by `README_PLANES.md` | moving to `docs/plans/` |
 
 ## Log
@@ -202,6 +204,27 @@ Commands executed (all passed): ruff, mypy, `pytest -q` (300 passed), coverage 8
 Coverage of critical modules: config 93 %, paths 94 %, diff 98 %, scope 97 %, findings 98 %,
 apply 92 %, github client 90 %, git_commit 84 %, publisher 99 %, markers 88 %, runner 91 %,
 apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
+
+### Fix — truncated model output (2026-11-02) — DONE_LOCAL
+
+Cause: on herrerogusano/LegalDesk PR #58 (+3,761 lines, `anthropic/claude-sonnet-5-5`,
+`max_output_tokens: 4096`) the answer hit the output limit. `call_json` only looked at the text:
+truncated JSON → `llm_invalid_json` → a second call with the same budget → an empty answer
+(likely cut off again, or the whole budget spent before any text; not verifiable without spending)
+→ `LiteLLMClient._to_response` raised "model returned an empty response" and the cost of that call
+was lost. Nothing told the user that the output limit was the problem.
+
+Change: `LLMResponse.finish_reason` (+ `truncated`), read from the LiteLLM choice and normalised
+(`length`; aliases `max_tokens`, `MAX_TOKENS`); `call_json` checks it before parsing and raises
+`LLMOutputTruncated` (`llm_output_truncated`) with the limit hit and what to change; the adapter
+returns empty answers instead of raising so their usage reaches the cost guard; empty answers get
+one correction retry; `content_filter` fails without retry. README section, architecture note and
+CHANGELOG (Unreleased). LiteLLM 1.106.5 verified locally: `Choices(finish_reason="max_tokens" |
+"MAX_TOKENS" | "length")` all become `length`.
+
+Commands executed (all passed): `ruff check`, `ruff format --check`, `mypy src`,
+`pytest -q --cov=pullbeacon` (341 passed, coverage 89 %), CLI smoke, mock eval (0.00 USD).
+No real model calls. Not verified remotely: the live behaviour with Anthropic (needs a paid call).
 
 ### Remote verification log (real GitHub, this repository)
 

