@@ -29,6 +29,8 @@ policy:
   exclude: ["**/*.lock", "**/generated/**", "**/vendor/**"]
   # Extra base-branch files the reviewer may read for context (bounded by max_file_bytes).
   context_files: []
+  # Findings below this severity are listed collapsed in the summary, not commented inline.
+  min_inline_severity: medium
   apply_enabled: true
   allowed_apply_paths: ["src/**", "tests/**"]
   min_apply_confidence: 0.80

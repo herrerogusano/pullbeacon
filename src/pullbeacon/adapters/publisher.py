@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from pullbeacon.adapters.github import GitHubClient
+from pullbeacon.core.findings import split_by_severity
 from pullbeacon.core.markers import (
     ReviewMarker,
     decode_marker,
@@ -17,7 +18,7 @@ from pullbeacon.core.markers import (
 )
 from pullbeacon.core.render import finding_comment, review_summary
 from pullbeacon.domain.errors import GitHubAPIError, StaleHeadError
-from pullbeacon.domain.models import Finding, PullRequestSnapshot, ReviewReport
+from pullbeacon.domain.models import Finding, PullRequestSnapshot, ReviewReport, Severity
 from pullbeacon.logging_utils import get_logger, log_event
 
 DEFAULT_BOT_LOGIN = "github-actions[bot]"
@@ -40,6 +41,7 @@ class PublishResult:
     inline_posted: int
     not_inline: tuple[tuple[str, str], ...]  # (finding id, reason)
     degraded: bool
+    collapsed: int = 0  # findings below min_inline_severity, listed collapsed in the summary
 
 
 def _is_bot(user: Any, bot_login: str) -> bool:
@@ -113,9 +115,16 @@ def post_reply(
 
 
 class ReviewPublisher:
-    def __init__(self, client: GitHubClient, *, apply_available: bool) -> None:
+    def __init__(
+        self,
+        client: GitHubClient,
+        *,
+        apply_available: bool,
+        min_severity: Severity = Severity.LOW,
+    ) -> None:
         self.client = client
         self.apply_available = apply_available
+        self.min_severity = min_severity
 
     def publish(
         self, snapshot: PullRequestSnapshot, report: ReviewReport, *, trigger: str
@@ -125,13 +134,12 @@ class ReviewPublisher:
             raise StaleHeadError(
                 "the pull request head moved while the review ran; results were not published"
             )
-        inline = [f for f in report.findings if f.inline and f.line and f.side]
+        shown, collapsed = split_by_severity(report.findings, self.min_severity)
+        inline = [f for f in shown if f.inline and f.line and f.side]
         not_inline: list[tuple[Finding, str]] = [
-            (f, "outside the diff or over the inline limit")
-            for f in report.findings
-            if f not in inline
+            (f, "outside the diff or over the inline limit") for f in shown if f not in inline
         ]
-        payload = self._payload(report, inline, not_inline, trigger)
+        payload = self._payload(report, inline, not_inline, collapsed, trigger)
         try:
             review = self.client.create_review(
                 snapshot.owner, snapshot.repo, snapshot.number, payload
@@ -152,7 +160,7 @@ class ReviewPublisher:
             )
             not_inline = demoted + not_inline
             inline = []
-            payload = self._payload(report, inline, not_inline, trigger)
+            payload = self._payload(report, inline, not_inline, collapsed, trigger)
             review = self.client.create_review(
                 snapshot.owner, snapshot.repo, snapshot.number, payload
             )
@@ -163,6 +171,7 @@ class ReviewPublisher:
             inline_posted=len(inline),
             not_inline=tuple((f.id, reason) for f, reason in not_inline),
             degraded=degraded,
+            collapsed=len(collapsed),
         )
 
     def _payload(
@@ -170,11 +179,17 @@ class ReviewPublisher:
         report: ReviewReport,
         inline: list[Finding],
         not_inline: list[tuple[Finding, str]],
+        collapsed: list[Finding],
         trigger: str,
     ) -> dict[str, Any]:
         marker = encode_marker(marker_from_report(report, trigger=trigger))
         body = review_summary(
-            report, not_inline=not_inline, apply_available=self.apply_available, marker=marker
+            report,
+            not_inline=not_inline,
+            collapsed=collapsed,
+            min_severity=self.min_severity,
+            apply_available=self.apply_available,
+            marker=marker,
         )
         # Never APPROVE / REQUEST_CHANGES in the MVP: humans decide.
         payload: dict[str, Any] = {"commit_id": report.head_sha, "event": "COMMENT", "body": body}

@@ -94,6 +94,8 @@ def review_summary(
     report: ReviewReport,
     *,
     not_inline: Iterable[tuple[Finding, str]] = (),
+    collapsed: Iterable[Finding] = (),
+    min_severity: Severity | None = None,
     apply_available: bool,
     marker: str,
 ) -> str:
@@ -130,6 +132,24 @@ def review_summary(
                 f"- **{finding.id}** ({finding.severity.value}, {finding.category.value}) "
                 f"{where} — {sanitize(finding.title, 200)} _(reason: {reason})_"
             )
+    hidden = list(collapsed)
+    if hidden:
+        floor = f" (below `min_inline_severity: {min_severity.value}`)" if min_severity else ""
+        lines += [
+            "",
+            f"<details><summary>{len(hidden)} lower-severity finding(s) not posted inline"
+            f"{floor}</summary>",
+            "",
+        ]
+        for finding in hidden:
+            where = f"`{sanitize(finding.path or '?', 200)}" + (
+                f":{finding.line}`" if finding.line else "`"
+            )
+            lines.append(
+                f"- **{finding.id}** ({finding.severity.value}, {finding.category.value}) "
+                f"{where} — {sanitize(finding.title, 200)}"
+            )
+        lines += ["", "</details>"]
     if report.skipped_files:
         lines += ["", "<details><summary>Skipped files</summary>", ""]
         lines += [f"- {s}" for s in _skips(report.skipped_files)]

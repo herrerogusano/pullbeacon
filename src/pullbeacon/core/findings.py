@@ -9,6 +9,7 @@ non-inline with a recorded reason; nothing is ever attributed to a guessed line.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -69,6 +70,15 @@ def evidence_in_diff(evidence: str, diff: FileDiff) -> bool:
         if needle in hay or (len(hay) >= MIN_EVIDENCE_MATCH and hay in needle):
             return True
     return False
+
+
+def split_by_severity(
+    findings: Sequence[Finding], floor: Severity
+) -> tuple[list[Finding], list[Finding]]:
+    """(shown, collapsed): findings at or above ``floor`` and the less severe rest."""
+    shown = [f for f in findings if f.severity.rank <= floor.rank]
+    collapsed = [f for f in findings if f.severity.rank > floor.rank]
+    return shown, collapsed
 
 
 def _category(value: str) -> Category:

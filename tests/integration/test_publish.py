@@ -233,3 +233,48 @@ def test_summary_only_suggests_commands_that_apply() -> None:
     assert "@pullbeacon explain" not in body
     assert "@pullbeacon apply" not in body
     assert "`@pullbeacon review`" in body
+
+
+def _with_low_finding(data):  # type: ignore[no-untyped-def]
+    from pullbeacon.adapters.llm import FakeLLMClient
+
+    review = json.loads(data["llm_responses"]["review"][0])
+    low = dict(review["findings"][0], severity="low", category="testing", can_apply=False)
+    low["title"] = "No test for the ownership check"
+    review["findings"].append(low)
+    return FakeLLMClient(responses={"review": [json.dumps(review)]})
+
+
+def test_low_findings_are_collapsed_in_the_summary_not_inline() -> None:
+    from tests.helpers import load_fixture
+
+    llm = _with_low_finding(load_fixture("pr_auth_bug.json"))
+    fake, services, _, _ = setup(llm=llm)
+    result = run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:1")
+    assert result.status is RunStatus.COMPLETED
+    assert result.details["inline_posted"] == 1
+    assert result.details["collapsed"] == 1
+    (post,) = review_posts(fake)
+    (comment,) = post.body["comments"]
+    assert "CRITICAL" in comment["body"]
+    summary = post.body["body"]
+    assert "1 lower-severity finding(s) not posted inline" in summary
+    assert "min_inline_severity: medium" in summary
+    assert "No test for the ownership check" in summary
+    # Both findings stay in the marker, so explain/apply by id keep working.
+    marker = decode_marker(summary)
+    assert marker is not None
+    assert len(marker.findings) == 2
+
+
+def test_min_inline_severity_low_posts_everything_inline() -> None:
+    from tests.helpers import APPLY_CONFIG, load_fixture
+
+    llm = _with_low_finding(load_fixture("pr_auth_bug.json"))
+    config = APPLY_CONFIG.replace("policy:", "policy:\n  min_inline_severity: low", 1)
+    fake, services, _, _ = setup(llm=llm, config=config)
+    result = run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:1")
+    assert result.details["inline_posted"] == 2
+    assert result.details["collapsed"] == 0
+    (post,) = review_posts(fake)
+    assert "lower-severity" not in post.body["body"]

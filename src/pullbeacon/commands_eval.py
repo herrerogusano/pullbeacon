@@ -7,12 +7,17 @@ from pathlib import Path
 
 from pullbeacon.adapters.llm import LiteLLMClient, LLMClient
 from pullbeacon.cli_output import emit_json
-from pullbeacon.config import PROVIDER_ENV_VARS, ModelConfig
+from pullbeacon.config import PROVIDER_ENV_VARS, ModelConfig, parse_config
 from pullbeacon.domain.errors import ConfigError
-from pullbeacon.domain.models import canonical_json
+from pullbeacon.domain.models import Severity, canonical_json
 from pullbeacon.evaluation.dataset import EvalCase, load_cases
 from pullbeacon.evaluation.report import to_csv, to_markdown
-from pullbeacon.evaluation.runner import ClientFactory, mock_factory, run_evaluation
+from pullbeacon.evaluation.runner import (
+    EVAL_CONFIG,
+    ClientFactory,
+    mock_factory,
+    run_evaluation,
+)
 
 
 def _live_factory(model_id: str) -> ClientFactory:
@@ -49,6 +54,11 @@ def add_eval_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) ->
         "--confirm-spend", action="store_true", help="required with --provider live"
     )
     parser.add_argument("--max-total-cost-usd", type=float, default=2.0)
+    parser.add_argument(
+        "--min-inline-severity",
+        choices=[s.value for s in Severity],
+        help="override policy.min_inline_severity (low = score every finding, as in v0.1)",
+    )
 
 
 def run_eval(args: argparse.Namespace) -> int:
@@ -74,9 +84,16 @@ def run_eval(args: argparse.Namespace) -> int:
     else:
         factories = [mock_factory]
         mode = "mock"
+    config = parse_config(EVAL_CONFIG)
+    if args.min_inline_severity:
+        policy = config.policy.model_copy(
+            update={"min_inline_severity": Severity(args.min_inline_severity)}
+        )
+        config = config.model_copy(update={"policy": policy})
     run = run_evaluation(
         cases,
         factories,
+        config=config,
         dataset_sha256=digest,
         mode=mode,
         total_budget_usd=args.max_total_cost_usd,
