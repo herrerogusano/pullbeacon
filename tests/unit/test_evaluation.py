@@ -277,7 +277,7 @@ def test_v2_dataset_loads_with_splits_and_authors() -> None:
 
 def test_v3_holdout_dataset_loads() -> None:
     cases_v3, _ = load_cases(Path(__file__).parents[2] / "evaluation" / "cases-v3")
-    assert len(cases_v3) >= 15
+    assert len(cases_v3) >= 18  # synthetic x3_* cases; the 28 OSS cases are fetched
     assert {c.split for c in cases_v3} == {"test"}
     assert {c.kind for c in cases_v3} == {"bug", "clean", "injection"}
     assert {c.author for c in cases_v3} == {"codex"}
