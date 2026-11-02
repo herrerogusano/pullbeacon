@@ -31,6 +31,7 @@ Usage::
     uv run python evaluation/fetch_oss_cases.py            # fetch, validate, write specs
     uv run python evaluation/fetch_oss_cases.py --check    # fetch and validate only
     uv run python evaluation/fetch_oss_cases.py --only oss_x --check
+    uv run python evaluation/fetch_oss_cases.py --manifest evaluation/oss_manifest_v3.json         --out evaluation/specs-v3-oss                  # benchmark v3 hold-out set
 
 Stdlib only (urllib); no API token needed for public repositories.
 """
@@ -291,9 +292,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--check", action="store_true", help="validate only; do not write specs")
     parser.add_argument("--only", action="append", default=[], help="restrict to these case_ids")
+    parser.add_argument("--manifest", type=Path, default=MANIFEST, help="manifest to read")
+    parser.add_argument("--out", type=Path, default=OUT_DIR, help="directory for the specs")
     args = parser.parse_args(argv)
+    out_dir: Path = args.out
 
-    entries = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    entries = json.loads(args.manifest.read_text(encoding="utf-8"))
     ids = [e.get("case_id") for e in entries]
     dupes = {i for i in ids if ids.count(i) > 1}
     if dupes:
@@ -304,7 +308,7 @@ def main(argv: list[str] | None = None) -> int:
 
     failures = 0
     if not args.check:
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(parents=True, exist_ok=True)
     for entry in entries:
         cid = entry.get("case_id", "<missing>")
         try:
@@ -314,7 +318,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"FAIL {cid}: {exc}", file=sys.stderr)
             continue
         if not args.check:
-            out = OUT_DIR / f"{cid}.json"
+            out = out_dir / f"{cid}.json"
             out.write_text(
                 json.dumps(spec, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
@@ -326,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     print(
         f"{len(entries) - failures}/{len(entries)} cases valid"
-        + ("" if args.check else f"; specs in {OUT_DIR}")
+        + ("" if args.check else f"; specs in {out_dir}")
     )
     if failures:
         print(f"ERROR: {failures} case(s) failed validation", file=sys.stderr)

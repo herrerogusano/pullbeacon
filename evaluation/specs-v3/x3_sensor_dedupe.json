@@ -1,0 +1,39 @@
+{
+  "case_id": "x3_sensor_dedupe",
+  "title": "Deduplicate incoming sensor readings",
+  "pr_body": "",
+  "language": "go",
+  "kind": "bug",
+  "criticality": "medium",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "performance",
+    "logic"
+  ],
+  "files": [
+    {
+      "path": "src/sensors/ingest.go",
+      "before": null,
+      "after": "package sensors\n\ntype Reading struct {\n    SensorID string\n    Sequence int64\n    Value float64\n}\n\nfunc Unique(readings []Reading) []Reading {\n    result := make([]Reading, 0, len(readings))\n    for _, reading := range readings {\n        seen := false\n        for _, previous := range result {\n            if previous.SensorID == reading.SensorID && previous.Sequence == reading.Sequence {\n                seen = true\n                break\n            }\n        }\n        if !seen { result = append(result, reading) }\n    }\n    return result\n}\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "reading-quadratic",
+      "path": "src/sensors/ingest.go",
+      "anchor": "for _, previous := range result {",
+      "category": "performance",
+      "severity": "medium",
+      "title": "Index readings by sensor and sequence",
+      "rationale": "For an input batch of n distinct readings, every new reading scans all prior readings, making ingestion O(n²) on untrusted batch sizes. A map keyed by sensor and sequence keeps this linear.",
+      "accepted": [
+        "reliability"
+      ]
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

@@ -1,0 +1,174 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_dossier_export",
+ "criticality": "critical",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 49,
+    "changes": 49,
+    "deletions": 0,
+    "filename": "src/dossiers/model.go",
+    "patch": "@@ -0,0 +1,49 @@\n+package dossiers\n+\n+import (\n+    \"errors\"\n+    \"strings\"\n+    \"time\"\n+)\n+\n+type Dossier struct {\n+    ID string `json:\"id\"`\n+    TenantID string `json:\"-\"`\n+    Subject string `json:\"subject\"`\n+    Status string `json:\"status\"`\n+    Owner string `json:\"owner\"`\n+    CreatedAt time.Time `json:\"createdAt\"`\n+    UpdatedAt time.Time `json:\"updatedAt\"`\n+}\n+\n+type Export struct {\n+    Dossier Dossier `json:\"dossier\"`\n+    Events []Event `json:\"events\"`\n+    GeneratedAt time.Time `json:\"generatedAt\"`\n+}\n+\n+type Event struct {\n+    ID string `json:\"id\"`\n+    DossierID string `json:\"dossierId\"`\n+    Kind string `json:\"kind\"`\n+    Actor string `json:\"actor\"`\n+    At time.Time `json:\"at\"`\n+    Detail string `json:\"detail\"`\n+}\n+\n+var ErrNotFound = errors.New(\"dossier not found\")\n+\n+func ValidStatus(status string) bool {\n+    switch status {\n+    case \"open\", \"review\", \"closed\": return true\n+    default: return false\n+    }\n+}\n+\n+func NewDossier(id, tenantID, subject, owner string, now time.Time) (Dossier, error) {\n+    if id == \"\" || tenantID == \"\" || owner == \"\" || strings.TrimSpace(subject) == \"\" {\n+        return Dossier{}, errors.New(\"missing dossier field\")\n+    }\n+    return Dossier{ID: id, TenantID: tenantID, Subject: strings.TrimSpace(subject),\n+        Owner: owner, Status: \"open\", CreatedAt: now.UTC(), UpdatedAt: now.UTC()}, nil\n+}",
+    "sha": "4762bcd66ba03c84770d4b0e389a4ecc7edcd033",
+    "status": "added"
+   },
+   {
+    "additions": 55,
+    "changes": 55,
+    "deletions": 0,
+    "filename": "src/dossiers/repository.go",
+    "patch": "@@ -0,0 +1,55 @@\n+package dossiers\n+\n+import (\n+    \"context\"\n+    \"database/sql\"\n+    \"errors\"\n+    \"time\"\n+)\n+\n+type Repository struct { DB *sql.DB }\n+\n+func (r Repository) Create(ctx context.Context, item Dossier) error {\n+    _, err := r.DB.ExecContext(ctx, `INSERT INTO dossiers\n+        (id, tenant_id, subject, status, owner, created_at, updated_at)\n+        VALUES ($1,$2,$3,$4,$5,$6,$7)`, item.ID, item.TenantID,\n+        item.Subject, item.Status, item.Owner, item.CreatedAt, item.UpdatedAt)\n+    return err\n+}\n+\n+func (r Repository) Get(ctx context.Context, tenantID, id string) (Dossier, error) {\n+    var d Dossier\n+    err := r.DB.QueryRowContext(ctx, `SELECT id, tenant_id, subject, status,\n+        owner, created_at, updated_at FROM dossiers WHERE id = $1`, id).Scan(\n+        &d.ID, &d.TenantID, &d.Subject, &d.Status, &d.Owner, &d.CreatedAt, &d.UpdatedAt)\n+    if errors.Is(err, sql.ErrNoRows) { return Dossier{}, ErrNotFound }\n+    if err != nil { return Dossier{}, err }\n+    return d, nil\n+}\n+\n+func (r Repository) List(ctx context.Context, tenantID string, limit int) ([]Dossier, error) {\n+    rows, err := r.DB.QueryContext(ctx, `SELECT id, tenant_id, subject, status,\n+        owner, created_at, updated_at FROM dossiers WHERE tenant_id = $1\n+        ORDER BY updated_at DESC LIMIT $2`, tenantID, limit)\n+    if err != nil { return nil, err }\n+    defer rows.Close()\n+    items := []Dossier{}\n+    for rows.Next() {\n+        var d Dossier\n+        if err := rows.Scan(&d.ID, &d.TenantID, &d.Subject, &d.Status,\n+            &d.Owner, &d.CreatedAt, &d.UpdatedAt); err != nil { return nil, err }\n+        items = append(items, d)\n+    }\n+    return items, rows.Err()\n+}\n+\n+func (r Repository) SetStatus(ctx context.Context, tenantID, id, status string, now time.Time) error {\n+    if !ValidStatus(status) { return errors.New(\"invalid status\") }\n+    result, err := r.DB.ExecContext(ctx, `UPDATE dossiers SET status=$1, updated_at=$2\n+        WHERE tenant_id=$3 AND id=$4`, status, now.UTC(), tenantID, id)\n+    if err != nil { return err }\n+    count, err := result.RowsAffected()\n+    if err != nil { return err }\n+    if count == 0 { return ErrNotFound }\n+    return nil\n+}",
+    "sha": "5a9f0f4e2f5dfa332a7e5d2aa2a1a3ee3b94a6e5",
+    "status": "added"
+   },
+   {
+    "additions": 42,
+    "changes": 42,
+    "deletions": 0,
+    "filename": "src/dossiers/events.go",
+    "patch": "@@ -0,0 +1,42 @@\n+package dossiers\n+\n+import (\n+    \"context\"\n+    \"database/sql\"\n+    \"errors\"\n+    \"time\"\n+)\n+\n+type EventRepository struct { DB *sql.DB }\n+\n+func (r EventRepository) Append(ctx context.Context, tenantID string, event Event) error {\n+    if tenantID == \"\" || event.ID == \"\" || event.DossierID == \"\" || event.Kind == \"\" {\n+        return errors.New(\"invalid event\")\n+    }\n+    _, err := r.DB.ExecContext(ctx, `INSERT INTO dossier_events\n+        (id, tenant_id, dossier_id, kind, actor, occurred_at, detail)\n+        VALUES ($1,$2,$3,$4,$5,$6,$7)`, event.ID, tenantID, event.DossierID,\n+        event.Kind, event.Actor, event.At.UTC(), event.Detail)\n+    return err\n+}\n+\n+func (r EventRepository) ForDossier(ctx context.Context, tenantID, dossierID string) ([]Event, error) {\n+    rows, err := r.DB.QueryContext(ctx, `SELECT id, dossier_id, kind, actor,\n+        occurred_at, detail FROM dossier_events WHERE tenant_id=$1 AND dossier_id=$2\n+        ORDER BY occurred_at, id`, tenantID, dossierID)\n+    if err != nil { return nil, err }\n+    defer rows.Close()\n+    events := []Event{}\n+    for rows.Next() {\n+        var e Event\n+        if err := rows.Scan(&e.ID, &e.DossierID, &e.Kind,\n+            &e.Actor, &e.At, &e.Detail); err != nil { return nil, err }\n+        events = append(events, e)\n+    }\n+    return events, rows.Err()\n+}\n+\n+func NewEvent(id, dossierID, kind, actor, detail string, at time.Time) Event {\n+    return Event{ID: id, DossierID: dossierID, Kind: kind,\n+        Actor: actor, Detail: detail, At: at.UTC()}\n+}",
+    "sha": "926303b657c049135f4df0997d3180eedc86c26c",
+    "status": "added"
+   },
+   {
+    "additions": 33,
+    "changes": 33,
+    "deletions": 0,
+    "filename": "src/dossiers/summary.go",
+    "patch": "@@ -0,0 +1,33 @@\n+package dossiers\n+\n+import (\n+    \"sort\"\n+    \"time\"\n+)\n+\n+type Summary struct {\n+    DossierID string `json:\"dossierId\"`\n+    Status string `json:\"status\"`\n+    EventCount int `json:\"eventCount\"`\n+    LastActivity time.Time `json:\"lastActivity\"`\n+    Actors []string `json:\"actors\"`\n+}\n+\n+func Summarize(item Dossier, events []Event) Summary {\n+    actors := map[string]struct{}{}\n+    last := item.UpdatedAt\n+    for _, event := range events {\n+        if event.Actor != \"\" { actors[event.Actor] = struct{}{} }\n+        if event.At.After(last) { last = event.At }\n+    }\n+    names := make([]string, 0, len(actors))\n+    for actor := range actors { names = append(names, actor) }\n+    sort.Strings(names)\n+    return Summary{\n+        DossierID: item.ID,\n+        Status: item.Status,\n+        EventCount: len(events),\n+        LastActivity: last.UTC(),\n+        Actors: names,\n+    }\n+}",
+    "sha": "6fa5caffdbd03dd469112ff2848b783b1f80a14b",
+    "status": "added"
+   },
+   {
+    "additions": 35,
+    "changes": 35,
+    "deletions": 0,
+    "filename": "src/dossiers/export.go",
+    "patch": "@@ -0,0 +1,35 @@\n+package dossiers\n+\n+import (\n+    \"context\"\n+    \"encoding/json\"\n+    \"io\"\n+    \"time\"\n+)\n+\n+type Exporter struct {\n+    Dossiers Repository\n+    Events EventRepository\n+    Now func() time.Time\n+}\n+\n+func (e Exporter) Build(ctx context.Context, tenantID, dossierID string) (Export, error) {\n+    dossier, err := e.Dossiers.Get(ctx, tenantID, dossierID)\n+    if err != nil { return Export{}, err }\n+    events, err := e.Events.ForDossier(ctx, tenantID, dossierID)\n+    if err != nil { return Export{}, err }\n+    now := time.Now\n+    if e.Now != nil { now = e.Now }\n+    return Export{Dossier: dossier, Events: events, GeneratedAt: now().UTC()}, nil\n+}\n+\n+func WriteJSON(writer io.Writer, export Export) error {\n+    encoder := json.NewEncoder(writer)\n+    encoder.SetEscapeHTML(true)\n+    encoder.SetIndent(\"\", \"  \")\n+    return encoder.Encode(export)\n+}\n+\n+func ExportFilename(dossierID string) string {\n+    return \"dossier-\" + dossierID + \".json\"\n+}",
+    "sha": "316ec359ce9ca4fa7eca5f90a4ae9423d37ad699",
+    "status": "added"
+   },
+   {
+    "additions": 45,
+    "changes": 45,
+    "deletions": 0,
+    "filename": "src/dossiers/http.go",
+    "patch": "@@ -0,0 +1,45 @@\n+package dossiers\n+\n+import (\n+    \"encoding/json\"\n+    \"errors\"\n+    \"net/http\"\n+    \"strings\"\n+)\n+\n+type TenantResolver func(*http.Request) (string, bool)\n+\n+type Handler struct {\n+    Repository Repository\n+    Exporter Exporter\n+    ResolveTenant TenantResolver\n+}\n+\n+func (h Handler) tenant(w http.ResponseWriter, r *http.Request) (string, bool) {\n+    if h.ResolveTenant == nil { http.Error(w, \"unauthorized\", http.StatusUnauthorized); return \"\", false }\n+    tenantID, ok := h.ResolveTenant(r)\n+    if !ok || tenantID == \"\" { http.Error(w, \"unauthorized\", http.StatusUnauthorized); return \"\", false }\n+    return tenantID, true\n+}\n+\n+func (h Handler) List(w http.ResponseWriter, r *http.Request) {\n+    tenantID, ok := h.tenant(w, r)\n+    if !ok { return }\n+    items, err := h.Repository.List(r.Context(), tenantID, 100)\n+    if err != nil { http.Error(w, \"database unavailable\", 500); return }\n+    w.Header().Set(\"Content-Type\", \"application/json\")\n+    _ = json.NewEncoder(w).Encode(items)\n+}\n+\n+func (h Handler) Download(w http.ResponseWriter, r *http.Request) {\n+    tenantID, ok := h.tenant(w, r)\n+    if !ok { return }\n+    dossierID := strings.TrimSpace(r.PathValue(\"dossierID\"))\n+    if dossierID == \"\" { http.Error(w, \"missing ID\", 400); return }\n+    data, err := h.Exporter.Build(r.Context(), tenantID, dossierID)\n+    if errors.Is(err, ErrNotFound) { http.NotFound(w, r); return }\n+    if err != nil { http.Error(w, \"database unavailable\", 500); return }\n+    w.Header().Set(\"Content-Type\", \"application/json\")\n+    w.Header().Set(\"Content-Disposition\", \"attachment; filename=dossier.json\")\n+    if err := WriteJSON(w, data); err != nil { return }\n+}",
+    "sha": "4959a15a9412a7527829874ea28d300b45442e62",
+    "status": "added"
+   },
+   {
+    "additions": 59,
+    "changes": 59,
+    "deletions": 0,
+    "filename": "src/dossiers/export_test.go",
+    "patch": "@@ -0,0 +1,59 @@\n+package dossiers\n+\n+import (\n+    \"bytes\"\n+    \"encoding/json\"\n+    \"strings\"\n+    \"testing\"\n+    \"time\"\n+)\n+\n+func TestNewDossier(t *testing.T) {\n+    now := time.Date(2032, 4, 3, 10, 0, 0, 0, time.UTC)\n+    item, err := NewDossier(\"d1\", \"north\", \" Equipment return \", \"mira\", now)\n+    if err != nil { t.Fatal(err) }\n+    if item.Subject != \"Equipment return\" || item.Status != \"open\" {\n+        t.Fatalf(\"unexpected dossier: %+v\", item)\n+    }\n+}\n+\n+func TestNewDossierRejectsBlankSubject(t *testing.T) {\n+    _, err := NewDossier(\"d1\", \"north\", \"  \", \"mira\", time.Now())\n+    if err == nil { t.Fatal(\"expected validation error\") }\n+}\n+\n+func TestWriteJSON(t *testing.T) {\n+    item, _ := NewDossier(\"d1\", \"north\", \"Equipment return\", \"mira\", time.Now())\n+    report := Export{Dossier: item, Events: []Event{}, GeneratedAt: time.Now()}\n+    var output bytes.Buffer\n+    if err := WriteJSON(&output, report); err != nil { t.Fatal(err) }\n+    var payload map[string]any\n+    if err := json.Unmarshal(output.Bytes(), &payload); err != nil { t.Fatal(err) }\n+    dossier := payload[\"dossier\"].(map[string]any)\n+    if dossier[\"subject\"] != \"Equipment return\" { t.Fatal(dossier) }\n+    if _, exists := dossier[\"TenantID\"]; exists { t.Fatal(\"tenant leaked in JSON\") }\n+    if !strings.HasSuffix(output.String(), \"\\n\") { t.Fatal(\"expected newline\") }\n+}\n+\n+func TestStatusValues(t *testing.T) {\n+    for _, status := range []string{\"open\", \"review\", \"closed\"} {\n+        if !ValidStatus(status) { t.Fatalf(\"invalid %s\", status) }\n+    }\n+    if ValidStatus(\"archived\") { t.Fatal(\"unexpected status\") }\n+}\n+\n+func TestSummarizeActors(t *testing.T) {\n+    updated := time.Date(2032, 4, 3, 10, 0, 0, 0, time.UTC)\n+    item, _ := NewDossier(\"d1\", \"north\", \"Return\", \"mira\", updated)\n+    events := []Event{\n+        NewEvent(\"e1\", \"d1\", \"note\", \"zoe\", \"First\", updated.Add(time.Minute)),\n+        NewEvent(\"e2\", \"d1\", \"note\", \"amy\", \"Second\", updated.Add(2*time.Minute)),\n+        NewEvent(\"e3\", \"d1\", \"review\", \"zoe\", \"Third\", updated.Add(3*time.Minute)),\n+    }\n+    summary := Summarize(item, events)\n+    if summary.EventCount != 3 { t.Fatalf(\"count: %d\", summary.EventCount) }\n+    if strings.Join(summary.Actors, \",\") != \"amy,zoe\" { t.Fatal(summary.Actors) }\n+    if !summary.LastActivity.Equal(updated.Add(3*time.Minute)) {\n+        t.Fatal(summary.LastActivity)\n+    }\n+}",
+    "sha": "0e088648bbe87a87d48e680b601add2aa71fc3cc",
+    "status": "added"
+   },
+   {
+    "additions": 32,
+    "changes": 32,
+    "deletions": 0,
+    "filename": "scripts/migrations/052_dossiers.sql",
+    "patch": "@@ -0,0 +1,32 @@\n+CREATE TABLE dossiers (\n+    id text PRIMARY KEY,\n+    tenant_id text NOT NULL,\n+    subject text NOT NULL,\n+    status text NOT NULL DEFAULT 'open',\n+    owner text NOT NULL,\n+    created_at timestamptz NOT NULL,\n+    updated_at timestamptz NOT NULL,\n+    UNIQUE (tenant_id, id),\n+    CONSTRAINT dossier_subject_nonempty CHECK (length(trim(subject)) > 0),\n+    CONSTRAINT dossier_status_valid CHECK (status IN ('open', 'review', 'closed')),\n+    CONSTRAINT dossier_owner_nonempty CHECK (length(owner) > 0)\n+);\n+\n+CREATE INDEX dossiers_tenant_updated_idx\n+    ON dossiers (tenant_id, updated_at DESC);\n+\n+CREATE TABLE dossier_events (\n+    id text PRIMARY KEY,\n+    tenant_id text NOT NULL,\n+    dossier_id text NOT NULL,\n+    kind text NOT NULL,\n+    actor text NOT NULL,\n+    occurred_at timestamptz NOT NULL,\n+    detail text NOT NULL DEFAULT '',\n+    CONSTRAINT dossier_event_kind_nonempty CHECK (length(kind) > 0),\n+    CONSTRAINT dossier_event_actor_nonempty CHECK (length(actor) > 0),\n+    FOREIGN KEY (tenant_id, dossier_id) REFERENCES dossiers(tenant_id, id) ON DELETE CASCADE\n+);\n+\n+CREATE INDEX dossier_events_lookup_idx\n+    ON dossier_events (tenant_id, dossier_id, occurred_at, id);",
+    "sha": "3aecf1bf559eb5f6c53499fb51a3001d1e572290",
+    "status": "added"
+   },
+   {
+    "additions": 53,
+    "changes": 53,
+    "deletions": 0,
+    "filename": "docs/dossiers/exports.md",
+    "patch": "@@ -0,0 +1,53 @@\n+# Dossier exports\n+\n+Dossiers belong to a tenant and can be downloaded as JSON.\n+The authenticated tenant comes from the request context.\n+Callers do not choose a tenant through a request parameter.\n+\n+## Stored fields\n+\n+IDs are stable strings allocated by the creating service.\n+Subjects are trimmed at creation time.\n+A dossier starts in the open status.\n+Review and closed are the other supported statuses.\n+Creation and update timestamps are stored in UTC.\n+Owners identify the staff account responsible for the dossier.\n+\n+## Events\n+\n+Events record state changes and staff actions.\n+An event has a kind, actor, timestamp, and detail text.\n+Event lists are ordered by timestamp and ID.\n+The tenant is stored with each event for query isolation.\n+Event timestamps are serialized in UTC.\n+\n+## Endpoints\n+\n+The list endpoint returns the newest 100 tenant dossiers.\n+The download endpoint accepts a dossier ID path segment.\n+The response is indented JSON with an attachment header.\n+A missing dossier returns 404.\n+Unauthenticated requests return 401.\n+Database errors return 500 without exposing SQL details.\n+\n+## Export shape\n+\n+The top-level document contains dossier, events, and generatedAt.\n+The dossier JSON omits its internal tenant ID.\n+Event detail strings are retained verbatim for audit review.\n+GeneratedAt marks the time the export was assembled.\n+No external network call is needed to assemble an export.\n+\n+## Operations\n+\n+A tenant must never receive another tenant's dossier.\n+List and download must use the same tenant identity source.\n+The audit log should include the dossier ID on failed exports.\n+JSON output is encoded with HTML escaping enabled.\n+Exports are suitable for administrative retention workflows.\n+Status updates use the tenant and dossier ID together.\n+Clients should retain generatedAt alongside downloaded archives.\n+Operators can reconcile event counts with the summary view.\n+The JSON export is intended for one dossier per request.\n+Retention systems may index exports by dossier ID and generation time.\n+Event ordering remains stable when timestamps match.",
+    "sha": "1be7cb763965f38ce6f0d2f3aca2136d08c37815",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "28f6e3484404608c8f41f606e096c948dd9d0871"
+   },
+   "body": "Adds tenant-scoped dossier listing, event history and JSON export for administrative retention.",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_dossier_export",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "b8bf3959abfd7461e6ba27c4ac90461322eee1cf"
+   },
+   "number": 885,
+   "state": "open",
+   "title": "Add dossier export endpoints",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "28f6e3484404608c8f41f606e096c948dd9d0871": {},
+   "b8bf3959abfd7461e6ba27c4ac90461322eee1cf": {
+    "docs/dossiers/exports.md": "# Dossier exports\n\nDossiers belong to a tenant and can be downloaded as JSON.\nThe authenticated tenant comes from the request context.\nCallers do not choose a tenant through a request parameter.\n\n## Stored fields\n\nIDs are stable strings allocated by the creating service.\nSubjects are trimmed at creation time.\nA dossier starts in the open status.\nReview and closed are the other supported statuses.\nCreation and update timestamps are stored in UTC.\nOwners identify the staff account responsible for the dossier.\n\n## Events\n\nEvents record state changes and staff actions.\nAn event has a kind, actor, timestamp, and detail text.\nEvent lists are ordered by timestamp and ID.\nThe tenant is stored with each event for query isolation.\nEvent timestamps are serialized in UTC.\n\n## Endpoints\n\nThe list endpoint returns the newest 100 tenant dossiers.\nThe download endpoint accepts a dossier ID path segment.\nThe response is indented JSON with an attachment header.\nA missing dossier returns 404.\nUnauthenticated requests return 401.\nDatabase errors return 500 without exposing SQL details.\n\n## Export shape\n\nThe top-level document contains dossier, events, and generatedAt.\nThe dossier JSON omits its internal tenant ID.\nEvent detail strings are retained verbatim for audit review.\nGeneratedAt marks the time the export was assembled.\nNo external network call is needed to assemble an export.\n\n## Operations\n\nA tenant must never receive another tenant's dossier.\nList and download must use the same tenant identity source.\nThe audit log should include the dossier ID on failed exports.\nJSON output is encoded with HTML escaping enabled.\nExports are suitable for administrative retention workflows.\nStatus updates use the tenant and dossier ID together.\nClients should retain generatedAt alongside downloaded archives.\nOperators can reconcile event counts with the summary view.\nThe JSON export is intended for one dossier per request.\nRetention systems may index exports by dossier ID and generation time.\nEvent ordering remains stable when timestamps match.\n",
+    "scripts/migrations/052_dossiers.sql": "CREATE TABLE dossiers (\n    id text PRIMARY KEY,\n    tenant_id text NOT NULL,\n    subject text NOT NULL,\n    status text NOT NULL DEFAULT 'open',\n    owner text NOT NULL,\n    created_at timestamptz NOT NULL,\n    updated_at timestamptz NOT NULL,\n    UNIQUE (tenant_id, id),\n    CONSTRAINT dossier_subject_nonempty CHECK (length(trim(subject)) > 0),\n    CONSTRAINT dossier_status_valid CHECK (status IN ('open', 'review', 'closed')),\n    CONSTRAINT dossier_owner_nonempty CHECK (length(owner) > 0)\n);\n\nCREATE INDEX dossiers_tenant_updated_idx\n    ON dossiers (tenant_id, updated_at DESC);\n\nCREATE TABLE dossier_events (\n    id text PRIMARY KEY,\n    tenant_id text NOT NULL,\n    dossier_id text NOT NULL,\n    kind text NOT NULL,\n    actor text NOT NULL,\n    occurred_at timestamptz NOT NULL,\n    detail text NOT NULL DEFAULT '',\n    CONSTRAINT dossier_event_kind_nonempty CHECK (length(kind) > 0),\n    CONSTRAINT dossier_event_actor_nonempty CHECK (length(actor) > 0),\n    FOREIGN KEY (tenant_id, dossier_id) REFERENCES dossiers(tenant_id, id) ON DELETE CASCADE\n);\n\nCREATE INDEX dossier_events_lookup_idx\n    ON dossier_events (tenant_id, dossier_id, occurred_at, id);\n",
+    "src/dossiers/events.go": "package dossiers\n\nimport (\n    \"context\"\n    \"database/sql\"\n    \"errors\"\n    \"time\"\n)\n\ntype EventRepository struct { DB *sql.DB }\n\nfunc (r EventRepository) Append(ctx context.Context, tenantID string, event Event) error {\n    if tenantID == \"\" || event.ID == \"\" || event.DossierID == \"\" || event.Kind == \"\" {\n        return errors.New(\"invalid event\")\n    }\n    _, err := r.DB.ExecContext(ctx, `INSERT INTO dossier_events\n        (id, tenant_id, dossier_id, kind, actor, occurred_at, detail)\n        VALUES ($1,$2,$3,$4,$5,$6,$7)`, event.ID, tenantID, event.DossierID,\n        event.Kind, event.Actor, event.At.UTC(), event.Detail)\n    return err\n}\n\nfunc (r EventRepository) ForDossier(ctx context.Context, tenantID, dossierID string) ([]Event, error) {\n    rows, err := r.DB.QueryContext(ctx, `SELECT id, dossier_id, kind, actor,\n        occurred_at, detail FROM dossier_events WHERE tenant_id=$1 AND dossier_id=$2\n        ORDER BY occurred_at, id`, tenantID, dossierID)\n    if err != nil { return nil, err }\n    defer rows.Close()\n    events := []Event{}\n    for rows.Next() {\n        var e Event\n        if err := rows.Scan(&e.ID, &e.DossierID, &e.Kind,\n            &e.Actor, &e.At, &e.Detail); err != nil { return nil, err }\n        events = append(events, e)\n    }\n    return events, rows.Err()\n}\n\nfunc NewEvent(id, dossierID, kind, actor, detail string, at time.Time) Event {\n    return Event{ID: id, DossierID: dossierID, Kind: kind,\n        Actor: actor, Detail: detail, At: at.UTC()}\n}\n",
+    "src/dossiers/export.go": "package dossiers\n\nimport (\n    \"context\"\n    \"encoding/json\"\n    \"io\"\n    \"time\"\n)\n\ntype Exporter struct {\n    Dossiers Repository\n    Events EventRepository\n    Now func() time.Time\n}\n\nfunc (e Exporter) Build(ctx context.Context, tenantID, dossierID string) (Export, error) {\n    dossier, err := e.Dossiers.Get(ctx, tenantID, dossierID)\n    if err != nil { return Export{}, err }\n    events, err := e.Events.ForDossier(ctx, tenantID, dossierID)\n    if err != nil { return Export{}, err }\n    now := time.Now\n    if e.Now != nil { now = e.Now }\n    return Export{Dossier: dossier, Events: events, GeneratedAt: now().UTC()}, nil\n}\n\nfunc WriteJSON(writer io.Writer, export Export) error {\n    encoder := json.NewEncoder(writer)\n    encoder.SetEscapeHTML(true)\n    encoder.SetIndent(\"\", \"  \")\n    return encoder.Encode(export)\n}\n\nfunc ExportFilename(dossierID string) string {\n    return \"dossier-\" + dossierID + \".json\"\n}\n",
+    "src/dossiers/export_test.go": "package dossiers\n\nimport (\n    \"bytes\"\n    \"encoding/json\"\n    \"strings\"\n    \"testing\"\n    \"time\"\n)\n\nfunc TestNewDossier(t *testing.T) {\n    now := time.Date(2032, 4, 3, 10, 0, 0, 0, time.UTC)\n    item, err := NewDossier(\"d1\", \"north\", \" Equipment return \", \"mira\", now)\n    if err != nil { t.Fatal(err) }\n    if item.Subject != \"Equipment return\" || item.Status != \"open\" {\n        t.Fatalf(\"unexpected dossier: %+v\", item)\n    }\n}\n\nfunc TestNewDossierRejectsBlankSubject(t *testing.T) {\n    _, err := NewDossier(\"d1\", \"north\", \"  \", \"mira\", time.Now())\n    if err == nil { t.Fatal(\"expected validation error\") }\n}\n\nfunc TestWriteJSON(t *testing.T) {\n    item, _ := NewDossier(\"d1\", \"north\", \"Equipment return\", \"mira\", time.Now())\n    report := Export{Dossier: item, Events: []Event{}, GeneratedAt: time.Now()}\n    var output bytes.Buffer\n    if err := WriteJSON(&output, report); err != nil { t.Fatal(err) }\n    var payload map[string]any\n    if err := json.Unmarshal(output.Bytes(), &payload); err != nil { t.Fatal(err) }\n    dossier := payload[\"dossier\"].(map[string]any)\n    if dossier[\"subject\"] != \"Equipment return\" { t.Fatal(dossier) }\n    if _, exists := dossier[\"TenantID\"]; exists { t.Fatal(\"tenant leaked in JSON\") }\n    if !strings.HasSuffix(output.String(), \"\\n\") { t.Fatal(\"expected newline\") }\n}\n\nfunc TestStatusValues(t *testing.T) {\n    for _, status := range []string{\"open\", \"review\", \"closed\"} {\n        if !ValidStatus(status) { t.Fatalf(\"invalid %s\", status) }\n    }\n    if ValidStatus(\"archived\") { t.Fatal(\"unexpected status\") }\n}\n\nfunc TestSummarizeActors(t *testing.T) {\n    updated := time.Date(2032, 4, 3, 10, 0, 0, 0, time.UTC)\n    item, _ := NewDossier(\"d1\", \"north\", \"Return\", \"mira\", updated)\n    events := []Event{\n        NewEvent(\"e1\", \"d1\", \"note\", \"zoe\", \"First\", updated.Add(time.Minute)),\n        NewEvent(\"e2\", \"d1\", \"note\", \"amy\", \"Second\", updated.Add(2*time.Minute)),\n        NewEvent(\"e3\", \"d1\", \"review\", \"zoe\", \"Third\", updated.Add(3*time.Minute)),\n    }\n    summary := Summarize(item, events)\n    if summary.EventCount != 3 { t.Fatalf(\"count: %d\", summary.EventCount) }\n    if strings.Join(summary.Actors, \",\") != \"amy,zoe\" { t.Fatal(summary.Actors) }\n    if !summary.LastActivity.Equal(updated.Add(3*time.Minute)) {\n        t.Fatal(summary.LastActivity)\n    }\n}\n",
+    "src/dossiers/http.go": "package dossiers\n\nimport (\n    \"encoding/json\"\n    \"errors\"\n    \"net/http\"\n    \"strings\"\n)\n\ntype TenantResolver func(*http.Request) (string, bool)\n\ntype Handler struct {\n    Repository Repository\n    Exporter Exporter\n    ResolveTenant TenantResolver\n}\n\nfunc (h Handler) tenant(w http.ResponseWriter, r *http.Request) (string, bool) {\n    if h.ResolveTenant == nil { http.Error(w, \"unauthorized\", http.StatusUnauthorized); return \"\", false }\n    tenantID, ok := h.ResolveTenant(r)\n    if !ok || tenantID == \"\" { http.Error(w, \"unauthorized\", http.StatusUnauthorized); return \"\", false }\n    return tenantID, true\n}\n\nfunc (h Handler) List(w http.ResponseWriter, r *http.Request) {\n    tenantID, ok := h.tenant(w, r)\n    if !ok { return }\n    items, err := h.Repository.List(r.Context(), tenantID, 100)\n    if err != nil { http.Error(w, \"database unavailable\", 500); return }\n    w.Header().Set(\"Content-Type\", \"application/json\")\n    _ = json.NewEncoder(w).Encode(items)\n}\n\nfunc (h Handler) Download(w http.ResponseWriter, r *http.Request) {\n    tenantID, ok := h.tenant(w, r)\n    if !ok { return }\n    dossierID := strings.TrimSpace(r.PathValue(\"dossierID\"))\n    if dossierID == \"\" { http.Error(w, \"missing ID\", 400); return }\n    data, err := h.Exporter.Build(r.Context(), tenantID, dossierID)\n    if errors.Is(err, ErrNotFound) { http.NotFound(w, r); return }\n    if err != nil { http.Error(w, \"database unavailable\", 500); return }\n    w.Header().Set(\"Content-Type\", \"application/json\")\n    w.Header().Set(\"Content-Disposition\", \"attachment; filename=dossier.json\")\n    if err := WriteJSON(w, data); err != nil { return }\n}\n",
+    "src/dossiers/model.go": "package dossiers\n\nimport (\n    \"errors\"\n    \"strings\"\n    \"time\"\n)\n\ntype Dossier struct {\n    ID string `json:\"id\"`\n    TenantID string `json:\"-\"`\n    Subject string `json:\"subject\"`\n    Status string `json:\"status\"`\n    Owner string `json:\"owner\"`\n    CreatedAt time.Time `json:\"createdAt\"`\n    UpdatedAt time.Time `json:\"updatedAt\"`\n}\n\ntype Export struct {\n    Dossier Dossier `json:\"dossier\"`\n    Events []Event `json:\"events\"`\n    GeneratedAt time.Time `json:\"generatedAt\"`\n}\n\ntype Event struct {\n    ID string `json:\"id\"`\n    DossierID string `json:\"dossierId\"`\n    Kind string `json:\"kind\"`\n    Actor string `json:\"actor\"`\n    At time.Time `json:\"at\"`\n    Detail string `json:\"detail\"`\n}\n\nvar ErrNotFound = errors.New(\"dossier not found\")\n\nfunc ValidStatus(status string) bool {\n    switch status {\n    case \"open\", \"review\", \"closed\": return true\n    default: return false\n    }\n}\n\nfunc NewDossier(id, tenantID, subject, owner string, now time.Time) (Dossier, error) {\n    if id == \"\" || tenantID == \"\" || owner == \"\" || strings.TrimSpace(subject) == \"\" {\n        return Dossier{}, errors.New(\"missing dossier field\")\n    }\n    return Dossier{ID: id, TenantID: tenantID, Subject: strings.TrimSpace(subject),\n        Owner: owner, Status: \"open\", CreatedAt: now.UTC(), UpdatedAt: now.UTC()}, nil\n}\n",
+    "src/dossiers/repository.go": "package dossiers\n\nimport (\n    \"context\"\n    \"database/sql\"\n    \"errors\"\n    \"time\"\n)\n\ntype Repository struct { DB *sql.DB }\n\nfunc (r Repository) Create(ctx context.Context, item Dossier) error {\n    _, err := r.DB.ExecContext(ctx, `INSERT INTO dossiers\n        (id, tenant_id, subject, status, owner, created_at, updated_at)\n        VALUES ($1,$2,$3,$4,$5,$6,$7)`, item.ID, item.TenantID,\n        item.Subject, item.Status, item.Owner, item.CreatedAt, item.UpdatedAt)\n    return err\n}\n\nfunc (r Repository) Get(ctx context.Context, tenantID, id string) (Dossier, error) {\n    var d Dossier\n    err := r.DB.QueryRowContext(ctx, `SELECT id, tenant_id, subject, status,\n        owner, created_at, updated_at FROM dossiers WHERE id = $1`, id).Scan(\n        &d.ID, &d.TenantID, &d.Subject, &d.Status, &d.Owner, &d.CreatedAt, &d.UpdatedAt)\n    if errors.Is(err, sql.ErrNoRows) { return Dossier{}, ErrNotFound }\n    if err != nil { return Dossier{}, err }\n    return d, nil\n}\n\nfunc (r Repository) List(ctx context.Context, tenantID string, limit int) ([]Dossier, error) {\n    rows, err := r.DB.QueryContext(ctx, `SELECT id, tenant_id, subject, status,\n        owner, created_at, updated_at FROM dossiers WHERE tenant_id = $1\n        ORDER BY updated_at DESC LIMIT $2`, tenantID, limit)\n    if err != nil { return nil, err }\n    defer rows.Close()\n    items := []Dossier{}\n    for rows.Next() {\n        var d Dossier\n        if err := rows.Scan(&d.ID, &d.TenantID, &d.Subject, &d.Status,\n            &d.Owner, &d.CreatedAt, &d.UpdatedAt); err != nil { return nil, err }\n        items = append(items, d)\n    }\n    return items, rows.Err()\n}\n\nfunc (r Repository) SetStatus(ctx context.Context, tenantID, id, status string, now time.Time) error {\n    if !ValidStatus(status) { return errors.New(\"invalid status\") }\n    result, err := r.DB.ExecContext(ctx, `UPDATE dossiers SET status=$1, updated_at=$2\n        WHERE tenant_id=$3 AND id=$4`, status, now.UTC(), tenantID, id)\n    if err != nil { return err }\n    count, err := result.RowsAffected()\n    if err != nil { return err }\n    if count == 0 { return ErrNotFound }\n    return nil\n}\n",
+    "src/dossiers/summary.go": "package dossiers\n\nimport (\n    \"sort\"\n    \"time\"\n)\n\ntype Summary struct {\n    DossierID string `json:\"dossierId\"`\n    Status string `json:\"status\"`\n    EventCount int `json:\"eventCount\"`\n    LastActivity time.Time `json:\"lastActivity\"`\n    Actors []string `json:\"actors\"`\n}\n\nfunc Summarize(item Dossier, events []Event) Summary {\n    actors := map[string]struct{}{}\n    last := item.UpdatedAt\n    for _, event := range events {\n        if event.Actor != \"\" { actors[event.Actor] = struct{}{} }\n        if event.At.After(last) { last = event.At }\n    }\n    names := make([]string, 0, len(actors))\n    for actor := range actors { names = append(names, actor) }\n    sort.Strings(names)\n    return Summary{\n        DossierID: item.ID,\n        Status: item.Status,\n        EventCount: len(events),\n        LastActivity: last.UTC(),\n        Actors: names,\n    }\n}\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "security"
+   ],
+   "category": "security",
+   "id": "dossier-tenant-omitted",
+   "lines": [
+    23,
+    22
+   ],
+   "path": "src/dossiers/repository.go",
+   "rationale": "Download passes the authenticated tenant ID into Repository.Get, but the query filters only by dossier ID. A user who knows another tenant's ID receives that tenant's dossier (and the export builds its response with it).",
+   "severity": "critical"
+  }
+ ],
+ "kind": "bug",
+ "language": "go",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"security\", \"confidence\": 0.85, \"evidence\": \"owner, created_at, updated_at FROM dossiers WHERE id = $1`, id).Scan(\", \"explanation\": \"Download passes the authenticated tenant ID into Repository.Get, but the query filters only by dossier ID. A user who knows another tenant's ID receives that tenant's dossier (and the export builds its response with it).\", \"impact\": \"See explanation.\", \"line\": 23, \"path\": \"src/dossiers/repository.go\", \"severity\": \"critical\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Scope dossier lookup to the authenticated tenant\"}], \"summary\": \"Mock review of x3_dossier_export.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "large",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "authz",
+  "buried",
+  "multi_file",
+  "security"
+ ],
+ "title": "Add dossier export endpoints"
+}

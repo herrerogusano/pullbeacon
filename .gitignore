@@ -32,3 +32,5 @@ Thumbs.db
 # Benchmark v2 cases fetched from open-source projects (local evaluation only, never committed)
 evaluation/specs-v2-oss/
 evaluation/cases-v2-oss/
+evaluation/specs-v3-oss/
+evaluation/cases-v3-oss/

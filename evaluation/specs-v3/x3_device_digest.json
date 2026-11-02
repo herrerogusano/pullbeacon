@@ -1,0 +1,32 @@
+{
+  "case_id": "x3_device_digest",
+  "title": "Compare device pairing digests",
+  "pr_body": "",
+  "language": "go",
+  "kind": "clean",
+  "criticality": "none",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "suspicious_but_correct",
+    "crypto"
+  ],
+  "files": [
+    {
+      "path": "src/pairing/digest.go",
+      "before": null,
+      "after": "package pairing\n\nimport (\n    \"crypto/sha256\"\n    \"crypto/subtle\"\n)\n\nfunc MatchesPairingCode(candidate string, expectedDigest [32]byte) bool {\n    actual := sha256.Sum256([]byte(candidate))\n    return subtle.ConstantTimeCompare(actual[:], expectedDigest[:]) == 1\n}\n"
+    }
+  ],
+  "bugs": [],
+  "traps": [
+    {
+      "path": "src/pairing/digest.go",
+      "anchor": "return subtle.ConstantTimeCompare(actual[:], expectedDigest[:]) == 1",
+      "rationale": "Both slices are fixed 32-byte SHA-256 digests and the standard-library comparison is timing safe; the code does not compare raw secret strings."
+    }
+  ],
+  "acceptable": []
+}

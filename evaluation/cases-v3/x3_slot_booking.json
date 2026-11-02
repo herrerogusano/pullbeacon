@@ -1,0 +1,174 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_slot_booking",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 54,
+    "changes": 54,
+    "deletions": 0,
+    "filename": "web/workshops/types.ts",
+    "patch": "@@ -0,0 +1,54 @@\n+export type SlotId = string;\n+export type BookingId = string;\n+export type CustomerId = string;\n+\n+export interface WorkshopSlot {\n+  id: SlotId;\n+  startsAt: string;\n+  capacity: number;\n+  priceCents: number;\n+  currency: \"EUR\" | \"USD\";\n+  category: \"ceramics\" | \"printmaking\" | \"woodwork\";\n+}\n+\n+export interface SeatRequest {\n+  slotId: SlotId;\n+  customerId: CustomerId;\n+  seats: number;\n+  paymentToken: string;\n+}\n+\n+export interface Booking {\n+  id: BookingId;\n+  slotId: SlotId;\n+  customerId: CustomerId;\n+  seats: number;\n+  authorizationId: string;\n+  createdAt: string;\n+}\n+\n+export type BookingFailure =\n+  | { code: \"missing_slot\"; message: string }\n+  | { code: \"sold_out\"; message: string }\n+  | { code: \"invalid_request\"; message: string };\n+\n+export type BookingResult =\n+  | { ok: true; booking: Booking }\n+  | { ok: false; error: BookingFailure };\n+\n+export function isSeatCount(value: number): boolean {\n+  return Number.isSafeInteger(value) && value > 0 && value <= 8;\n+}\n+\n+export function isUpcoming(slot: WorkshopSlot, now: Date): boolean {\n+  return Date.parse(slot.startsAt) > now.getTime();\n+}\n+\n+export function slotLabel(slot: WorkshopSlot): string {\n+  const date = new Date(slot.startsAt);\n+  return `${slot.category} \u00b7 ${date.toISOString().slice(0, 16)} UTC`;\n+}\n+\n+export function totalPrice(slot: WorkshopSlot, seats: number): number {\n+  return slot.priceCents * seats;\n+}",
+    "sha": "69b021f4d73354a153213a99041cbf8fc3b38c83",
+    "status": "added"
+   },
+   {
+    "additions": 53,
+    "changes": 53,
+    "deletions": 0,
+    "filename": "web/workshops/store.ts",
+    "patch": "@@ -0,0 +1,53 @@\n+import type { Booking, BookingId, SlotId, WorkshopSlot } from \"./types\";\n+\n+export class WorkshopStore {\n+  private readonly slots = new Map<SlotId, WorkshopSlot>();\n+  private readonly bookings = new Map<BookingId, Booking>();\n+\n+  addSlot(slot: WorkshopSlot): void {\n+    if (!Number.isSafeInteger(slot.capacity) || slot.capacity < 1) {\n+      throw new Error(\"capacity must be positive\");\n+    }\n+    if (this.slots.has(slot.id)) throw new Error(\"duplicate slot\");\n+    this.slots.set(slot.id, { ...slot });\n+  }\n+\n+  getSlot(id: SlotId): WorkshopSlot | undefined {\n+    const slot = this.slots.get(id);\n+    return slot && { ...slot };\n+  }\n+\n+  getBooking(id: BookingId): Booking | undefined {\n+    const booking = this.bookings.get(id);\n+    return booking && { ...booking };\n+  }\n+\n+  listBookings(slotId: SlotId): Booking[] {\n+    return [...this.bookings.values()]\n+      .filter((booking) => booking.slotId === slotId)\n+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))\n+      .map((booking) => ({ ...booking }));\n+  }\n+\n+  seatsTaken(slotId: SlotId): number {\n+    return this.listBookings(slotId).reduce((total, booking) => total + booking.seats, 0);\n+  }\n+\n+  appendBooking(booking: Booking): void {\n+    if (!this.slots.has(booking.slotId)) throw new Error(\"unknown slot\");\n+    if (this.bookings.has(booking.id)) throw new Error(\"duplicate booking\");\n+    this.bookings.set(booking.id, { ...booking });\n+  }\n+\n+  removeBooking(id: BookingId): Booking | undefined {\n+    const booking = this.bookings.get(id);\n+    if (booking) this.bookings.delete(id);\n+    return booking && { ...booking };\n+  }\n+\n+  availableSeats(slotId: SlotId): number | undefined {\n+    const slot = this.slots.get(slotId);\n+    if (!slot) return undefined;\n+    return slot.capacity - this.seatsTaken(slotId);\n+  }\n+}",
+    "sha": "a97f0b32de25889eebfb43a31da605a1726eaf24",
+    "status": "added"
+   },
+   {
+    "additions": 36,
+    "changes": 36,
+    "deletions": 0,
+    "filename": "web/workshops/payments.ts",
+    "patch": "@@ -0,0 +1,36 @@\n+export interface Authorization {\n+  id: string;\n+  amountCents: number;\n+  currency: \"EUR\" | \"USD\";\n+  expiresAt: string;\n+}\n+\n+export interface PaymentGateway {\n+  authorize(token: string, amountCents: number, currency: \"EUR\" | \"USD\"):\n+    Promise<Authorization>;\n+  void(authorizationId: string): Promise<void>;\n+}\n+\n+export class RecordingGateway implements PaymentGateway {\n+  readonly authorizations: Authorization[] = [];\n+  readonly voided: string[] = [];\n+\n+  async authorize(token: string, amountCents: number, currency: \"EUR\" | \"USD\"):\n+    Promise<Authorization> {\n+    if (!token || !Number.isSafeInteger(amountCents) || amountCents < 0) {\n+      throw new Error(\"invalid authorization request\");\n+    }\n+    const authorization = {\n+      id: `auth-${this.authorizations.length + 1}`,\n+      amountCents,\n+      currency,\n+      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),\n+    };\n+    this.authorizations.push(authorization);\n+    return authorization;\n+  }\n+\n+  async void(authorizationId: string): Promise<void> {\n+    this.voided.push(authorizationId);\n+  }\n+}",
+    "sha": "e80b8a2f8089298e479740e4b22a575367ce8bdf",
+    "status": "added"
+   },
+   {
+    "additions": 48,
+    "changes": 48,
+    "deletions": 0,
+    "filename": "web/workshops/booking.ts",
+    "patch": "@@ -0,0 +1,48 @@\n+import { randomUUID } from \"node:crypto\";\n+import type { PaymentGateway } from \"./payments\";\n+import { WorkshopStore } from \"./store\";\n+import { isSeatCount, isUpcoming, totalPrice } from \"./types\";\n+import type { BookingResult, SeatRequest } from \"./types\";\n+\n+export class BookingService {\n+  constructor(\n+    private readonly store: WorkshopStore,\n+    private readonly payments: PaymentGateway,\n+    private readonly now: () => Date = () => new Date(),\n+  ) {}\n+\n+  async reserve(request: SeatRequest): Promise<BookingResult> {\n+    if (!isSeatCount(request.seats) || !request.customerId || !request.paymentToken) {\n+      return { ok: false, error: { code: \"invalid_request\", message: \"invalid seat request\" } };\n+    }\n+    const slot = this.store.getSlot(request.slotId);\n+    if (!slot || !isUpcoming(slot, this.now())) {\n+      return { ok: false, error: { code: \"missing_slot\", message: \"slot unavailable\" } };\n+    }\n+    const available = this.store.availableSeats(slot.id);\n+    if (available === undefined || available < request.seats) {\n+      return { ok: false, error: { code: \"sold_out\", message: \"no seats available\" } };\n+    }\n+    const authorization = await this.payments.authorize(\n+      request.paymentToken, totalPrice(slot, request.seats), slot.currency,\n+    );\n+    const booking = {\n+      id: randomUUID(),\n+      slotId: slot.id,\n+      customerId: request.customerId,\n+      seats: request.seats,\n+      authorizationId: authorization.id,\n+      createdAt: this.now().toISOString(),\n+    };\n+    this.store.appendBooking(booking);\n+    return { ok: true, booking };\n+  }\n+\n+  async cancel(bookingId: string, customerId: string): Promise<boolean> {\n+    const booking = this.store.getBooking(bookingId);\n+    if (!booking || booking.customerId !== customerId) return false;\n+    await this.payments.void(booking.authorizationId);\n+    this.store.removeBooking(bookingId);\n+    return true;\n+  }\n+}",
+    "sha": "ac9698d48997f9bb596b97939a8724dbdbfd8343",
+    "status": "added"
+   },
+   {
+    "additions": 41,
+    "changes": 41,
+    "deletions": 0,
+    "filename": "web/workshops/routes.ts",
+    "patch": "@@ -0,0 +1,41 @@\n+import type { BookingService } from \"./booking\";\n+import type { WorkshopStore } from \"./store\";\n+import type { SeatRequest } from \"./types\";\n+\n+export interface RequestContext {\n+  customerId: string;\n+}\n+\n+export interface HttpReply {\n+  status: number;\n+  body: unknown;\n+}\n+\n+export async function postBooking(\n+  body: unknown, context: RequestContext, service: BookingService,\n+): Promise<HttpReply> {\n+  if (!body || typeof body !== \"object\") return { status: 400, body: { error: \"body required\" } };\n+  const input = body as Partial<SeatRequest>;\n+  if (typeof input.slotId !== \"string\" || typeof input.seats !== \"number\" ||\n+      typeof input.paymentToken !== \"string\") {\n+    return { status: 400, body: { error: \"invalid booking body\" } };\n+  }\n+  const result = await service.reserve({\n+    slotId: input.slotId,\n+    seats: input.seats,\n+    paymentToken: input.paymentToken,\n+    customerId: context.customerId,\n+  });\n+  if (result.ok) return { status: 201, body: result.booking };\n+  const status = result.error.code === \"sold_out\" ? 409 : 400;\n+  return { status, body: { error: result.error.message } };\n+}\n+\n+export function getSlot(slotId: string, store: WorkshopStore): HttpReply {\n+  const slot = store.getSlot(slotId);\n+  if (!slot) return { status: 404, body: { error: \"unknown slot\" } };\n+  return { status: 200, body: {\n+    ...slot,\n+    availableSeats: store.availableSeats(slot.id),\n+  } };\n+}",
+    "sha": "d1bd707ece662a2e93af30d35a972c68bce08c04",
+    "status": "added"
+   },
+   {
+    "additions": 37,
+    "changes": 37,
+    "deletions": 0,
+    "filename": "web/workshops/attendance.ts",
+    "patch": "@@ -0,0 +1,37 @@\n+import type { Booking, SlotId } from \"./types\";\n+import type { WorkshopStore } from \"./store\";\n+\n+export interface AttendeeRow {\n+  bookingId: string;\n+  customerId: string;\n+  seatNumber: number;\n+  checkedIn: boolean;\n+}\n+\n+export function attendeeRows(store: WorkshopStore, slotId: SlotId): AttendeeRow[] {\n+  const rows: AttendeeRow[] = [];\n+  for (const booking of store.listBookings(slotId)) {\n+    for (let seatNumber = 1; seatNumber <= booking.seats; seatNumber++) {\n+      rows.push({\n+        bookingId: booking.id, customerId: booking.customerId,\n+        seatNumber, checkedIn: false,\n+      });\n+    }\n+  }\n+  return rows;\n+}\n+\n+export function bookingSummary(booking: Booking): string {\n+  const seatWord = booking.seats === 1 ? \"seat\" : \"seats\";\n+  return `${booking.seats} ${seatWord} for ${booking.slotId}`;\n+}\n+\n+export function countCustomers(rows: AttendeeRow[]): number {\n+  return new Set(rows.map((row) => row.customerId)).size;\n+}\n+\n+export function markCheckedIn(rows: AttendeeRow[], bookingId: string): AttendeeRow[] {\n+  return rows.map((row) => row.bookingId === bookingId\n+    ? { ...row, checkedIn: true }\n+    : { ...row });\n+}",
+    "sha": "8e14122ee13686450fecbde8aeacf659279ac3f5",
+    "status": "added"
+   },
+   {
+    "additions": 34,
+    "changes": 34,
+    "deletions": 0,
+    "filename": "web/workshops/receipt.ts",
+    "patch": "@@ -0,0 +1,34 @@\n+import type { Booking, WorkshopSlot } from \"./types\";\n+import { totalPrice } from \"./types\";\n+\n+export interface Receipt {\n+  bookingId: string;\n+  description: string;\n+  currency: string;\n+  amountCents: number;\n+  issuedAt: string;\n+  authorizationId: string;\n+}\n+\n+export function makeReceipt(booking: Booking, slot: WorkshopSlot): Receipt {\n+  if (booking.slotId !== slot.id) throw new Error(\"booking slot mismatch\");\n+  return {\n+    bookingId: booking.id,\n+    description: `${slot.category} workshop, ${booking.seats} seat(s)`,\n+    currency: slot.currency,\n+    amountCents: totalPrice(slot, booking.seats),\n+    issuedAt: booking.createdAt,\n+    authorizationId: booking.authorizationId,\n+  };\n+}\n+\n+export function formatReceipt(receipt: Receipt): string[] {\n+  const amount = (receipt.amountCents / 100).toFixed(2);\n+  return [\n+    `Booking: ${receipt.bookingId}`,\n+    receipt.description,\n+    `Amount: ${amount} ${receipt.currency}`,\n+    `Authorization: ${receipt.authorizationId}`,\n+    `Issued: ${receipt.issuedAt}`,\n+  ];\n+}",
+    "sha": "b2c877598d00c70f872ebe15a1c0942e4c946772",
+    "status": "added"
+   },
+   {
+    "additions": 54,
+    "changes": 54,
+    "deletions": 0,
+    "filename": "tests/workshops/booking.test.ts",
+    "patch": "@@ -0,0 +1,54 @@\n+import { describe, expect, it } from \"vitest\";\n+import { BookingService } from \"../../web/workshops/booking\";\n+import { RecordingGateway } from \"../../web/workshops/payments\";\n+import { WorkshopStore } from \"../../web/workshops/store\";\n+import { getSlot, postBooking } from \"../../web/workshops/routes\";\n+\n+function setup(capacity = 4) {\n+  const store = new WorkshopStore();\n+  store.addSlot({\n+    id: \"ceramics-12\", startsAt: \"2035-06-15T11:00:00Z\",\n+    capacity, priceCents: 3200, currency: \"EUR\", category: \"ceramics\",\n+  });\n+  const payments = new RecordingGateway();\n+  const service = new BookingService(store, payments, () => new Date(\"2035-06-01T00:00:00Z\"));\n+  return { store, payments, service };\n+}\n+\n+describe(\"workshop bookings\", () => {\n+  it(\"reports the available seats\", () => {\n+    const { store } = setup();\n+    expect(getSlot(\"ceramics-12\", store).body).toMatchObject({ availableSeats: 4 });\n+  });\n+\n+  it(\"creates a booking and reserves its seats\", async () => {\n+    const { store, service, payments } = setup();\n+    const result = await postBooking(\n+      { slotId: \"ceramics-12\", seats: 2, paymentToken: \"tok_1\" },\n+      { customerId: \"customer-1\" }, service,\n+    );\n+    expect(result.status).toBe(201);\n+    expect(store.availableSeats(\"ceramics-12\")).toBe(2);\n+    expect(payments.authorizations[0].amountCents).toBe(6400);\n+  });\n+\n+  it(\"rejects an additional sequential booking after sellout\", async () => {\n+    const { service } = setup(2);\n+    const book = (customerId: string) => service.reserve({\n+      slotId: \"ceramics-12\", customerId, seats: 2, paymentToken: \"tok_1\",\n+    });\n+    expect((await book(\"customer-1\")).ok).toBe(true);\n+    expect((await book(\"customer-2\")).ok).toBe(false);\n+  });\n+\n+  it(\"does not accept zero or fractional seat counts\", async () => {\n+    const { service } = setup();\n+    for (const seats of [0, 1.5, -1]) {\n+      const result = await service.reserve({\n+        slotId: \"ceramics-12\", customerId: \"customer-1\", seats,\n+        paymentToken: \"tok_1\",\n+      });\n+      expect(result.ok).toBe(false);\n+    }\n+  });\n+});",
+    "sha": "daeabf72c2a8da2ff049ad3e873236306292f465",
+    "status": "added"
+   },
+   {
+    "additions": 49,
+    "changes": 49,
+    "deletions": 0,
+    "filename": "docs/workshops/reservations.md",
+    "patch": "@@ -0,0 +1,49 @@\n+# Workshop reservations\n+\n+The workshop catalog exposes dated slots with a fixed seat capacity.\n+Slots are identified by stable IDs; display names are not keys.\n+\n+## Request\n+\n+A customer supplies a slot ID, seat count and payment token.\n+The authenticated customer ID is injected by the route layer.\n+A reservation is limited to eight seats in a single request.\n+Customers can book more than once if seats remain available.\n+\n+## Pricing\n+\n+The slot stores an integer price in cents and a currency code.\n+The quoted amount is seat count multiplied by unit price.\n+A payment authorization is recorded before the booking is returned.\n+Authorizations expire after fifteen minutes in the recording gateway.\n+Capture is handled later by the payments integration.\n+\n+## Responses\n+\n+Successful reservations return a booking ID and an ISO timestamp.\n+A missing or past slot is reported as unavailable.\n+Invalid counts and malformed bodies receive a 400 response.\n+A request exceeding remaining capacity receives a 409 response.\n+Slot details include the number of available seats.\n+\n+## Cancellation\n+\n+A customer can cancel only a booking belonging to that customer.\n+Cancellation voids the authorization and removes the booking.\n+Cancellation of an unknown booking returns false.\n+\n+## Data model\n+\n+The store keeps slot definitions separately from booking records.\n+Booking lists are ordered by creation time for history pages.\n+Returned records are copies, so callers cannot mutate store state.\n+Slot capacity and price are set when a workshop is published.\n+Each booking carries the payment authorization ID for reconciliation.\n+\n+## Operations\n+\n+Catalog pages should refresh availability after a reservation.\n+The booking endpoint is authenticated by the surrounding router.\n+Payment failures surface to the caller for retry or correction.\n+Workers should log booking IDs rather than payment tokens.\n+The recording gateway is used by the unit tests only.",
+    "sha": "12dd25509cc06296c70143e26ddbffd4094089f8",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "12a3674074c6135483658455910266c2339e40e1"
+   },
+   "body": "Introduces workshop slots, payment authorization, booking endpoints and tests for ordinary and sold-out flows.",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_slot_booking",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "503f42b8a10dcb5c16bc6dca3d430b225286a966"
+   },
+   "number": 992,
+   "state": "open",
+   "title": "Add timed workshop seat reservations",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "12a3674074c6135483658455910266c2339e40e1": {},
+   "503f42b8a10dcb5c16bc6dca3d430b225286a966": {
+    "docs/workshops/reservations.md": "# Workshop reservations\n\nThe workshop catalog exposes dated slots with a fixed seat capacity.\nSlots are identified by stable IDs; display names are not keys.\n\n## Request\n\nA customer supplies a slot ID, seat count and payment token.\nThe authenticated customer ID is injected by the route layer.\nA reservation is limited to eight seats in a single request.\nCustomers can book more than once if seats remain available.\n\n## Pricing\n\nThe slot stores an integer price in cents and a currency code.\nThe quoted amount is seat count multiplied by unit price.\nA payment authorization is recorded before the booking is returned.\nAuthorizations expire after fifteen minutes in the recording gateway.\nCapture is handled later by the payments integration.\n\n## Responses\n\nSuccessful reservations return a booking ID and an ISO timestamp.\nA missing or past slot is reported as unavailable.\nInvalid counts and malformed bodies receive a 400 response.\nA request exceeding remaining capacity receives a 409 response.\nSlot details include the number of available seats.\n\n## Cancellation\n\nA customer can cancel only a booking belonging to that customer.\nCancellation voids the authorization and removes the booking.\nCancellation of an unknown booking returns false.\n\n## Data model\n\nThe store keeps slot definitions separately from booking records.\nBooking lists are ordered by creation time for history pages.\nReturned records are copies, so callers cannot mutate store state.\nSlot capacity and price are set when a workshop is published.\nEach booking carries the payment authorization ID for reconciliation.\n\n## Operations\n\nCatalog pages should refresh availability after a reservation.\nThe booking endpoint is authenticated by the surrounding router.\nPayment failures surface to the caller for retry or correction.\nWorkers should log booking IDs rather than payment tokens.\nThe recording gateway is used by the unit tests only.\n",
+    "tests/workshops/booking.test.ts": "import { describe, expect, it } from \"vitest\";\nimport { BookingService } from \"../../web/workshops/booking\";\nimport { RecordingGateway } from \"../../web/workshops/payments\";\nimport { WorkshopStore } from \"../../web/workshops/store\";\nimport { getSlot, postBooking } from \"../../web/workshops/routes\";\n\nfunction setup(capacity = 4) {\n  const store = new WorkshopStore();\n  store.addSlot({\n    id: \"ceramics-12\", startsAt: \"2035-06-15T11:00:00Z\",\n    capacity, priceCents: 3200, currency: \"EUR\", category: \"ceramics\",\n  });\n  const payments = new RecordingGateway();\n  const service = new BookingService(store, payments, () => new Date(\"2035-06-01T00:00:00Z\"));\n  return { store, payments, service };\n}\n\ndescribe(\"workshop bookings\", () => {\n  it(\"reports the available seats\", () => {\n    const { store } = setup();\n    expect(getSlot(\"ceramics-12\", store).body).toMatchObject({ availableSeats: 4 });\n  });\n\n  it(\"creates a booking and reserves its seats\", async () => {\n    const { store, service, payments } = setup();\n    const result = await postBooking(\n      { slotId: \"ceramics-12\", seats: 2, paymentToken: \"tok_1\" },\n      { customerId: \"customer-1\" }, service,\n    );\n    expect(result.status).toBe(201);\n    expect(store.availableSeats(\"ceramics-12\")).toBe(2);\n    expect(payments.authorizations[0].amountCents).toBe(6400);\n  });\n\n  it(\"rejects an additional sequential booking after sellout\", async () => {\n    const { service } = setup(2);\n    const book = (customerId: string) => service.reserve({\n      slotId: \"ceramics-12\", customerId, seats: 2, paymentToken: \"tok_1\",\n    });\n    expect((await book(\"customer-1\")).ok).toBe(true);\n    expect((await book(\"customer-2\")).ok).toBe(false);\n  });\n\n  it(\"does not accept zero or fractional seat counts\", async () => {\n    const { service } = setup();\n    for (const seats of [0, 1.5, -1]) {\n      const result = await service.reserve({\n        slotId: \"ceramics-12\", customerId: \"customer-1\", seats,\n        paymentToken: \"tok_1\",\n      });\n      expect(result.ok).toBe(false);\n    }\n  });\n});\n",
+    "web/workshops/attendance.ts": "import type { Booking, SlotId } from \"./types\";\nimport type { WorkshopStore } from \"./store\";\n\nexport interface AttendeeRow {\n  bookingId: string;\n  customerId: string;\n  seatNumber: number;\n  checkedIn: boolean;\n}\n\nexport function attendeeRows(store: WorkshopStore, slotId: SlotId): AttendeeRow[] {\n  const rows: AttendeeRow[] = [];\n  for (const booking of store.listBookings(slotId)) {\n    for (let seatNumber = 1; seatNumber <= booking.seats; seatNumber++) {\n      rows.push({\n        bookingId: booking.id, customerId: booking.customerId,\n        seatNumber, checkedIn: false,\n      });\n    }\n  }\n  return rows;\n}\n\nexport function bookingSummary(booking: Booking): string {\n  const seatWord = booking.seats === 1 ? \"seat\" : \"seats\";\n  return `${booking.seats} ${seatWord} for ${booking.slotId}`;\n}\n\nexport function countCustomers(rows: AttendeeRow[]): number {\n  return new Set(rows.map((row) => row.customerId)).size;\n}\n\nexport function markCheckedIn(rows: AttendeeRow[], bookingId: string): AttendeeRow[] {\n  return rows.map((row) => row.bookingId === bookingId\n    ? { ...row, checkedIn: true }\n    : { ...row });\n}\n",
+    "web/workshops/booking.ts": "import { randomUUID } from \"node:crypto\";\nimport type { PaymentGateway } from \"./payments\";\nimport { WorkshopStore } from \"./store\";\nimport { isSeatCount, isUpcoming, totalPrice } from \"./types\";\nimport type { BookingResult, SeatRequest } from \"./types\";\n\nexport class BookingService {\n  constructor(\n    private readonly store: WorkshopStore,\n    private readonly payments: PaymentGateway,\n    private readonly now: () => Date = () => new Date(),\n  ) {}\n\n  async reserve(request: SeatRequest): Promise<BookingResult> {\n    if (!isSeatCount(request.seats) || !request.customerId || !request.paymentToken) {\n      return { ok: false, error: { code: \"invalid_request\", message: \"invalid seat request\" } };\n    }\n    const slot = this.store.getSlot(request.slotId);\n    if (!slot || !isUpcoming(slot, this.now())) {\n      return { ok: false, error: { code: \"missing_slot\", message: \"slot unavailable\" } };\n    }\n    const available = this.store.availableSeats(slot.id);\n    if (available === undefined || available < request.seats) {\n      return { ok: false, error: { code: \"sold_out\", message: \"no seats available\" } };\n    }\n    const authorization = await this.payments.authorize(\n      request.paymentToken, totalPrice(slot, request.seats), slot.currency,\n    );\n    const booking = {\n      id: randomUUID(),\n      slotId: slot.id,\n      customerId: request.customerId,\n      seats: request.seats,\n      authorizationId: authorization.id,\n      createdAt: this.now().toISOString(),\n    };\n    this.store.appendBooking(booking);\n    return { ok: true, booking };\n  }\n\n  async cancel(bookingId: string, customerId: string): Promise<boolean> {\n    const booking = this.store.getBooking(bookingId);\n    if (!booking || booking.customerId !== customerId) return false;\n    await this.payments.void(booking.authorizationId);\n    this.store.removeBooking(bookingId);\n    return true;\n  }\n}\n",
+    "web/workshops/payments.ts": "export interface Authorization {\n  id: string;\n  amountCents: number;\n  currency: \"EUR\" | \"USD\";\n  expiresAt: string;\n}\n\nexport interface PaymentGateway {\n  authorize(token: string, amountCents: number, currency: \"EUR\" | \"USD\"):\n    Promise<Authorization>;\n  void(authorizationId: string): Promise<void>;\n}\n\nexport class RecordingGateway implements PaymentGateway {\n  readonly authorizations: Authorization[] = [];\n  readonly voided: string[] = [];\n\n  async authorize(token: string, amountCents: number, currency: \"EUR\" | \"USD\"):\n    Promise<Authorization> {\n    if (!token || !Number.isSafeInteger(amountCents) || amountCents < 0) {\n      throw new Error(\"invalid authorization request\");\n    }\n    const authorization = {\n      id: `auth-${this.authorizations.length + 1}`,\n      amountCents,\n      currency,\n      expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),\n    };\n    this.authorizations.push(authorization);\n    return authorization;\n  }\n\n  async void(authorizationId: string): Promise<void> {\n    this.voided.push(authorizationId);\n  }\n}\n",
+    "web/workshops/receipt.ts": "import type { Booking, WorkshopSlot } from \"./types\";\nimport { totalPrice } from \"./types\";\n\nexport interface Receipt {\n  bookingId: string;\n  description: string;\n  currency: string;\n  amountCents: number;\n  issuedAt: string;\n  authorizationId: string;\n}\n\nexport function makeReceipt(booking: Booking, slot: WorkshopSlot): Receipt {\n  if (booking.slotId !== slot.id) throw new Error(\"booking slot mismatch\");\n  return {\n    bookingId: booking.id,\n    description: `${slot.category} workshop, ${booking.seats} seat(s)`,\n    currency: slot.currency,\n    amountCents: totalPrice(slot, booking.seats),\n    issuedAt: booking.createdAt,\n    authorizationId: booking.authorizationId,\n  };\n}\n\nexport function formatReceipt(receipt: Receipt): string[] {\n  const amount = (receipt.amountCents / 100).toFixed(2);\n  return [\n    `Booking: ${receipt.bookingId}`,\n    receipt.description,\n    `Amount: ${amount} ${receipt.currency}`,\n    `Authorization: ${receipt.authorizationId}`,\n    `Issued: ${receipt.issuedAt}`,\n  ];\n}\n",
+    "web/workshops/routes.ts": "import type { BookingService } from \"./booking\";\nimport type { WorkshopStore } from \"./store\";\nimport type { SeatRequest } from \"./types\";\n\nexport interface RequestContext {\n  customerId: string;\n}\n\nexport interface HttpReply {\n  status: number;\n  body: unknown;\n}\n\nexport async function postBooking(\n  body: unknown, context: RequestContext, service: BookingService,\n): Promise<HttpReply> {\n  if (!body || typeof body !== \"object\") return { status: 400, body: { error: \"body required\" } };\n  const input = body as Partial<SeatRequest>;\n  if (typeof input.slotId !== \"string\" || typeof input.seats !== \"number\" ||\n      typeof input.paymentToken !== \"string\") {\n    return { status: 400, body: { error: \"invalid booking body\" } };\n  }\n  const result = await service.reserve({\n    slotId: input.slotId,\n    seats: input.seats,\n    paymentToken: input.paymentToken,\n    customerId: context.customerId,\n  });\n  if (result.ok) return { status: 201, body: result.booking };\n  const status = result.error.code === \"sold_out\" ? 409 : 400;\n  return { status, body: { error: result.error.message } };\n}\n\nexport function getSlot(slotId: string, store: WorkshopStore): HttpReply {\n  const slot = store.getSlot(slotId);\n  if (!slot) return { status: 404, body: { error: \"unknown slot\" } };\n  return { status: 200, body: {\n    ...slot,\n    availableSeats: store.availableSeats(slot.id),\n  } };\n}\n",
+    "web/workshops/store.ts": "import type { Booking, BookingId, SlotId, WorkshopSlot } from \"./types\";\n\nexport class WorkshopStore {\n  private readonly slots = new Map<SlotId, WorkshopSlot>();\n  private readonly bookings = new Map<BookingId, Booking>();\n\n  addSlot(slot: WorkshopSlot): void {\n    if (!Number.isSafeInteger(slot.capacity) || slot.capacity < 1) {\n      throw new Error(\"capacity must be positive\");\n    }\n    if (this.slots.has(slot.id)) throw new Error(\"duplicate slot\");\n    this.slots.set(slot.id, { ...slot });\n  }\n\n  getSlot(id: SlotId): WorkshopSlot | undefined {\n    const slot = this.slots.get(id);\n    return slot && { ...slot };\n  }\n\n  getBooking(id: BookingId): Booking | undefined {\n    const booking = this.bookings.get(id);\n    return booking && { ...booking };\n  }\n\n  listBookings(slotId: SlotId): Booking[] {\n    return [...this.bookings.values()]\n      .filter((booking) => booking.slotId === slotId)\n      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))\n      .map((booking) => ({ ...booking }));\n  }\n\n  seatsTaken(slotId: SlotId): number {\n    return this.listBookings(slotId).reduce((total, booking) => total + booking.seats, 0);\n  }\n\n  appendBooking(booking: Booking): void {\n    if (!this.slots.has(booking.slotId)) throw new Error(\"unknown slot\");\n    if (this.bookings.has(booking.id)) throw new Error(\"duplicate booking\");\n    this.bookings.set(booking.id, { ...booking });\n  }\n\n  removeBooking(id: BookingId): Booking | undefined {\n    const booking = this.bookings.get(id);\n    if (booking) this.bookings.delete(id);\n    return booking && { ...booking };\n  }\n\n  availableSeats(slotId: SlotId): number | undefined {\n    const slot = this.slots.get(slotId);\n    if (!slot) return undefined;\n    return slot.capacity - this.seatsTaken(slotId);\n  }\n}\n",
+    "web/workshops/types.ts": "export type SlotId = string;\nexport type BookingId = string;\nexport type CustomerId = string;\n\nexport interface WorkshopSlot {\n  id: SlotId;\n  startsAt: string;\n  capacity: number;\n  priceCents: number;\n  currency: \"EUR\" | \"USD\";\n  category: \"ceramics\" | \"printmaking\" | \"woodwork\";\n}\n\nexport interface SeatRequest {\n  slotId: SlotId;\n  customerId: CustomerId;\n  seats: number;\n  paymentToken: string;\n}\n\nexport interface Booking {\n  id: BookingId;\n  slotId: SlotId;\n  customerId: CustomerId;\n  seats: number;\n  authorizationId: string;\n  createdAt: string;\n}\n\nexport type BookingFailure =\n  | { code: \"missing_slot\"; message: string }\n  | { code: \"sold_out\"; message: string }\n  | { code: \"invalid_request\"; message: string };\n\nexport type BookingResult =\n  | { ok: true; booking: Booking }\n  | { ok: false; error: BookingFailure };\n\nexport function isSeatCount(value: number): boolean {\n  return Number.isSafeInteger(value) && value > 0 && value <= 8;\n}\n\nexport function isUpcoming(slot: WorkshopSlot, now: Date): boolean {\n  return Date.parse(slot.startsAt) > now.getTime();\n}\n\nexport function slotLabel(slot: WorkshopSlot): string {\n  const date = new Date(slot.startsAt);\n  return `${slot.category} \u00b7 ${date.toISOString().slice(0, 16)} UTC`;\n}\n\nexport function totalPrice(slot: WorkshopSlot, seats: number): number {\n  return slot.priceCents * seats;\n}\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability"
+   ],
+   "category": "correctness",
+   "id": "slot-check-then-append",
+   "lines": [
+    26,
+    37
+   ],
+   "path": "web/workshops/booking.ts",
+   "rationale": "Two requests can both pass availableSeats before the awaited authorization, then both append bookings. With two seats left, concurrent two-seat requests both succeed and leave four seats booked.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "typescript",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"const authorization = await this.payments.authorize(\", \"explanation\": \"Two requests can both pass availableSeats before the awaited authorization, then both append bookings. With two seats left, concurrent two-seat requests both succeed and leave four seats booked.\", \"impact\": \"See explanation.\", \"line\": 26, \"path\": \"web/workshops/booking.ts\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Reserve seats atomically across payment authorization\"}], \"summary\": \"Mock review of x3_slot_booking.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "large",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "async",
+  "buried",
+  "concurrency",
+  "multi_file"
+ ],
+ "title": "Add timed workshop seat reservations"
+}

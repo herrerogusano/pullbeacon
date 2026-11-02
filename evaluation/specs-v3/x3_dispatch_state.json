@@ -1,0 +1,39 @@
+{
+  "case_id": "x3_dispatch_state",
+  "title": "Record delivery attempts for warehouse notices",
+  "pr_body": "",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "error_handling",
+    "logic"
+  ],
+  "files": [
+    {
+      "path": "app/notices/dispatch.py",
+      "before": null,
+      "after": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef deliver(notice, transport, repository) -> None:\n    try:\n        transport.send(notice.destination, notice.payload)\n    except OSError:\n        logger.warning(\"notice transport unavailable\", exc_info=True)\n    repository.mark_delivered(notice.id)\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "failed-delivery-marked",
+      "path": "app/notices/dispatch.py",
+      "anchor": "repository.mark_delivered(notice.id)",
+      "category": "reliability",
+      "severity": "high",
+      "title": "Keep failed notices pending",
+      "rationale": "An OSError from transport.send is swallowed and execution continues to mark_delivered, so the retry worker will never see a notice that was not sent.",
+      "accepted": [
+        "correctness"
+      ]
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

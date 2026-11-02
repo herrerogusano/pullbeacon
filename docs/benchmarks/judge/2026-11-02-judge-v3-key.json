@@ -1,0 +1,4466 @@
+[
+ {
+  "i": 1,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_retry_audit",
+  "line": "16",
+  "auto": "FP",
+  "severities": {
+   "low": 1,
+   "medium": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 2,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "50",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 3,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "329",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 4,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_gin_attachment_filename_quote",
+  "line": "1057",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 5,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_starlette_upload_rollover_blocking",
+  "line": "452",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 6,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "41",
+  "auto": "TP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 7,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "348",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 8,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_archive_extract",
+  "line": "15",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 9,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "328",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 10,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 11,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_archive_extract",
+  "line": "15",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 12,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_undici_header_trim_redos",
+  "line": "28",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 13,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "18",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 14,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1093",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 15,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "577",
+  "auto": "FP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 16,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 17,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "705",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 18,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_sensor_dedupe",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 19,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 20,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "30",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 21,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1068",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 22,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "407",
+  "auto": "TP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 23,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_django_timesince_aware_pivot",
+  "line": "100",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 24,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_gin_attachment_filename_quote",
+  "line": "1055",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 25,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_signed_preview",
+  "line": "14",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 26,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_tornado_cookie_unquote_quadratic",
+  "line": "1094",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 27,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "148",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 28,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 29,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1068",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 30,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "349",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 31,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "408",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 32,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_customer_alias",
+  "line": "3",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 33,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 34,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_balance_backfill",
+  "line": "4",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 35,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_deadline_fetch",
+  "line": "5",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 36,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "37",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 37,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_moment_locale_path_traversal",
+  "line": "73",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 38,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_departure_board",
+  "line": "51",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 39,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "23",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 40,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_qs_encode_lone_surrogate",
+  "line": "407",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 41,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_balance_backfill",
+  "line": "4",
+  "auto": "TP",
+  "severities": {
+   "high": 2,
+   "critical": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 42,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "581",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 43,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "44",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 44,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "11",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 45,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "31",
+  "auto": "FP",
+  "severities": {
+   "medium": 2,
+   "high": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 46,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "717",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 47,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "22",
+  "auto": "FP:TRAP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 48,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_customer_alias",
+  "line": "3",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 49,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "655",
+  "auto": "FP",
+  "severities": {
+   "high": 1,
+   "medium": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 50,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "580",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 51,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "644",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 52,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_django_timesince_aware_pivot",
+  "line": "100",
+  "auto": "TP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 53,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "42",
+  "auto": "TP",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 54,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_signed_preview",
+  "line": "9",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 55,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "30",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 56,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "148",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 57,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_django_timesince_aware_pivot",
+  "line": "100",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 58,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_deadline_fetch",
+  "line": "5",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 59,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_semver_inc_dotted_prerelease",
+  "line": "312",
+  "auto": "TP",
+  "severities": {
+   "medium": 1,
+   "high": 2
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 60,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_starlette_upload_rollover_blocking",
+  "line": "452",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 61,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 62,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 63,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "29",
+  "auto": "FP:TRAP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 64,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "21",
+  "auto": "FP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 65,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "43",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 66,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_undici_header_trim_redos",
+  "line": "28",
+  "auto": "TP",
+  "severities": {
+   "high": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 67,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "20",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 68,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "20",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 69,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "408",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 70,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_signed_preview",
+  "line": "3",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 71,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "5",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 72,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "643",
+  "auto": "TP",
+  "severities": {
+   "critical": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 73,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "28",
+  "auto": "FP:TRAP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 74,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_gin_attachment_filename_quote",
+  "line": "1059",
+  "auto": "TP",
+  "severities": {
+   "high": 3,
+   "medium": 1
+  },
+  "count": 4,
+  "mine": "TP"
+ },
+ {
+  "i": 75,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "34",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 76,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "149",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 77,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "25",
+  "auto": "FP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 78,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 79,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_semver_inc_dotted_prerelease",
+  "line": "312",
+  "auto": "TP",
+  "severities": {
+   "medium": 2,
+   "high": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 80,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "148",
+  "auto": "TP",
+  "severities": {
+   "high": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 81,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "149",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 82,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "20",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 83,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_archive_extract",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "critical": 2,
+   "high": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 84,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_sensor_dedupe",
+  "line": "9",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 85,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "446",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 86,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "345",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 87,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1093",
+  "auto": "TP",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 88,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "9",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 89,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "644",
+  "auto": "TP",
+  "severities": {
+   "critical": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 90,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_signed_preview",
+  "line": "3",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "medium": 1,
+   "high": 1,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 91,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "9",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 92,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_moment_locale_path_traversal",
+  "line": "79",
+  "auto": "FP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 93,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "43",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 94,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "43",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 95,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "9",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 96,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "33",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 97,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_gin_attachment_filename_quote",
+  "line": "1057",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 98,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_moment_locale_path_traversal",
+  "line": "73",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 99,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "22",
+  "auto": "FP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 100,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "153",
+  "auto": "FP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 101,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "445",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 102,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_flask_session_vary_cookie",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 103,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "23",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 104,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "584",
+  "auto": "FP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 105,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_utc_statement",
+  "line": "6",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 106,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_gin_attachment_filename_quote",
+  "line": "1057",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 107,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "717",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 108,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_followredirects_proxy_auth_leak",
+  "line": "464",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 109,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "579",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 110,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_balance_backfill",
+  "line": "4",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 111,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "30",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 112,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "14",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 113,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "21",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 114,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "408",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 115,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "651",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 116,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 117,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_archive_extract",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 118,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_moment_locale_path_traversal",
+  "line": "67",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 119,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_django_timesince_aware_pivot",
+  "line": "100",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 120,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 121,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "23",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 122,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "61",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 123,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_balance_backfill",
+  "line": "5",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 124,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "28",
+  "auto": "FP:TRAP",
+  "severities": {
+   "low": 1,
+   "medium": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 125,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "22",
+  "auto": "FP:TRAP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 126,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "23",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 127,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_departure_board",
+  "line": "28",
+  "auto": "FP:TRAP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 128,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "43",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 129,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_moment_locale_path_traversal",
+  "line": "73",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 130,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_gin_attachment_filename_quote",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 131,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_departure_board",
+  "line": "29",
+  "auto": "FP:TRAP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 132,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "704",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 133,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 134,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "150",
+  "auto": "FP",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 135,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "34",
+  "auto": "FP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 136,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "29",
+  "auto": "FP:TRAP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 137,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_departure_board",
+  "line": "47",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 138,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "43",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 139,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "705",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 140,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_moment_locale_path_traversal",
+  "line": "67",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 141,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_climate_samples",
+  "line": "31",
+  "auto": "FP",
+  "severities": {
+   "high": 1,
+   "medium": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 142,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_customer_alias",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 143,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "23",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 144,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_moment_locale_path_traversal",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 145,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_gin_attachment_filename_quote",
+  "line": "1059",
+  "auto": "TP",
+  "severities": {
+   "medium": 2,
+   "high": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 146,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "38",
+  "auto": "FP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 147,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_minimist_constructor_pollution",
+  "line": "24",
+  "auto": "TP",
+  "severities": {
+   "critical": 1,
+   "high": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 148,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_climate_samples",
+  "line": "61",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 149,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "26",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 150,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_gin_attachment_filename_quote",
+  "line": "1065",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 151,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_pydantic_email_length_redos",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 152,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "407",
+  "auto": "TP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 153,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_followredirects_proxy_auth_leak",
+  "line": "464",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 154,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "26",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 155,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "27",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 156,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 157,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "717",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 158,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "30",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 159,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_qs_encode_lone_surrogate",
+  "line": "407",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 160,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "20",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 161,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "14",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 162,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_followredirects_proxy_auth_leak",
+  "line": "464",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 163,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "150",
+  "auto": "FP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 164,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "407",
+  "auto": "FP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 165,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 166,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_sensor_dedupe",
+  "line": "9",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 167,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "345",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 168,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "37",
+  "auto": "TP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 169,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 170,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "27",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 171,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_deadline_fetch",
+  "line": "4",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 172,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_flask_session_vary_cookie",
+  "line": "348",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 173,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_deadline_fetch",
+  "line": "4",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 174,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "27",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 175,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_retry_audit",
+  "line": "6",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 176,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "329",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 177,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_slot_booking",
+  "line": "37",
+  "auto": "TP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 178,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "651",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 179,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "348",
+  "auto": "TP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 180,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "11",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 181,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_undici_header_trim_redos",
+  "line": "28",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 182,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "23",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 183,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "29",
+  "auto": "FP",
+  "severities": {
+   "low": 3,
+   "medium": 1
+  },
+  "count": 4,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 184,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "40",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 185,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_moment_locale_path_traversal",
+  "line": "67",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 186,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_climate_samples",
+  "line": "61",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 187,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "29",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 188,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_customer_alias",
+  "line": "3",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 189,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "704",
+  "auto": "TP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 190,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_climate_samples",
+  "line": "30",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 191,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 192,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "150",
+  "auto": "FP",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 193,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "23",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 194,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_utc_statement",
+  "line": "6",
+  "auto": "TP",
+  "severities": {
+   "high": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 195,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "42",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 196,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_slot_booking",
+  "line": "22",
+  "auto": "FP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 197,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_minimist_constructor_pollution",
+  "line": "24",
+  "auto": "TP",
+  "severities": {
+   "high": 1,
+   "critical": 2
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 198,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 199,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_minimist_constructor_pollution",
+  "line": "24",
+  "auto": "TP",
+  "severities": {
+   "high": 1,
+   "critical": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 200,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_signed_preview",
+  "line": "14",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 201,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "41",
+  "auto": "TP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 202,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_deadline_fetch",
+  "line": "5",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 203,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "446",
+  "auto": "TP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 204,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "61",
+  "auto": "FP",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 205,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "577",
+  "auto": "FP",
+  "severities": {
+   "high": 1,
+   "medium": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 206,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 207,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_sensor_dedupe",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 208,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "29",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 209,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dossier_export",
+  "line": "34",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 210,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dispatch_state",
+  "line": "11",
+  "auto": "TP",
+  "severities": {
+   "high": 2,
+   "critical": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 211,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_sensor_dedupe",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 212,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_balance_backfill",
+  "line": "4",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 213,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "47",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 214,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_sensor_dedupe",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 215,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_undici_header_trim_redos",
+  "line": "31",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 216,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dispatch_state",
+  "line": "11",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 217,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "11",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 218,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "328",
+  "auto": "FP",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 219,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_minimist_constructor_pollution",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "critical": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 220,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 221,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "326",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 222,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 223,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_signed_preview",
+  "line": "11",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 224,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "445",
+  "auto": "TP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 225,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_customer_alias",
+  "line": "3",
+  "auto": "TP",
+  "severities": {
+   "high": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 226,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "42",
+  "auto": "TP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 227,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "35",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 228,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "445",
+  "auto": "TP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 229,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "40",
+  "auto": "FP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 230,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_minimist_constructor_pollution",
+  "line": "24",
+  "auto": "TP",
+  "severities": {
+   "high": 1,
+   "critical": 2
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 231,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "51",
+  "auto": "FP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 232,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "367",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 233,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 234,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_qs_encode_lone_surrogate",
+  "line": "408",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 235,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_slot_booking",
+  "line": "26",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 236,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_climate_samples",
+  "line": "31",
+  "auto": "FP",
+  "severities": {
+   "medium": 2,
+   "high": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 237,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "35",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 238,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_archive_extract",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 239,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_archive_extract",
+  "line": "4",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 240,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_minimist_constructor_pollution",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 241,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_slot_booking",
+  "line": "35",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 242,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_django_timesince_aware_pivot",
+  "line": "99",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 243,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_retry_audit",
+  "line": "9",
+  "auto": "FP:TRAP",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 244,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "32",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 245,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "148",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 246,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_semver_inc_dotted_prerelease",
+  "line": "312",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 247,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "446",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 248,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 249,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_utc_statement",
+  "line": "6",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 250,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_utc_statement",
+  "line": "6",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 251,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_semver_inc_dotted_prerelease",
+  "line": "312",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 252,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "35",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 253,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_signed_preview",
+  "line": "3",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 254,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "149",
+  "auto": "FP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 255,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_retry_audit",
+  "line": "16",
+  "auto": "FP",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 256,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "643",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 257,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "31",
+  "auto": "FP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 258,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_signed_preview",
+  "line": "3",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 259,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "326",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 260,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_undici_header_trim_redos",
+  "line": "30",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 261,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "40",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 262,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "26",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 263,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_shipment_pages",
+  "line": "29",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 264,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_archive_extract",
+  "line": "15",
+  "auto": "FP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 265,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1093",
+  "auto": "TP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 266,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "722",
+  "auto": "FP",
+  "severities": {
+   "medium": 1,
+   "high": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 267,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_slot_booking",
+  "line": "37",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 268,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "25",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 269,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_signed_preview",
+  "line": "14",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 270,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 271,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "643",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 272,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 273,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_balance_backfill",
+  "line": "7",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 274,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "408",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 275,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "21",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 276,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "22",
+  "auto": "FP:TRAP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 277,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_moment_locale_path_traversal",
+  "line": "79",
+  "auto": "FP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 278,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "349",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 279,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_climate_samples",
+  "line": "41",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 280,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "28",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 281,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 282,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "150",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 283,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "23",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 284,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "348",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 285,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 286,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "328",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 287,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_slot_booking",
+  "line": "35",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 288,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "22",
+  "auto": "FP:TRAP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 289,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "153",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 290,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_climate_samples",
+  "line": "42",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 291,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "722",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 292,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1104",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 293,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "26",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 294,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "43",
+  "auto": "FP",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 295,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_gin_attachment_filename_quote",
+  "line": "1059",
+  "auto": "TP",
+  "severities": {
+   "high": 3,
+   "low": 1
+  },
+  "count": 4,
+  "mine": "TP"
+ },
+ {
+  "i": 296,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_aiohttp_static_symlink_traversal",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 297,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_balance_backfill",
+  "line": "7",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 298,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_archive_extract",
+  "line": "4",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 299,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_archive_extract",
+  "line": "15",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 300,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_gin_attachment_filename_quote",
+  "line": "1059",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 301,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "149",
+  "auto": "FP",
+  "severities": {
+   "high": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 302,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_tornado_cookie_unquote_quadratic",
+  "line": "1093",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 303,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_semver_inc_dotted_prerelease",
+  "line": "313",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 304,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_archive_extract",
+  "line": "13",
+  "auto": "TP",
+  "severities": {
+   "critical": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 305,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_minimist_constructor_pollution",
+  "line": "10",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 306,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_departure_board",
+  "line": "51",
+  "auto": "FP",
+  "severities": {
+   "low": 2,
+   "medium": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 307,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_archive_extract",
+  "line": "4",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 308,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_starlette_upload_rollover_blocking",
+  "line": "452",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 309,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "148",
+  "auto": "TP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 310,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_flask_session_vary_cookie",
+  "line": "348",
+  "auto": "TP",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 311,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_axios_xsrf_with_credentials",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 312,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_qs_encode_lone_surrogate",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "medium": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 313,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "14",
+  "auto": "TP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "TP"
+ },
+ {
+  "i": 314,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_undici_header_trim_redos",
+  "line": "31",
+  "auto": "FP",
+  "severities": {
+   "low": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 315,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_archive_extract",
+  "line": "4",
+  "auto": "ACCEPTABLE",
+  "severities": {
+   "high": 1,
+   "medium": 1,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 316,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "-",
+  "auto": "UNLOCATED",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 317,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_semver_inc_dotted_prerelease",
+  "line": "11",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 318,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_axios_xsrf_with_credentials",
+  "line": "153",
+  "auto": "FP",
+  "severities": {
+   "low": 3
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 319,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_starlette_upload_rollover_blocking",
+  "line": "446",
+  "auto": "TP",
+  "severities": {
+   "medium": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 320,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dossier_export",
+  "line": "44",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 321,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "36",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 322,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_dispatch_state",
+  "line": "11",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 323,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "24",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 324,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_followredirects_proxy_auth_leak",
+  "line": "464",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 325,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_shipment_pages",
+  "line": "37",
+  "auto": "TP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 326,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "54",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 327,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_undici_header_trim_redos",
+  "line": "28",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 328,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_seed_accessions",
+  "line": "24",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 329,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_slot_booking",
+  "line": "22",
+  "auto": "FP",
+  "severities": {
+   "high": 2
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 330,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "577",
+  "auto": "TP",
+  "severities": {
+   "high": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 331,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_signed_preview",
+  "line": "14",
+  "auto": "TP",
+  "severities": {
+   "critical": 1,
+   "high": 2
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 332,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_stream_receipts",
+  "line": "11",
+  "auto": "FP",
+  "severities": {
+   "medium": 2,
+   "low": 1
+  },
+  "count": 3,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 333,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_balance_backfill",
+  "line": "7",
+  "auto": "FP",
+  "severities": {
+   "low": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 334,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_pydantic_email_length_redos",
+  "line": "722",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 335,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_stream_receipts",
+  "line": "15",
+  "auto": "TP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "TP"
+ },
+ {
+  "i": 336,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_departure_board",
+  "line": "51",
+  "auto": "FP",
+  "severities": {
+   "medium": 1,
+   "low": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 337,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "x3_dispatch_state",
+  "line": "11",
+  "auto": "TP",
+  "severities": {
+   "high": 3
+  },
+  "count": 3,
+  "mine": "TP"
+ },
+ {
+  "i": 338,
+  "run": "v3-v01-r1",
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_aiohttp_static_symlink_traversal",
+  "line": "644",
+  "auto": "FP",
+  "severities": {
+   "medium": 1,
+   "high": 1
+  },
+  "count": 2,
+  "mine": "UNREVIEWED"
+ },
+ {
+  "i": 339,
+  "run": "v3-v02-r1",
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "x3_seed_accessions",
+  "line": "24",
+  "auto": "FP",
+  "severities": {
+   "medium": 1
+  },
+  "count": 1,
+  "mine": "UNREVIEWED"
+ }
+]

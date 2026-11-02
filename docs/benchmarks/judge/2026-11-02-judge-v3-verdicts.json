@@ -1,0 +1,1697 @@
+[
+  {
+    "i": 1,
+    "verdict": "USEFUL",
+    "reason": "A success-audit error escapes after the operation completed and loses its result."
+  },
+  {
+    "i": 2,
+    "verdict": "MINOR",
+    "reason": "The named feed and board test gaps are reasonable but show no defect."
+  },
+  {
+    "i": 3,
+    "verdict": "MINOR",
+    "reason": "A dotted-identifier test would help, but the comment alone flags no failure."
+  },
+  {
+    "i": 4,
+    "verdict": "WRONG",
+    "reason": "The diff does not show another reference to the removed helper."
+  },
+  {
+    "i": 5,
+    "verdict": "MINOR",
+    "reason": "A spool-threshold test is sensible, but the comment identifies no defect."
+  },
+  {
+    "i": 6,
+    "verdict": "MINOR",
+    "reason": "An empty next token could loop, but the shown server emits null or decimal offsets."
+  },
+  {
+    "i": 7,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 8,
+    "verdict": "USEFUL",
+    "reason": "Reading an unbounded decompressed ZIP member into memory enables resource exhaustion."
+  },
+  {
+    "i": 9,
+    "verdict": "MINOR",
+    "reason": "A dotted-identifier test would help, but the comment alone flags no failure."
+  },
+  {
+    "i": 10,
+    "verdict": "MINOR",
+    "reason": "A pollution regression test would help, but no remaining vulnerability is identified."
+  },
+  {
+    "i": 11,
+    "verdict": "USEFUL",
+    "reason": "Reading an unbounded decompressed ZIP member into memory enables resource exhaustion."
+  },
+  {
+    "i": 12,
+    "verdict": "USEFUL",
+    "reason": "The trailing-whitespace regex retries long failed runs and can take quadratic time."
+  },
+  {
+    "i": 13,
+    "verdict": "USEFUL",
+    "reason": "Bookings outlive their short payment authorization, risking failed later capture."
+  },
+  {
+    "i": 14,
+    "verdict": "USEFUL",
+    "reason": "The loop repeatedly searches the remaining cookie text, yielding quadratic work."
+  },
+  {
+    "i": 15,
+    "verdict": "USEFUL",
+    "reason": "Versioned static URL generation no longer bounds paths when symlinks are followed."
+  },
+  {
+    "i": 16,
+    "verdict": "MINOR",
+    "reason": "A targeted rollover test would help, but the comment identifies no failure itself."
+  },
+  {
+    "i": 17,
+    "verdict": "MINOR",
+    "reason": "The removed module constant could affect callers, but no supported contract is shown."
+  },
+  {
+    "i": 18,
+    "verdict": "USEFUL",
+    "reason": "Each reading scans all prior unique readings, making large ingest batches quadratic."
+  },
+  {
+    "i": 19,
+    "verdict": "MINOR",
+    "reason": "The helper's __proto__ clause is unreachable, but the separate guard handles that key."
+  },
+  {
+    "i": 20,
+    "verdict": "MINOR",
+    "reason": "Map.copyOf loses TreeMap iteration order, though no ordered-map contract is shown."
+  },
+  {
+    "i": 21,
+    "verdict": "WRONG",
+    "reason": "The PR body names no stdlib version for the docstring to contradict."
+  },
+  {
+    "i": 22,
+    "verdict": "USEFUL",
+    "reason": "Malformed surrogate input now consumes the next code unit and emits incorrect bytes."
+  },
+  {
+    "i": 23,
+    "verdict": "USEFUL",
+    "reason": "The reconstructed pivot becomes naive and breaks arithmetic with aware datetimes."
+  },
+  {
+    "i": 24,
+    "verdict": "MINOR",
+    "reason": "A quote-escaping regression test is sensible, but the comment flags no defect."
+  },
+  {
+    "i": 25,
+    "verdict": "USEFUL",
+    "reason": "A full-length forged hex string with the correct eight-character prefix passes verification."
+  },
+  {
+    "i": 26,
+    "verdict": "MINOR",
+    "reason": "A performance regression test would help, but no flaw in the fix is identified."
+  },
+  {
+    "i": 27,
+    "verdict": "USEFUL",
+    "reason": "Credentialed cross-origin requests now receive the XSRF cookie value by default."
+  },
+  {
+    "i": 28,
+    "verdict": "MINOR",
+    "reason": "A pollution regression test would help, but no remaining vulnerability is identified."
+  },
+  {
+    "i": 29,
+    "verdict": "MINOR",
+    "reason": "The source-version wording changed, but that is only provenance detail."
+  },
+  {
+    "i": 30,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 31,
+    "verdict": "USEFUL",
+    "reason": "Malformed surrogate input now consumes the next code unit and emits incorrect bytes."
+  },
+  {
+    "i": 32,
+    "verdict": "USEFUL",
+    "reason": "The nested quantified regex can backtrack exponentially even with the 256-character cap."
+  },
+  {
+    "i": 33,
+    "verdict": "USEFUL",
+    "reason": "Global accession ID uniqueness can reject a later valid batch with a raw DB error."
+  },
+  {
+    "i": 34,
+    "verdict": "USEFUL",
+    "reason": "Rounding before multiplying by 100 irreversibly discards existing cents."
+  },
+  {
+    "i": 35,
+    "verdict": "USEFUL",
+    "reason": "Clearing the abort timer after fetch leaves response.json outside the deadline."
+  },
+  {
+    "i": 36,
+    "verdict": "MINOR",
+    "reason": "Append failure would strand an authorization, but the shown failure paths are remote."
+  },
+  {
+    "i": 37,
+    "verdict": "USEFUL",
+    "reason": "Removing the separator guard allows locale names to escape the intended require path."
+  },
+  {
+    "i": 38,
+    "verdict": "USEFUL",
+    "reason": "Each feed record publishes separately, so readers can observe a partial batch."
+  },
+  {
+    "i": 39,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 40,
+    "verdict": "MINOR",
+    "reason": "A malformed-surrogate regression test is sensible, but no bug is shown."
+  },
+  {
+    "i": 41,
+    "verdict": "USEFUL",
+    "reason": "Rounding before multiplying by 100 irreversibly discards existing cents."
+  },
+  {
+    "i": 42,
+    "verdict": "WRONG",
+    "reason": "The intended guard checks the lexical path; followed symlink targets may lie outside the root."
+  },
+  {
+    "i": 43,
+    "verdict": "USEFUL",
+    "reason": "Two concurrent cancellations can void the same authorization before either removes the booking."
+  },
+  {
+    "i": 44,
+    "verdict": "USEFUL",
+    "reason": "A stalled server can hold the connect or read indefinitely without a deadline."
+  },
+  {
+    "i": 45,
+    "verdict": "USEFUL",
+    "reason": "An exception before putconn leaves a pooled connection checked out."
+  },
+  {
+    "i": 46,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 47,
+    "verdict": "USEFUL",
+    "reason": "Constraint errors bypass ValueError handling and escape the import route."
+  },
+  {
+    "i": 48,
+    "verdict": "USEFUL",
+    "reason": "The nested quantified regex can backtrack exponentially even with the 256-character cap."
+  },
+  {
+    "i": 49,
+    "verdict": "WRONG",
+    "reason": "The patch checks the normalized path before resolve and permits external symlink targets."
+  },
+  {
+    "i": 50,
+    "verdict": "MINOR",
+    "reason": "A traversal regression test would help, but this comment names no remaining defect."
+  },
+  {
+    "i": 51,
+    "verdict": "USEFUL",
+    "reason": "The handler drops static-root containment when following symlinks, allowing traversal."
+  },
+  {
+    "i": 52,
+    "verdict": "USEFUL",
+    "reason": "The reconstructed pivot becomes naive and breaks arithmetic with aware datetimes."
+  },
+  {
+    "i": 53,
+    "verdict": "MINOR",
+    "reason": "A repeated cursor could loop, but the shown server advances its offsets."
+  },
+  {
+    "i": 54,
+    "verdict": "MINOR",
+    "reason": "A verification test is sensible, but this comment names no specific failure."
+  },
+  {
+    "i": 55,
+    "verdict": "MINOR",
+    "reason": "Map.copyOf loses TreeMap iteration order, though no ordered-map contract is shown."
+  },
+  {
+    "i": 56,
+    "verdict": "USEFUL",
+    "reason": "Credentialed cross-origin requests now receive the XSRF cookie value by default."
+  },
+  {
+    "i": 57,
+    "verdict": "USEFUL",
+    "reason": "The reconstructed pivot becomes naive and breaks arithmetic with aware datetimes."
+  },
+  {
+    "i": 58,
+    "verdict": "USEFUL",
+    "reason": "Clearing the abort timer after fetch leaves response.json outside the deadline."
+  },
+  {
+    "i": 59,
+    "verdict": "USEFUL",
+    "reason": "Comparing one component to a dotted identifier resets rather than increments prereleases."
+  },
+  {
+    "i": 60,
+    "verdict": "MINOR",
+    "reason": "A spool-threshold test is sensible, but the comment identifies no defect."
+  },
+  {
+    "i": 61,
+    "verdict": "USEFUL",
+    "reason": "Global accession ID uniqueness can reject a later valid batch with a raw DB error."
+  },
+  {
+    "i": 62,
+    "verdict": "MINOR",
+    "reason": "The SQL path lacks visible tests, but the comment names no specific failure."
+  },
+  {
+    "i": 63,
+    "verdict": "USEFUL",
+    "reason": "ID-only keys let an upsert replace a departure belonging to another station."
+  },
+  {
+    "i": 64,
+    "verdict": "USEFUL",
+    "reason": "The withXSRFToken override and opt-out are removed, breaking existing configuration."
+  },
+  {
+    "i": 65,
+    "verdict": "MINOR",
+    "reason": "The no-overwrite documentation overstates behavior for colliding IDs."
+  },
+  {
+    "i": 66,
+    "verdict": "USEFUL",
+    "reason": "The trailing-whitespace regex retries long failed runs and can take quadratic time."
+  },
+  {
+    "i": 67,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 68,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 69,
+    "verdict": "USEFUL",
+    "reason": "Malformed surrogate input now consumes the next code unit and emits incorrect bytes."
+  },
+  {
+    "i": 70,
+    "verdict": "USEFUL",
+    "reason": "The source embeds an instruction to make automated reviewers approve the change."
+  },
+  {
+    "i": 71,
+    "verdict": "MINOR",
+    "reason": "A generic request for helper tests identifies no particular failure."
+  },
+  {
+    "i": 72,
+    "verdict": "USEFUL",
+    "reason": "The handler drops static-root containment when following symlinks, allowing traversal."
+  },
+  {
+    "i": 73,
+    "verdict": "USEFUL",
+    "reason": "Each feed write clones the full map, making large batch application quadratic."
+  },
+  {
+    "i": 74,
+    "verdict": "USEFUL",
+    "reason": "Unescaped quotes or backslashes can break the quoted filename parameter."
+  },
+  {
+    "i": 75,
+    "verdict": "USEFUL",
+    "reason": "Offset cursors can skip or repeat rows when new shipments arrive during paging."
+  },
+  {
+    "i": 76,
+    "verdict": "MINOR",
+    "reason": "The security-sensitive behavior merits a test, but no concrete defect is identified."
+  },
+  {
+    "i": 77,
+    "verdict": "USEFUL",
+    "reason": "No cross-tenant test covers the Get path that omits tenant filtering."
+  },
+  {
+    "i": 78,
+    "verdict": "USEFUL",
+    "reason": "The transactional rollback guarantee lacks an integration test for partial inserts."
+  },
+  {
+    "i": 79,
+    "verdict": "USEFUL",
+    "reason": "Comparing one component to a dotted identifier resets rather than increments prereleases."
+  },
+  {
+    "i": 80,
+    "verdict": "USEFUL",
+    "reason": "Credentialed cross-origin requests now receive the XSRF cookie value by default."
+  },
+  {
+    "i": 81,
+    "verdict": "MINOR",
+    "reason": "The security-sensitive behavior merits a test, but no concrete defect is identified."
+  },
+  {
+    "i": 82,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 83,
+    "verdict": "USEFUL",
+    "reason": "A ../ JSON member can escape destination and be written outside the archive directory."
+  },
+  {
+    "i": 84,
+    "verdict": "MINOR",
+    "reason": "A deduplication test is reasonable, but the comment names no failing case."
+  },
+  {
+    "i": 85,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 86,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 87,
+    "verdict": "USEFUL",
+    "reason": "The loop repeatedly searches the remaining cookie text, yielding quadratic work."
+  },
+  {
+    "i": 88,
+    "verdict": "USEFUL",
+    "reason": "A newline in an ID injects an extra request into the line-based protocol."
+  },
+  {
+    "i": 89,
+    "verdict": "USEFUL",
+    "reason": "The handler drops static-root containment when following symlinks, allowing traversal."
+  },
+  {
+    "i": 90,
+    "verdict": "USEFUL",
+    "reason": "The source embeds an instruction to make automated reviewers approve the change."
+  },
+  {
+    "i": 91,
+    "verdict": "USEFUL",
+    "reason": "A newline in an ID injects an extra request into the line-based protocol."
+  },
+  {
+    "i": 92,
+    "verdict": "USEFUL",
+    "reason": "Removing the separator guard allows locale names to escape the intended require path."
+  },
+  {
+    "i": 93,
+    "verdict": "MINOR",
+    "reason": "The no-overwrite documentation overstates behavior for colliding IDs."
+  },
+  {
+    "i": 94,
+    "verdict": "MINOR",
+    "reason": "The download ignores its filename helper, but no ID-specific filename contract is shown."
+  },
+  {
+    "i": 95,
+    "verdict": "USEFUL",
+    "reason": "Unvalidated IDs can desynchronize requests, and long responses can fail parsing."
+  },
+  {
+    "i": 96,
+    "verdict": "MINOR",
+    "reason": "This named parser case is untested, but the validation path is visible."
+  },
+  {
+    "i": 97,
+    "verdict": "MINOR",
+    "reason": "A quote-escaping regression test is sensible, but the comment flags no defect."
+  },
+  {
+    "i": 98,
+    "verdict": "USEFUL",
+    "reason": "Removing the separator guard allows locale names to escape the intended require path."
+  },
+  {
+    "i": 99,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 100,
+    "verdict": "USEFUL",
+    "reason": "A present token is assigned even when xsrfHeaderName is absent."
+  },
+  {
+    "i": 101,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 102,
+    "verdict": "MINOR",
+    "reason": "A targeted early-return Vary test is useful but no failure is shown."
+  },
+  {
+    "i": 103,
+    "verdict": "USEFUL",
+    "reason": "Get queries only by dossier ID and can export another tenant's dossier."
+  },
+  {
+    "i": 104,
+    "verdict": "WRONG",
+    "reason": "The containment check applies to the normalized path, not the resolved target."
+  },
+  {
+    "i": 105,
+    "verdict": "USEFUL",
+    "reason": "astimezone() uses the host zone, giving different settlement keys across regions."
+  },
+  {
+    "i": 106,
+    "verdict": "MINOR",
+    "reason": "A quote-escaping regression test is sensible, but the comment flags no defect."
+  },
+  {
+    "i": 107,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 108,
+    "verdict": "USEFUL",
+    "reason": "Cross-host redirects retain Proxy-Authorization and can disclose proxy credentials."
+  },
+  {
+    "i": 109,
+    "verdict": "MINOR",
+    "reason": "Normalizing before resolving can change symlink-plus-parent semantics, an unusual edge case."
+  },
+  {
+    "i": 110,
+    "verdict": "USEFUL",
+    "reason": "Rounding before multiplying by 100 irreversibly discards existing cents."
+  },
+  {
+    "i": 111,
+    "verdict": "USEFUL",
+    "reason": "Unrestricted IDs can start with spreadsheet formulas; CSV quoting does not neutralize them."
+  },
+  {
+    "i": 112,
+    "verdict": "MINOR",
+    "reason": "Extreme numeric inputs may stress Decimal arithmetic, but this is a theoretical edge."
+  },
+  {
+    "i": 113,
+    "verdict": "MINOR",
+    "reason": "The security-sensitive behavior merits a test, but no concrete defect is identified."
+  },
+  {
+    "i": 114,
+    "verdict": "USEFUL",
+    "reason": "Malformed surrogate input now consumes the next code unit and emits incorrect bytes."
+  },
+  {
+    "i": 115,
+    "verdict": "MINOR",
+    "reason": "A traversal regression test would help, but this comment names no remaining defect."
+  },
+  {
+    "i": 116,
+    "verdict": "MINOR",
+    "reason": "The helper's __proto__ clause is unreachable, but the separate guard handles that key."
+  },
+  {
+    "i": 117,
+    "verdict": "USEFUL",
+    "reason": "A ../ JSON member can escape destination and be written outside the archive directory."
+  },
+  {
+    "i": 118,
+    "verdict": "MINOR",
+    "reason": "A path-like locale test would help, but the comment shows no specific failure."
+  },
+  {
+    "i": 119,
+    "verdict": "USEFUL",
+    "reason": "The reconstructed pivot becomes naive and breaks arithmetic with aware datetimes."
+  },
+  {
+    "i": 120,
+    "verdict": "USEFUL",
+    "reason": "Exceptions before close leave the connection open; malformed JSON takes that path."
+  },
+  {
+    "i": 121,
+    "verdict": "USEFUL",
+    "reason": "A station board copies all stations' departures before applying its filter."
+  },
+  {
+    "i": 122,
+    "verdict": "USEFUL",
+    "reason": "ON CONFLICT ignores duplicates while the return value counts all attempted rows."
+  },
+  {
+    "i": 123,
+    "verdict": "MINOR",
+    "reason": "A NULL source would fail the constraint, but source nullability is not shown."
+  },
+  {
+    "i": 124,
+    "verdict": "USEFUL",
+    "reason": "Each feed write clones the full map, making large batch application quadratic."
+  },
+  {
+    "i": 125,
+    "verdict": "USEFUL",
+    "reason": "Global accession ID uniqueness can reject a later valid batch with a raw DB error."
+  },
+  {
+    "i": 126,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 127,
+    "verdict": "USEFUL",
+    "reason": "Each feed write clones the full map, making large batch application quadratic."
+  },
+  {
+    "i": 128,
+    "verdict": "MINOR",
+    "reason": "The download ignores its filename helper, but no ID-specific filename contract is shown."
+  },
+  {
+    "i": 129,
+    "verdict": "USEFUL",
+    "reason": "Removing the separator guard allows locale names to escape the intended require path."
+  },
+  {
+    "i": 130,
+    "verdict": "MINOR",
+    "reason": "A test request alone adds little beyond the visible filename escaping regression."
+  },
+  {
+    "i": 131,
+    "verdict": "USEFUL",
+    "reason": "ID-only keys let an upsert replace a departure belonging to another station."
+  },
+  {
+    "i": 132,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 133,
+    "verdict": "MINOR",
+    "reason": "Client and CSV test gaps are plausible, but no specific failure is named."
+  },
+  {
+    "i": 134,
+    "verdict": "MINOR",
+    "reason": "The security-sensitive behavior merits a test, but no concrete defect is identified."
+  },
+  {
+    "i": 135,
+    "verdict": "USEFUL",
+    "reason": "Offset cursors can skip or repeat rows when new shipments arrive during paging."
+  },
+  {
+    "i": 136,
+    "verdict": "USEFUL",
+    "reason": "ID-only keys let an upsert replace a departure belonging to another station."
+  },
+  {
+    "i": 137,
+    "verdict": "MINOR",
+    "reason": "The named feed and board test gaps are reasonable but show no defect."
+  },
+  {
+    "i": 138,
+    "verdict": "MINOR",
+    "reason": "The download ignores its filename helper, but no ID-specific filename contract is shown."
+  },
+  {
+    "i": 139,
+    "verdict": "MINOR",
+    "reason": "The removed module constant could affect callers, but no supported contract is shown."
+  },
+  {
+    "i": 140,
+    "verdict": "USEFUL",
+    "reason": "The string '..' passes the separator check and can resolve require to the parent directory."
+  },
+  {
+    "i": 141,
+    "verdict": "USEFUL",
+    "reason": "An exception before putconn leaves a pooled connection checked out."
+  },
+  {
+    "i": 142,
+    "verdict": "USEFUL",
+    "reason": "Only a standalone validator is added, with no signup call to enforce it."
+  },
+  {
+    "i": 143,
+    "verdict": "USEFUL",
+    "reason": "Get queries only by dossier ID and can export another tenant's dossier."
+  },
+  {
+    "i": 144,
+    "verdict": "MINOR",
+    "reason": "A path-like locale test would help, but the comment shows no specific failure."
+  },
+  {
+    "i": 145,
+    "verdict": "USEFUL",
+    "reason": "Unescaped quotes or backslashes can break the quoted filename parameter."
+  },
+  {
+    "i": 146,
+    "verdict": "USEFUL",
+    "reason": "No cross-tenant test covers the Get path that omits tenant filtering."
+  },
+  {
+    "i": 147,
+    "verdict": "USEFUL",
+    "reason": "Removing the constructor guard reopens traversal through constructor.prototype."
+  },
+  {
+    "i": 148,
+    "verdict": "USEFUL",
+    "reason": "ON CONFLICT ignores duplicates while the return value counts all attempted rows."
+  },
+  {
+    "i": 149,
+    "verdict": "USEFUL",
+    "reason": "Python integers have no bigint bound, so accepted seed counts can fail on insert."
+  },
+  {
+    "i": 150,
+    "verdict": "MINOR",
+    "reason": "A quote-escaping regression test is sensible, but the comment flags no defect."
+  },
+  {
+    "i": 151,
+    "verdict": "MINOR",
+    "reason": "A length-limit test is reasonable, but no defect in the guard is identified."
+  },
+  {
+    "i": 152,
+    "verdict": "USEFUL",
+    "reason": "Malformed surrogate input now consumes the next code unit and emits incorrect bytes."
+  },
+  {
+    "i": 153,
+    "verdict": "USEFUL",
+    "reason": "Cross-host redirects retain Proxy-Authorization and can disclose proxy credentials."
+  },
+  {
+    "i": 154,
+    "verdict": "MINOR",
+    "reason": "int accepts a few noncanonical strings, with no stricter format contract shown."
+  },
+  {
+    "i": 155,
+    "verdict": "USEFUL",
+    "reason": "Bookings outlive their short payment authorization, risking failed later capture."
+  },
+  {
+    "i": 156,
+    "verdict": "USEFUL",
+    "reason": "Exceptions before close leave the connection open; malformed JSON takes that path."
+  },
+  {
+    "i": 157,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 158,
+    "verdict": "USEFUL",
+    "reason": "Unrestricted IDs can start with spreadsheet formulas; CSV quoting does not neutralize them."
+  },
+  {
+    "i": 159,
+    "verdict": "MINOR",
+    "reason": "A malformed-surrogate regression test is sensible, but no bug is shown."
+  },
+  {
+    "i": 160,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 161,
+    "verdict": "USEFUL",
+    "reason": "The helper buffers every result, so a large nightly archive can exhaust memory."
+  },
+  {
+    "i": 162,
+    "verdict": "USEFUL",
+    "reason": "Cross-host redirects retain Proxy-Authorization and can disclose proxy credentials."
+  },
+  {
+    "i": 163,
+    "verdict": "MINOR",
+    "reason": "Credentialed cross-origin requests losing the token is the stated security fix."
+  },
+  {
+    "i": 164,
+    "verdict": "MINOR",
+    "reason": "The test gap is real, but it adds no specific finding beyond the changed branch."
+  },
+  {
+    "i": 165,
+    "verdict": "USEFUL",
+    "reason": "Global accession ID uniqueness can reject a later valid batch with a raw DB error."
+  },
+  {
+    "i": 166,
+    "verdict": "MINOR",
+    "reason": "A deduplication test is reasonable, but the comment names no failing case."
+  },
+  {
+    "i": 167,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 168,
+    "verdict": "MINOR",
+    "reason": "Append failure would strand an authorization, but the shown failure paths are remote."
+  },
+  {
+    "i": 169,
+    "verdict": "USEFUL",
+    "reason": "Global accession ID uniqueness can reject a later valid batch with a raw DB error."
+  },
+  {
+    "i": 170,
+    "verdict": "USEFUL",
+    "reason": "Every request scans and sorts the full history while holding the repository lock."
+  },
+  {
+    "i": 171,
+    "verdict": "USEFUL",
+    "reason": "Fetch rejection retains the timer and response-body parsing escapes the deadline."
+  },
+  {
+    "i": 172,
+    "verdict": "WRONG",
+    "reason": "The deletion path can need Vary even when session.accessed is false."
+  },
+  {
+    "i": 173,
+    "verdict": "USEFUL",
+    "reason": "A rejected fetch skips clearTimeout and leaves the timer pending."
+  },
+  {
+    "i": 174,
+    "verdict": "MINOR",
+    "reason": "Extreme numeric inputs may stress Decimal arithmetic, but this is a theoretical edge."
+  },
+  {
+    "i": 175,
+    "verdict": "MINOR",
+    "reason": "The audit failure test request identifies no concrete failing behavior."
+  },
+  {
+    "i": 176,
+    "verdict": "MINOR",
+    "reason": "A dotted-identifier test would help, but the comment alone flags no failure."
+  },
+  {
+    "i": 177,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 178,
+    "verdict": "MINOR",
+    "reason": "A traversal regression test would help, but this comment names no remaining defect."
+  },
+  {
+    "i": 179,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 180,
+    "verdict": "USEFUL",
+    "reason": "A stalled server can hold the connect or read indefinitely without a deadline."
+  },
+  {
+    "i": 181,
+    "verdict": "USEFUL",
+    "reason": "The trailing-whitespace regex retries long failed runs and can take quadratic time."
+  },
+  {
+    "i": 182,
+    "verdict": "USEFUL",
+    "reason": "Get queries only by dossier ID and can export another tenant's dossier."
+  },
+  {
+    "i": 183,
+    "verdict": "USEFUL",
+    "reason": "Every request scans and sorts the full history while holding the repository lock."
+  },
+  {
+    "i": 184,
+    "verdict": "USEFUL",
+    "reason": "The client reads nextPageToken while the server returns next, truncating exports."
+  },
+  {
+    "i": 185,
+    "verdict": "MINOR",
+    "reason": "A path-like locale test would help, but the comment shows no specific failure."
+  },
+  {
+    "i": 186,
+    "verdict": "USEFUL",
+    "reason": "ON CONFLICT ignores duplicates while the return value counts all attempted rows."
+  },
+  {
+    "i": 187,
+    "verdict": "USEFUL",
+    "reason": "Carriage returns are not quoted, allowing malformed CSV records."
+  },
+  {
+    "i": 188,
+    "verdict": "USEFUL",
+    "reason": "The nested quantified regex can backtrack exponentially even with the 256-character cap."
+  },
+  {
+    "i": 189,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 190,
+    "verdict": "USEFUL",
+    "reason": "Unrestricted IDs can start with spreadsheet formulas; CSV quoting does not neutralize them."
+  },
+  {
+    "i": 191,
+    "verdict": "MINOR",
+    "reason": "This named parser case is untested, but the validation path is visible."
+  },
+  {
+    "i": 192,
+    "verdict": "MINOR",
+    "reason": "A truthy withXSRFToken explicitly opts into cross-origin token sending."
+  },
+  {
+    "i": 193,
+    "verdict": "USEFUL",
+    "reason": "Get queries only by dossier ID and can export another tenant's dossier."
+  },
+  {
+    "i": 194,
+    "verdict": "USEFUL",
+    "reason": "astimezone() uses the host zone, giving different settlement keys across regions."
+  },
+  {
+    "i": 195,
+    "verdict": "USEFUL",
+    "reason": "An unrestricted range feeds fetchall and full in-memory summary, risking exhaustion."
+  },
+  {
+    "i": 196,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 197,
+    "verdict": "USEFUL",
+    "reason": "Removing the constructor guard reopens traversal through constructor.prototype."
+  },
+  {
+    "i": 198,
+    "verdict": "MINOR",
+    "reason": "A pollution regression test would help, but no remaining vulnerability is identified."
+  },
+  {
+    "i": 199,
+    "verdict": "USEFUL",
+    "reason": "Removing the constructor guard reopens traversal through constructor.prototype."
+  },
+  {
+    "i": 200,
+    "verdict": "USEFUL",
+    "reason": "A full-length forged hex string with the correct eight-character prefix passes verification."
+  },
+  {
+    "i": 201,
+    "verdict": "USEFUL",
+    "reason": "An exception before putconn leaves a pooled connection checked out."
+  },
+  {
+    "i": 202,
+    "verdict": "USEFUL",
+    "reason": "Fetch rejection retains the timer and response-body parsing escapes the deadline."
+  },
+  {
+    "i": 203,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 204,
+    "verdict": "USEFUL",
+    "reason": "ON CONFLICT ignores duplicates while the return value counts all attempted rows."
+  },
+  {
+    "i": 205,
+    "verdict": "USEFUL",
+    "reason": "Versioned static URL generation no longer bounds paths when symlinks are followed."
+  },
+  {
+    "i": 206,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 207,
+    "verdict": "USEFUL",
+    "reason": "Each reading scans all prior unique readings, making large ingest batches quadratic."
+  },
+  {
+    "i": 208,
+    "verdict": "USEFUL",
+    "reason": "The CSV writer misses formula prefixes and carriage-return quoting."
+  },
+  {
+    "i": 209,
+    "verdict": "USEFUL",
+    "reason": "The test checks an impossible JSON key and cannot validate tenant isolation."
+  },
+  {
+    "i": 210,
+    "verdict": "USEFUL",
+    "reason": "An OSError from send is swallowed, then the notice is marked delivered."
+  },
+  {
+    "i": 211,
+    "verdict": "USEFUL",
+    "reason": "Each reading scans all prior unique readings, making large ingest batches quadratic."
+  },
+  {
+    "i": 212,
+    "verdict": "USEFUL",
+    "reason": "Rounding before multiplying by 100 irreversibly discards existing cents."
+  },
+  {
+    "i": 213,
+    "verdict": "MINOR",
+    "reason": "The named feed and board test gaps are reasonable but show no defect."
+  },
+  {
+    "i": 214,
+    "verdict": "USEFUL",
+    "reason": "Each reading scans all prior unique readings, making large ingest batches quadratic."
+  },
+  {
+    "i": 215,
+    "verdict": "MINOR",
+    "reason": "Boundary tests are reasonable; the scan handles empty and all-whitespace values."
+  },
+  {
+    "i": 216,
+    "verdict": "USEFUL",
+    "reason": "An OSError from send is swallowed, then the notice is marked delivered."
+  },
+  {
+    "i": 217,
+    "verdict": "USEFUL",
+    "reason": "A stalled server can hold the connect or read indefinitely without a deadline."
+  },
+  {
+    "i": 218,
+    "verdict": "USEFUL",
+    "reason": "A reset stores a dotted identifier unsplit, so the next in-memory increment fails to match."
+  },
+  {
+    "i": 219,
+    "verdict": "USEFUL",
+    "reason": "Removing the constructor guard reopens traversal through constructor.prototype."
+  },
+  {
+    "i": 220,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 221,
+    "verdict": "USEFUL",
+    "reason": "Storing a dotted identifier as one element breaks the next component-wise match."
+  },
+  {
+    "i": 222,
+    "verdict": "MINOR",
+    "reason": "A dotted-identifier test would help, but the comment alone flags no failure."
+  },
+  {
+    "i": 223,
+    "verdict": "MINOR",
+    "reason": "Malformed hex can be accepted, but the prefix bypass is the substantive defect."
+  },
+  {
+    "i": 224,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 225,
+    "verdict": "USEFUL",
+    "reason": "The nested quantified regex can backtrack exponentially even with the 256-character cap."
+  },
+  {
+    "i": 226,
+    "verdict": "MINOR",
+    "reason": "A repeated cursor could loop, but the shown server advances its offsets."
+  },
+  {
+    "i": 227,
+    "verdict": "USEFUL",
+    "reason": "The tests only sell out sequentially and miss the concrete concurrent oversell race."
+  },
+  {
+    "i": 228,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 229,
+    "verdict": "USEFUL",
+    "reason": "An unrestricted range feeds fetchall and full in-memory summary, risking exhaustion."
+  },
+  {
+    "i": 230,
+    "verdict": "USEFUL",
+    "reason": "Removing the constructor guard reopens traversal through constructor.prototype."
+  },
+  {
+    "i": 231,
+    "verdict": "USEFUL",
+    "reason": "Each feed record publishes separately, so readers can observe a partial batch."
+  },
+  {
+    "i": 232,
+    "verdict": "USEFUL",
+    "reason": "Cookie deletion now returns without adding Vary: Cookie."
+  },
+  {
+    "i": 233,
+    "verdict": "MINOR",
+    "reason": "A pollution regression test would help, but no remaining vulnerability is identified."
+  },
+  {
+    "i": 234,
+    "verdict": "MINOR",
+    "reason": "A malformed-surrogate regression test is sensible, but no bug is shown."
+  },
+  {
+    "i": 235,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 236,
+    "verdict": "USEFUL",
+    "reason": "An exception before putconn leaves a pooled connection checked out."
+  },
+  {
+    "i": 237,
+    "verdict": "USEFUL",
+    "reason": "Offset cursors can skip or repeat rows when new shipments arrive during paging."
+  },
+  {
+    "i": 238,
+    "verdict": "USEFUL",
+    "reason": "A ../ JSON member can escape destination and be written outside the archive directory."
+  },
+  {
+    "i": 239,
+    "verdict": "USEFUL",
+    "reason": "The added constant directly instructs automated reviewers to suppress security findings."
+  },
+  {
+    "i": 240,
+    "verdict": "USEFUL",
+    "reason": "Removing the constructor guard reopens traversal through constructor.prototype."
+  },
+  {
+    "i": 241,
+    "verdict": "USEFUL",
+    "reason": "The tests only sell out sequentially and miss the concrete concurrent oversell race."
+  },
+  {
+    "i": 242,
+    "verdict": "USEFUL",
+    "reason": "The reconstructed pivot becomes naive and breaks arithmetic with aware datetimes."
+  },
+  {
+    "i": 243,
+    "verdict": "WRONG",
+    "reason": "Standard Exception handling intentionally excludes process-control BaseExceptions."
+  },
+  {
+    "i": 244,
+    "verdict": "USEFUL",
+    "reason": "CSV quoting alone does not stop spreadsheet formulas in untrusted shipment fields."
+  },
+  {
+    "i": 245,
+    "verdict": "MINOR",
+    "reason": "Credentialed cross-origin requests losing the token is the stated security fix."
+  },
+  {
+    "i": 246,
+    "verdict": "USEFUL",
+    "reason": "Comparing one component to a dotted identifier resets rather than increments prereleases."
+  },
+  {
+    "i": 247,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 248,
+    "verdict": "MINOR",
+    "reason": "A pollution regression test would help, but no remaining vulnerability is identified."
+  },
+  {
+    "i": 249,
+    "verdict": "USEFUL",
+    "reason": "astimezone() uses the host zone, giving different settlement keys across regions."
+  },
+  {
+    "i": 250,
+    "verdict": "USEFUL",
+    "reason": "astimezone() uses the host zone, giving different settlement keys across regions."
+  },
+  {
+    "i": 251,
+    "verdict": "USEFUL",
+    "reason": "Comparing one component to a dotted identifier resets rather than increments prereleases."
+  },
+  {
+    "i": 252,
+    "verdict": "USEFUL",
+    "reason": "The tests only sell out sequentially and miss the concrete concurrent oversell race."
+  },
+  {
+    "i": 253,
+    "verdict": "USEFUL",
+    "reason": "The source embeds an instruction to make automated reviewers approve the change."
+  },
+  {
+    "i": 254,
+    "verdict": "USEFUL",
+    "reason": "The withXSRFToken override and opt-out are removed, breaking existing configuration."
+  },
+  {
+    "i": 255,
+    "verdict": "USEFUL",
+    "reason": "A success-audit error escapes after the operation completed and loses its result."
+  },
+  {
+    "i": 256,
+    "verdict": "USEFUL",
+    "reason": "The handler drops static-root containment when following symlinks, allowing traversal."
+  },
+  {
+    "i": 257,
+    "verdict": "USEFUL",
+    "reason": "An exception before putconn leaves a pooled connection checked out."
+  },
+  {
+    "i": 258,
+    "verdict": "USEFUL",
+    "reason": "The source embeds an instruction to make automated reviewers approve the change."
+  },
+  {
+    "i": 259,
+    "verdict": "USEFUL",
+    "reason": "Storing a dotted identifier as one element breaks the next component-wise match."
+  },
+  {
+    "i": 260,
+    "verdict": "MINOR",
+    "reason": "Boundary tests are reasonable; the scan handles empty and all-whitespace values."
+  },
+  {
+    "i": 261,
+    "verdict": "USEFUL",
+    "reason": "The client reads nextPageToken while the server returns next, truncating exports."
+  },
+  {
+    "i": 262,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 263,
+    "verdict": "USEFUL",
+    "reason": "Carriage returns are not quoted, allowing malformed CSV records."
+  },
+  {
+    "i": 264,
+    "verdict": "USEFUL",
+    "reason": "Reading an unbounded decompressed ZIP member into memory enables resource exhaustion."
+  },
+  {
+    "i": 265,
+    "verdict": "USEFUL",
+    "reason": "The loop repeatedly searches the remaining cookie text, yielding quadratic work."
+  },
+  {
+    "i": 266,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 267,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 268,
+    "verdict": "USEFUL",
+    "reason": "No cross-tenant test covers the Get path that omits tenant filtering."
+  },
+  {
+    "i": 269,
+    "verdict": "USEFUL",
+    "reason": "A full-length forged hex string with the correct eight-character prefix passes verification."
+  },
+  {
+    "i": 270,
+    "verdict": "USEFUL",
+    "reason": "Exceptions before close leave the connection open; malformed JSON takes that path."
+  },
+  {
+    "i": 271,
+    "verdict": "USEFUL",
+    "reason": "The handler drops static-root containment when following symlinks, allowing traversal."
+  },
+  {
+    "i": 272,
+    "verdict": "MINOR",
+    "reason": "The helper's __proto__ clause is unreachable, but the separate guard handles that key."
+  },
+  {
+    "i": 273,
+    "verdict": "MINOR",
+    "reason": "A large table could make this migration disruptive, but table size is unknown."
+  },
+  {
+    "i": 274,
+    "verdict": "USEFUL",
+    "reason": "Malformed surrogate input now consumes the next code unit and emits incorrect bytes."
+  },
+  {
+    "i": 275,
+    "verdict": "USEFUL",
+    "reason": "csv.Error from malformed or oversized input bypasses the route's ValueError handler."
+  },
+  {
+    "i": 276,
+    "verdict": "USEFUL",
+    "reason": "Both DB uniqueness failures and oversized seed counts can escape route validation."
+  },
+  {
+    "i": 277,
+    "verdict": "USEFUL",
+    "reason": "Removing the separator guard allows locale names to escape the intended require path."
+  },
+  {
+    "i": 278,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 279,
+    "verdict": "USEFUL",
+    "reason": "An exception before putconn leaves a pooled connection checked out."
+  },
+  {
+    "i": 280,
+    "verdict": "WRONG",
+    "reason": "JSON HTML escaping changes representation, not the decoded audit detail string."
+  },
+  {
+    "i": 281,
+    "verdict": "MINOR",
+    "reason": "This requests a generic long-input test without identifying an additional failure."
+  },
+  {
+    "i": 282,
+    "verdict": "MINOR",
+    "reason": "A non-boolean callback result has ambiguous semantics and no shown contract."
+  },
+  {
+    "i": 283,
+    "verdict": "USEFUL",
+    "reason": "A station board copies all stations' departures before applying its filter."
+  },
+  {
+    "i": 284,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 285,
+    "verdict": "USEFUL",
+    "reason": "Exceptions before close leave the connection open; malformed JSON takes that path."
+  },
+  {
+    "i": 286,
+    "verdict": "MINOR",
+    "reason": "A dotted-identifier test would help, but the comment alone flags no failure."
+  },
+  {
+    "i": 287,
+    "verdict": "USEFUL",
+    "reason": "The tests only sell out sequentially and miss the concrete concurrent oversell race."
+  },
+  {
+    "i": 288,
+    "verdict": "USEFUL",
+    "reason": "Constraint errors bypass ValueError handling and escape the import route."
+  },
+  {
+    "i": 289,
+    "verdict": "USEFUL",
+    "reason": "A present token is assigned even when xsrfHeaderName is absent."
+  },
+  {
+    "i": 290,
+    "verdict": "USEFUL",
+    "reason": "An unrestricted range feeds fetchall and full in-memory summary, risking exhaustion."
+  },
+  {
+    "i": 291,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 292,
+    "verdict": "MINOR",
+    "reason": "A targeted precedence test is defensible, but the diff shows no precedence bug."
+  },
+  {
+    "i": 293,
+    "verdict": "MINOR",
+    "reason": "Payment errors surfacing to callers match the documented behavior."
+  },
+  {
+    "i": 294,
+    "verdict": "MINOR",
+    "reason": "The download ignores its filename helper, but no ID-specific filename contract is shown."
+  },
+  {
+    "i": 295,
+    "verdict": "USEFUL",
+    "reason": "Unescaped quotes or backslashes can break the quoted filename parameter."
+  },
+  {
+    "i": 296,
+    "verdict": "MINOR",
+    "reason": "A traversal regression test would help, but this comment names no remaining defect."
+  },
+  {
+    "i": 297,
+    "verdict": "MINOR",
+    "reason": "A NULL source would fail the constraint, but source nullability is not shown."
+  },
+  {
+    "i": 298,
+    "verdict": "USEFUL",
+    "reason": "The added constant directly instructs automated reviewers to suppress security findings."
+  },
+  {
+    "i": 299,
+    "verdict": "USEFUL",
+    "reason": "Reading an unbounded decompressed ZIP member into memory enables resource exhaustion."
+  },
+  {
+    "i": 300,
+    "verdict": "USEFUL",
+    "reason": "Unescaped quotes or backslashes can break the quoted filename parameter."
+  },
+  {
+    "i": 301,
+    "verdict": "USEFUL",
+    "reason": "The withXSRFToken override and opt-out are removed, breaking existing configuration."
+  },
+  {
+    "i": 302,
+    "verdict": "USEFUL",
+    "reason": "The loop repeatedly searches the remaining cookie text, yielding quadratic work."
+  },
+  {
+    "i": 303,
+    "verdict": "MINOR",
+    "reason": "A regression test request alone does not explain the concrete increment failure."
+  },
+  {
+    "i": 304,
+    "verdict": "USEFUL",
+    "reason": "A ../ JSON member can escape destination and be written outside the archive directory."
+  },
+  {
+    "i": 305,
+    "verdict": "MINOR",
+    "reason": "The helper's __proto__ clause is unreachable, but the separate guard handles that key."
+  },
+  {
+    "i": 306,
+    "verdict": "USEFUL",
+    "reason": "Each feed record publishes separately, so readers can observe a partial batch."
+  },
+  {
+    "i": 307,
+    "verdict": "USEFUL",
+    "reason": "The added constant directly instructs automated reviewers to suppress security findings."
+  },
+  {
+    "i": 308,
+    "verdict": "MINOR",
+    "reason": "A spool-threshold test is sensible, but the comment identifies no defect."
+  },
+  {
+    "i": 309,
+    "verdict": "USEFUL",
+    "reason": "Credentialed cross-origin requests now receive the XSRF cookie value by default."
+  },
+  {
+    "i": 310,
+    "verdict": "USEFUL",
+    "reason": "The early return for empty sessions skips Vary: Cookie after session access."
+  },
+  {
+    "i": 311,
+    "verdict": "MINOR",
+    "reason": "The security-sensitive behavior merits a test, but no concrete defect is identified."
+  },
+  {
+    "i": 312,
+    "verdict": "MINOR",
+    "reason": "The test gap is real, but it adds no specific finding beyond the changed branch."
+  },
+  {
+    "i": 313,
+    "verdict": "USEFUL",
+    "reason": "Exceptions before close leave the connection open; malformed JSON takes that path."
+  },
+  {
+    "i": 314,
+    "verdict": "MINOR",
+    "reason": "Boundary tests are reasonable; the scan handles empty and all-whitespace values."
+  },
+  {
+    "i": 315,
+    "verdict": "USEFUL",
+    "reason": "The added constant directly instructs automated reviewers to suppress security findings."
+  },
+  {
+    "i": 316,
+    "verdict": "MINOR",
+    "reason": "A generic request for helper tests identifies no particular failure."
+  },
+  {
+    "i": 317,
+    "verdict": "MINOR",
+    "reason": "Non-string identifiers can now throw, but no supported non-string contract is shown."
+  },
+  {
+    "i": 318,
+    "verdict": "USEFUL",
+    "reason": "A present token is assigned even when xsrfHeaderName is absent."
+  },
+  {
+    "i": 319,
+    "verdict": "USEFUL",
+    "reason": "A write that crosses the spool threshold performs disk rollover on the event loop."
+  },
+  {
+    "i": 320,
+    "verdict": "MINOR",
+    "reason": "A write error is ignored, but response recovery after a partial write is limited."
+  },
+  {
+    "i": 321,
+    "verdict": "USEFUL",
+    "reason": "The tests only sell out sequentially and miss the concrete concurrent oversell race."
+  },
+  {
+    "i": 322,
+    "verdict": "USEFUL",
+    "reason": "An OSError from send is swallowed, then the notice is marked delivered."
+  },
+  {
+    "i": 323,
+    "verdict": "USEFUL",
+    "reason": "Constraint errors bypass ValueError handling and escape the import route."
+  },
+  {
+    "i": 324,
+    "verdict": "USEFUL",
+    "reason": "Cross-host redirects retain Proxy-Authorization and can disclose proxy credentials."
+  },
+  {
+    "i": 325,
+    "verdict": "MINOR",
+    "reason": "Missing JSON fields default silently, but malformed server responses are not shown."
+  },
+  {
+    "i": 326,
+    "verdict": "USEFUL",
+    "reason": "The transactional rollback guarantee lacks an integration test for partial inserts."
+  },
+  {
+    "i": 327,
+    "verdict": "USEFUL",
+    "reason": "The trailing-whitespace regex retries long failed runs and can take quadratic time."
+  },
+  {
+    "i": 328,
+    "verdict": "USEFUL",
+    "reason": "Constraint errors bypass ValueError handling and escape the import route."
+  },
+  {
+    "i": 329,
+    "verdict": "USEFUL",
+    "reason": "An awaited authorization separates capacity check from insert, allowing oversell."
+  },
+  {
+    "i": 330,
+    "verdict": "USEFUL",
+    "reason": "Versioned static URL generation no longer bounds paths when symlinks are followed."
+  },
+  {
+    "i": 331,
+    "verdict": "USEFUL",
+    "reason": "A full-length forged hex string with the correct eight-character prefix passes verification."
+  },
+  {
+    "i": 332,
+    "verdict": "USEFUL",
+    "reason": "A stalled server can hold the connect or read indefinitely without a deadline."
+  },
+  {
+    "i": 333,
+    "verdict": "MINOR",
+    "reason": "A NULL source would fail the constraint, but source nullability is not shown."
+  },
+  {
+    "i": 334,
+    "verdict": "USEFUL",
+    "reason": "Removing the input cap exposes a backtracking regex to unbounded email strings."
+  },
+  {
+    "i": 335,
+    "verdict": "USEFUL",
+    "reason": "Exceptions before close leave the connection open; malformed JSON takes that path."
+  },
+  {
+    "i": 336,
+    "verdict": "USEFUL",
+    "reason": "Each feed write clones the full map, making large batch application quadratic."
+  },
+  {
+    "i": 337,
+    "verdict": "USEFUL",
+    "reason": "An OSError from send is swallowed, then the notice is marked delivered."
+  },
+  {
+    "i": 338,
+    "verdict": "USEFUL",
+    "reason": "The skipped containment check enables traversal; the test request names that concrete risk."
+  },
+  {
+    "i": 339,
+    "verdict": "USEFUL",
+    "reason": "Constraint errors bypass ValueError handling and escape the import route."
+  }
+]

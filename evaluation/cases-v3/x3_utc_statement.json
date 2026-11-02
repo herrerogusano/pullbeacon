@@ -1,0 +1,91 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_utc_statement",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 10,
+    "changes": 10,
+    "deletions": 0,
+    "filename": "app/statements/days.py",
+    "patch": "@@ -0,0 +1,10 @@\n+from datetime import datetime, timezone\n+\n+\n+def settlement_day(epoch_seconds: int) -> str:\n+    instant = datetime.fromtimestamp(epoch_seconds, tz=timezone.utc)\n+    return instant.astimezone().date().isoformat()\n+\n+\n+def statement_key(account_id: str, epoch_seconds: int) -> str:\n+    return f\"{account_id}/{settlement_day(epoch_seconds)}\"",
+    "sha": "b194576a77030e00f3607bca9b4e83145338b29b",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "1276a6b7cf8eb0c434137b50de21ae0530b4f812"
+   },
+   "body": "Settlement keys are used across regions, and the timestamp is already supplied as Unix seconds.",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_utc_statement",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "0d95961f376320a6d2ba7ab5b4430f68b0f08f0a"
+   },
+   "number": 686,
+   "state": "open",
+   "title": "Group card statements by settlement day",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "0d95961f376320a6d2ba7ab5b4430f68b0f08f0a": {
+    "app/statements/days.py": "from datetime import datetime, timezone\n\n\ndef settlement_day(epoch_seconds: int) -> str:\n    instant = datetime.fromtimestamp(epoch_seconds, tz=timezone.utc)\n    return instant.astimezone().date().isoformat()\n\n\ndef statement_key(account_id: str, epoch_seconds: int) -> str:\n    return f\"{account_id}/{settlement_day(epoch_seconds)}\"\n"
+   },
+   "1276a6b7cf8eb0c434137b50de21ae0530b4f812": {}
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability"
+   ],
+   "category": "correctness",
+   "id": "statement-local-day",
+   "lines": [
+    6
+   ],
+   "path": "app/statements/days.py",
+   "rationale": "The conversion with no timezone argument uses the server's local timezone; a transaction near UTC midnight can be assigned to a different statement day depending on deployment location.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"return instant.astimezone().date().isoformat()\", \"explanation\": \"The conversion with no timezone argument uses the server's local timezone; a transaction near UTC midnight can be assigned to a different statement day depending on deployment location.\", \"impact\": \"See explanation.\", \"line\": 6, \"path\": \"app/statements/days.py\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Use UTC for settlement grouping\"}], \"summary\": \"Mock review of x3_utc_statement.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "logic",
+  "timezone"
+ ],
+ "title": "Group card statements by settlement day"
+}

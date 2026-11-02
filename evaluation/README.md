@@ -1,8 +1,10 @@
 # PullBeacon evaluation
 
-Two reproducible benchmarks of reviewers. **v1** (below) is small and saturated; **v2**
-([`SPEC_V2.md`](SPEC_V2.md), 58 cases from three independent sources, dev/test split) is the one to use
-for decisions. Both measure issue detection, false positives on clean PRs,
+Reproducible benchmarks of reviewers. **v1** (below) is small and saturated; **v2**
+([`SPEC_V2.md`](SPEC_V2.md), 58 cases from three independent sources, dev/test split) is the
+development set; **v3** (`cases-v3` + fetched `cases-v3-oss`, same spec format, 46 cases, all
+`test`) is a hold-out set written after v0.2 was frozen — use it only to confirm a change, never
+to tune one. Both measure issue detection, false positives on clean PRs,
 location quality, cost and latency. They run the **real** PullBeacon pipeline (diff parsing,
 scope, prompts, validation) against an in-memory GitHub; only the LLM differs.
 
@@ -56,6 +58,18 @@ Options for larger benchmarks: `--dataset` can be repeated to combine directorie
 keeps only the cases of one split (decide prompt changes on `dev`, report `test`), `--repeats N`
 (1–5) runs every case N times to measure consistency, and `--workers N` (1–8) runs reviews in
 parallel (the budget may be exceeded by at most the reviews already in flight).
+
+Tools for analysing runs (offline, no calls):
+
+- `evaluation/compare_runs.py RUN.json [...] --floor medium --dataset D` re-scores runs with a
+  severity floor and prints recall, precision, false positives per clean PR, comments per review,
+  share of `testing` comments and consistency per model.
+- `evaluation/judge_pack.py pack RUN.json [...] OUTDIR --dataset D` builds a blind pack for an
+  independent judge (comments + PR diffs, no labels, versions pooled and shuffled; the key stays in
+  `OUTDIR/key.json`); `agree` compares the judge with the author's v2 verdicts (agreement, Cohen's
+  kappa), `useful` reports the judge's useful share per run, model and floor.
+- `evaluation/fetch_oss_cases.py --manifest evaluation/oss_manifest_v3.json --out
+  evaluation/specs-v3-oss` then `evaluation/build_cases_v2.py --oss` rebuilds the v3 OSS cases.
 
 Each run writes `.json` (full metadata: date, PullBeacon version and commit, prompt versions,
 dataset and config hashes, temperature, cost source), `.md` and `.csv`.

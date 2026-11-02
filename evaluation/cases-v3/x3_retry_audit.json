@@ -1,0 +1,84 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_retry_audit",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    10
+   ],
+   "path": "app/audit/retry.py",
+   "rationale": "The broad catch records failure and immediately re-raises the original exception; it neither hides the failure nor returns success."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 17,
+    "changes": 17,
+    "deletions": 0,
+    "filename": "app/audit/retry.py",
+    "patch": "@@ -0,0 +1,17 @@\n+import logging\n+\n+logger = logging.getLogger(__name__)\n+\n+\n+def run_with_audit(operation, audit):\n+    try:\n+        result = operation()\n+    except Exception:\n+        logger.exception(\"operation failed before audit completion\")\n+        try:\n+            audit.record_failure()\n+        except Exception:\n+            logger.exception(\"failure audit could not be recorded\")\n+        raise\n+    audit.record_success()\n+    return result",
+    "sha": "88dcc2ea0bf98e422bb3305521a22f23c7b40560",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "7e454c4b46fab524f989f501de0e89896cf5eeb2"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_retry_audit",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "db6ce95ccd902fba94ffadf83cc65b8323fb4749"
+   },
+   "number": 505,
+   "state": "open",
+   "title": "Preserve audit context on retry failures",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "7e454c4b46fab524f989f501de0e89896cf5eeb2": {},
+   "db6ce95ccd902fba94ffadf83cc65b8323fb4749": {
+    "app/audit/retry.py": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef run_with_audit(operation, audit):\n    try:\n        result = operation()\n    except Exception:\n        logger.exception(\"operation failed before audit completion\")\n        try:\n            audit.record_failure()\n        except Exception:\n            logger.exception(\"failure audit could not be recorded\")\n        raise\n    audit.record_success()\n    return result\n"
+   }
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of x3_retry_audit.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "error_handling",
+  "suspicious_but_correct"
+ ],
+ "title": "Preserve audit context on retry failures"
+}

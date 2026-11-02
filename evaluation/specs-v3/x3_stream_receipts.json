@@ -1,0 +1,43 @@
+{
+  "case_id": "x3_stream_receipts",
+  "title": "Stream nightly receipt archive",
+  "pr_body": "",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "async",
+    "resource_leak",
+    "error_handling"
+  ],
+  "files": [
+    {
+      "path": "app/receipts/stream.py",
+      "before": null,
+      "after": "import asyncio\nimport json\n\n\nasync def stream_receipts(host: str, port: int, receipt_ids: list[str]) -> list[dict]:\n    reader, writer = await asyncio.open_connection(host, port)\n    results: list[dict] = []\n    for receipt_id in receipt_ids:\n        writer.write((receipt_id + \"\\n\").encode())\n        await writer.drain()\n        line = await reader.readline()\n        if not line:\n            raise ConnectionError(\"receipt server closed the stream\")\n        results.append(json.loads(line))\n    writer.close()\n    await writer.wait_closed()\n    return results\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "stream-not-closed",
+      "path": "app/receipts/stream.py",
+      "anchor": "raise ConnectionError(\"receipt server closed the stream\")",
+      "category": "reliability",
+      "severity": "high",
+      "title": "Close the stream when a receipt fails",
+      "rationale": "A disconnect or invalid JSON exits the loop before writer.close()/wait_closed(), leaving the TCP writer open for every failed archive run. Put closure in a finally block.",
+      "accepted": [
+        "performance"
+      ],
+      "extra_anchors": [
+        "results.append(json.loads(line))"
+      ]
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

@@ -1,0 +1,93 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_stream_receipts",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 17,
+    "changes": 17,
+    "deletions": 0,
+    "filename": "app/receipts/stream.py",
+    "patch": "@@ -0,0 +1,17 @@\n+import asyncio\n+import json\n+\n+\n+async def stream_receipts(host: str, port: int, receipt_ids: list[str]) -> list[dict]:\n+    reader, writer = await asyncio.open_connection(host, port)\n+    results: list[dict] = []\n+    for receipt_id in receipt_ids:\n+        writer.write((receipt_id + \"\\n\").encode())\n+        await writer.drain()\n+        line = await reader.readline()\n+        if not line:\n+            raise ConnectionError(\"receipt server closed the stream\")\n+        results.append(json.loads(line))\n+    writer.close()\n+    await writer.wait_closed()\n+    return results",
+    "sha": "8a9ebccea1829c1b7f423e9217dc98c842345364",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "6a39996a979ff724cd30d991fb9e289d141e56ba"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_stream_receipts",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "00b21598d7902fadc1f68cf8928c8a99fdb620ef"
+   },
+   "number": 320,
+   "state": "open",
+   "title": "Stream nightly receipt archive",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "00b21598d7902fadc1f68cf8928c8a99fdb620ef": {
+    "app/receipts/stream.py": "import asyncio\nimport json\n\n\nasync def stream_receipts(host: str, port: int, receipt_ids: list[str]) -> list[dict]:\n    reader, writer = await asyncio.open_connection(host, port)\n    results: list[dict] = []\n    for receipt_id in receipt_ids:\n        writer.write((receipt_id + \"\\n\").encode())\n        await writer.drain()\n        line = await reader.readline()\n        if not line:\n            raise ConnectionError(\"receipt server closed the stream\")\n        results.append(json.loads(line))\n    writer.close()\n    await writer.wait_closed()\n    return results\n"
+   },
+   "6a39996a979ff724cd30d991fb9e289d141e56ba": {}
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "performance",
+    "reliability"
+   ],
+   "category": "reliability",
+   "id": "stream-not-closed",
+   "lines": [
+    13,
+    14
+   ],
+   "path": "app/receipts/stream.py",
+   "rationale": "A disconnect or invalid JSON exits the loop before writer.close()/wait_closed(), leaving the TCP writer open for every failed archive run. Put closure in a finally block.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"raise ConnectionError(\\\"receipt server closed the stream\\\")\", \"explanation\": \"A disconnect or invalid JSON exits the loop before writer.close()/wait_closed(), leaving the TCP writer open for every failed archive run. Put closure in a finally block.\", \"impact\": \"See explanation.\", \"line\": 13, \"path\": \"app/receipts/stream.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Close the stream when a receipt fails\"}], \"summary\": \"Mock review of x3_stream_receipts.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "async",
+  "error_handling",
+  "resource_leak"
+ ],
+ "title": "Stream nightly receipt archive"
+}

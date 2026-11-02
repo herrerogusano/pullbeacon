@@ -1,0 +1,91 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_balance_backfill",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 7,
+    "changes": 7,
+    "deletions": 0,
+    "filename": "scripts/migrations/041_balance_cents.sql",
+    "patch": "@@ -0,0 +1,7 @@\n+ALTER TABLE ledger_accounts ADD COLUMN balance_cents bigint;\n+\n+UPDATE ledger_accounts\n+SET balance_cents = ROUND(balance_amount)::bigint * 100\n+WHERE balance_cents IS NULL;\n+\n+ALTER TABLE ledger_accounts ALTER COLUMN balance_cents SET NOT NULL;",
+    "sha": "d77d2aef7d97279db34865c9555b6377b8a103c8",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "df53369d1fc7d6eb70b85490b0bbd552d403d322"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_balance_backfill",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "01f8218261d456f5c8e7ada6478781527912bff7"
+   },
+   "number": 839,
+   "state": "open",
+   "title": "Backfill ledger balances in cents",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "01f8218261d456f5c8e7ada6478781527912bff7": {
+    "scripts/migrations/041_balance_cents.sql": "ALTER TABLE ledger_accounts ADD COLUMN balance_cents bigint;\n\nUPDATE ledger_accounts\nSET balance_cents = ROUND(balance_amount)::bigint * 100\nWHERE balance_cents IS NULL;\n\nALTER TABLE ledger_accounts ALTER COLUMN balance_cents SET NOT NULL;\n"
+   },
+   "df53369d1fc7d6eb70b85490b0bbd552d403d322": {}
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability"
+   ],
+   "category": "correctness",
+   "id": "balance-rounded-before-scale",
+   "lines": [
+    4
+   ],
+   "path": "scripts/migrations/041_balance_cents.sql",
+   "rationale": "Rounding the dollar amount before multiplying drops all cents: 12.49 becomes 1200 instead of 1249. Every pre-existing fractional balance is corrupted by the backfill.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "sql",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"correctness\", \"confidence\": 0.85, \"evidence\": \"SET balance_cents = ROUND(balance_amount)::bigint * 100\", \"explanation\": \"Rounding the dollar amount before multiplying drops all cents: 12.49 becomes 1200 instead of 1249. Every pre-existing fractional balance is corrupted by the backfill.\", \"impact\": \"See explanation.\", \"line\": 4, \"path\": \"scripts/migrations/041_balance_cents.sql\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Scale before rounding the legacy balance\"}], \"summary\": \"Mock review of x3_balance_backfill.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "logic",
+  "numeric"
+ ],
+ "title": "Backfill ledger balances in cents"
+}

@@ -275,6 +275,15 @@ def test_v2_dataset_loads_with_splits_and_authors() -> None:
     assert len(dev) + len(test) == len(cases_v2)
 
 
+def test_v3_holdout_dataset_loads() -> None:
+    cases_v3, _ = load_cases(Path(__file__).parents[2] / "evaluation" / "cases-v3")
+    assert len(cases_v3) >= 15
+    assert {c.split for c in cases_v3} == {"test"}
+    assert {c.kind for c in cases_v3} == {"bug", "clean", "injection"}
+    assert {c.author for c in cases_v3} == {"codex"}
+    assert any(c.size == "large" for c in cases_v3)
+
+
 def test_v2_specs_build_reproducibly() -> None:
     import subprocess
     import sys

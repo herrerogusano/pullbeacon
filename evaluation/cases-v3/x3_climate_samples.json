@@ -1,0 +1,174 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_climate_samples",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 43,
+    "changes": 43,
+    "deletions": 0,
+    "filename": "app/climate/models.py",
+    "patch": "@@ -0,0 +1,43 @@\n+from dataclasses import dataclass\n+from datetime import datetime, timezone\n+\n+\n+@dataclass(frozen=True)\n+class Sample:\n+    greenhouse_id: str\n+    sensor_id: str\n+    recorded_at: datetime\n+    temperature_c: float\n+    humidity_percent: float\n+    co2_ppm: int\n+\n+    def __post_init__(self) -> None:\n+        if not self.greenhouse_id or not self.sensor_id:\n+            raise ValueError(\"sample identity is required\")\n+        if self.recorded_at.tzinfo is None:\n+            raise ValueError(\"sample timestamp requires a timezone\")\n+        if not -50 <= self.temperature_c <= 80:\n+            raise ValueError(\"temperature outside sensor range\")\n+        if not 0 <= self.humidity_percent <= 100:\n+            raise ValueError(\"humidity outside sensor range\")\n+        if not 0 <= self.co2_ppm <= 100_000:\n+            raise ValueError(\"CO2 outside sensor range\")\n+\n+    @property\n+    def utc_time(self) -> datetime:\n+        return self.recorded_at.astimezone(timezone.utc)\n+\n+\n+@dataclass(frozen=True)\n+class Range:\n+    start: datetime\n+    end: datetime\n+\n+    def __post_init__(self) -> None:\n+        if self.start.tzinfo is None or self.end.tzinfo is None:\n+            raise ValueError(\"range must be timezone aware\")\n+        if self.end <= self.start:\n+            raise ValueError(\"range must have positive duration\")\n+\n+    def contains(self, instant: datetime) -> bool:\n+        return self.start <= instant < self.end",
+    "sha": "4f0efc80ceb773950193984229227996dfbe0505",
+    "status": "added"
+   },
+   {
+    "additions": 61,
+    "changes": 61,
+    "deletions": 0,
+    "filename": "app/climate/repository.py",
+    "patch": "@@ -0,0 +1,61 @@\n+from collections.abc import Iterable\n+from datetime import datetime\n+from typing import Protocol\n+\n+from .models import Range, Sample\n+\n+\n+class Cursor(Protocol):\n+    def __enter__(self): ...\n+    def __exit__(self, exc_type, exc, traceback): ...\n+    def execute(self, sql: str, params: tuple) -> None: ...\n+    def executemany(self, sql: str, params: list[tuple]) -> None: ...\n+    def fetchall(self) -> list[tuple]: ...\n+\n+\n+class Connection(Protocol):\n+    def cursor(self) -> Cursor: ...\n+\n+\n+class Pool(Protocol):\n+    def getconn(self) -> Connection: ...\n+    def putconn(self, conn: Connection) -> None: ...\n+    def connection(self): ...\n+\n+\n+class SampleRepository:\n+    def __init__(self, pool: Pool):\n+        self.pool = pool\n+\n+    def samples(self, greenhouse_id: str, window: Range) -> list[Sample]:\n+        conn = self.pool.getconn()\n+        with conn.cursor() as cursor:\n+            cursor.execute(\n+                \"SELECT greenhouse_id, sensor_id, recorded_at, temperature_c, \"\n+                \"humidity_percent, co2_ppm FROM climate_samples \"\n+                \"WHERE greenhouse_id = %s AND recorded_at >= %s AND recorded_at < %s \"\n+                \"ORDER BY recorded_at, sensor_id\",\n+                (greenhouse_id, window.start, window.end),\n+            )\n+            rows = cursor.fetchall()\n+        self.pool.putconn(conn)\n+        return [Sample(*row) for row in rows]\n+\n+    def insert_many(self, samples: Iterable[Sample]) -> int:\n+        values = [\n+            (s.greenhouse_id, s.sensor_id, s.utc_time,\n+             s.temperature_c, s.humidity_percent, s.co2_ppm)\n+            for s in samples\n+        ]\n+        if not values:\n+            return 0\n+        with self.pool.connection() as conn:\n+            with conn.cursor() as cursor:\n+                cursor.executemany(\n+                    \"INSERT INTO climate_samples (greenhouse_id, sensor_id, \"\n+                    \"recorded_at, temperature_c, humidity_percent, co2_ppm) \"\n+                    \"VALUES (%s, %s, %s, %s, %s, %s) \"\n+                    \"ON CONFLICT (greenhouse_id, sensor_id, recorded_at) DO NOTHING\",\n+                    values,\n+                )\n+        return len(values)",
+    "sha": "6f909032a88909c9fc3e2f4c0f8cfaaba49fa637",
+    "status": "added"
+   },
+   {
+    "additions": 44,
+    "changes": 44,
+    "deletions": 0,
+    "filename": "app/climate/metrics.py",
+    "patch": "@@ -0,0 +1,44 @@\n+from dataclasses import dataclass\n+from statistics import fmean\n+\n+from .models import Sample\n+\n+\n+@dataclass(frozen=True)\n+class Summary:\n+    greenhouse_id: str\n+    sample_count: int\n+    sensor_count: int\n+    mean_temperature_c: float | None\n+    mean_humidity_percent: float | None\n+    peak_co2_ppm: int | None\n+    temperature_spread_c: float | None\n+\n+\n+def summarize(greenhouse_id: str, samples: list[Sample]) -> Summary:\n+    if not samples:\n+        return Summary(greenhouse_id, 0, 0, None, None, None, None)\n+    temperatures = [sample.temperature_c for sample in samples]\n+    humidity = [sample.humidity_percent for sample in samples]\n+    return Summary(\n+        greenhouse_id=greenhouse_id,\n+        sample_count=len(samples),\n+        sensor_count=len({sample.sensor_id for sample in samples}),\n+        mean_temperature_c=fmean(temperatures),\n+        mean_humidity_percent=fmean(humidity),\n+        peak_co2_ppm=max(sample.co2_ppm for sample in samples),\n+        temperature_spread_c=max(temperatures) - min(temperatures),\n+    )\n+\n+\n+def alert_reasons(summary: Summary, minimum_c: float, maximum_c: float) -> list[str]:\n+    reasons: list[str] = []\n+    if summary.mean_temperature_c is None:\n+        return reasons\n+    if summary.mean_temperature_c < minimum_c:\n+        reasons.append(\"mean temperature below range\")\n+    if summary.mean_temperature_c > maximum_c:\n+        reasons.append(\"mean temperature above range\")\n+    if summary.peak_co2_ppm is not None and summary.peak_co2_ppm > 2_000:\n+        reasons.append(\"high CO2 reading\")\n+    return reasons",
+    "sha": "aa0a496196cbd0c763e7cac107f61125d827bee0",
+    "status": "added"
+   },
+   {
+    "additions": 38,
+    "changes": 38,
+    "deletions": 0,
+    "filename": "app/climate/service.py",
+    "patch": "@@ -0,0 +1,38 @@\n+from dataclasses import dataclass\n+from datetime import datetime\n+\n+from .metrics import Summary, alert_reasons, summarize\n+from .models import Range, Sample\n+from .repository import SampleRepository\n+\n+\n+@dataclass(frozen=True)\n+class ClimateReport:\n+    greenhouse_id: str\n+    window: Range\n+    summary: Summary\n+    alerts: tuple[str, ...]\n+    generated_at: datetime\n+\n+\n+class ClimateService:\n+    def __init__(self, repository: SampleRepository, now):\n+        self.repository = repository\n+        self.now = now\n+\n+    def build_report(self, greenhouse_id: str, window: Range,\n+                     minimum_c: float, maximum_c: float) -> ClimateReport:\n+        if not greenhouse_id:\n+            raise ValueError(\"greenhouse ID required\")\n+        if minimum_c >= maximum_c:\n+            raise ValueError(\"invalid temperature band\")\n+        samples = self.repository.samples(greenhouse_id, window)\n+        summary = summarize(greenhouse_id, samples)\n+        alerts = tuple(alert_reasons(summary, minimum_c, maximum_c))\n+        return ClimateReport(greenhouse_id, window, summary,\n+                             alerts, self.now())\n+\n+    def ingest(self, greenhouse_id: str, samples: list[Sample]) -> int:\n+        if any(sample.greenhouse_id != greenhouse_id for sample in samples):\n+            raise ValueError(\"sample belongs to another greenhouse\")\n+        return self.repository.insert_many(samples)",
+    "sha": "35b5a94549a7bb84fe6e4f1ad124ab1b9f9a5c98",
+    "status": "added"
+   },
+   {
+    "additions": 33,
+    "changes": 33,
+    "deletions": 0,
+    "filename": "app/climate/export.py",
+    "patch": "@@ -0,0 +1,33 @@\n+import csv\n+import json\n+from dataclasses import asdict\n+from io import StringIO\n+\n+from .models import Sample\n+from .service import ClimateReport\n+\n+\n+def report_json(report: ClimateReport) -> str:\n+    data = {\n+        \"greenhouseId\": report.greenhouse_id,\n+        \"window\": {\n+            \"start\": report.window.start.isoformat(),\n+            \"end\": report.window.end.isoformat(),\n+        },\n+        \"summary\": asdict(report.summary),\n+        \"alerts\": list(report.alerts),\n+        \"generatedAt\": report.generated_at.isoformat(),\n+    }\n+    return json.dumps(data, sort_keys=True) + \"\\n\"\n+\n+\n+def samples_csv(samples: list[Sample]) -> str:\n+    output = StringIO(newline=\"\")\n+    writer = csv.writer(output)\n+    writer.writerow((\"greenhouse_id\", \"sensor_id\", \"recorded_at\",\n+                     \"temperature_c\", \"humidity_percent\", \"co2_ppm\"))\n+    for sample in samples:\n+        writer.writerow((sample.greenhouse_id, sample.sensor_id,\n+                         sample.utc_time.isoformat(), sample.temperature_c,\n+                         sample.humidity_percent, sample.co2_ppm))\n+    return output.getvalue()",
+    "sha": "2074c627555b168d1e8b2671f6e06624d10d44ac",
+    "status": "added"
+   },
+   {
+    "additions": 28,
+    "changes": 28,
+    "deletions": 0,
+    "filename": "app/climate/routes.py",
+    "patch": "@@ -0,0 +1,28 @@\n+from datetime import datetime\n+\n+from .export import report_json\n+from .models import Range\n+from .service import ClimateService\n+\n+\n+def parse_range(start: str, end: str) -> Range:\n+    return Range(datetime.fromisoformat(start), datetime.fromisoformat(end))\n+\n+\n+def report_endpoint(service: ClimateService, greenhouse_id: str,\n+                    start: str, end: str) -> tuple[int, str]:\n+    try:\n+        window = parse_range(start, end)\n+        report = service.build_report(greenhouse_id, window, 18.0, 30.0)\n+    except ValueError as error:\n+        return 400, str(error)\n+    return 200, report_json(report)\n+\n+\n+def ingestion_endpoint(service: ClimateService, greenhouse_id: str,\n+                       samples: list) -> tuple[int, str]:\n+    try:\n+        count = service.ingest(greenhouse_id, samples)\n+    except ValueError as error:\n+        return 400, str(error)\n+    return 202, f\"accepted {count} samples\"",
+    "sha": "a0a80ae4410c3a57002026fd077ec7069ee999ea",
+    "status": "added"
+   },
+   {
+    "additions": 28,
+    "changes": 28,
+    "deletions": 0,
+    "filename": "scripts/migrations/063_climate_samples.sql",
+    "patch": "@@ -0,0 +1,28 @@\n+CREATE TABLE climate_samples (\n+    greenhouse_id text NOT NULL,\n+    sensor_id text NOT NULL,\n+    recorded_at timestamptz NOT NULL,\n+    temperature_c double precision NOT NULL,\n+    humidity_percent double precision NOT NULL,\n+    co2_ppm integer NOT NULL,\n+    PRIMARY KEY (greenhouse_id, sensor_id, recorded_at),\n+    CONSTRAINT climate_greenhouse_required CHECK (length(greenhouse_id) > 0),\n+    CONSTRAINT climate_sensor_required CHECK (length(sensor_id) > 0),\n+    CONSTRAINT climate_temperature_range CHECK (temperature_c BETWEEN -50 AND 80),\n+    CONSTRAINT climate_humidity_range CHECK (humidity_percent BETWEEN 0 AND 100),\n+    CONSTRAINT climate_co2_range CHECK (co2_ppm BETWEEN 0 AND 100000)\n+);\n+\n+CREATE INDEX climate_samples_window_idx\n+    ON climate_samples (greenhouse_id, recorded_at, sensor_id);\n+\n+COMMENT ON TABLE climate_samples IS\n+    'Validated greenhouse sensor observations for dashboard reports';\n+COMMENT ON COLUMN climate_samples.recorded_at IS\n+    'Timestamp supplied by sensor and normalized to UTC by ingestion';\n+COMMENT ON COLUMN climate_samples.temperature_c IS\n+    'Temperature measured in degrees Celsius';\n+COMMENT ON COLUMN climate_samples.humidity_percent IS\n+    'Relative humidity as a percent from zero to one hundred';\n+COMMENT ON COLUMN climate_samples.co2_ppm IS\n+    'Carbon dioxide concentration in parts per million';",
+    "sha": "46000038ec928419c937dce11d5f569a5055e137",
+    "status": "added"
+   },
+   {
+    "additions": 84,
+    "changes": 84,
+    "deletions": 0,
+    "filename": "tests/climate/test_reports.py",
+    "patch": "@@ -0,0 +1,84 @@\n+from datetime import datetime, timedelta, timezone\n+import json\n+\n+from app.climate.export import report_json, samples_csv\n+from app.climate.metrics import alert_reasons, summarize\n+from app.climate.models import Range, Sample\n+from app.climate.service import ClimateService\n+\n+\n+NOW = datetime(2034, 7, 1, tzinfo=timezone.utc)\n+\n+\n+def sample(sensor: str, minute: int, temperature: float) -> Sample:\n+    return Sample(\"west\", sensor, NOW + timedelta(minutes=minute),\n+                  temperature, 55.0, 750)\n+\n+\n+class MemoryRepository:\n+    def __init__(self):\n+        self.items = []\n+\n+    def samples(self, greenhouse_id, window):\n+        return [item for item in self.items\n+                if item.greenhouse_id == greenhouse_id and window.contains(item.utc_time)]\n+\n+    def insert_many(self, items):\n+        self.items.extend(items)\n+        return len(items)\n+\n+\n+def test_summary_means():\n+    result = summarize(\"west\", [sample(\"a\", 1, 20), sample(\"b\", 2, 24)])\n+    assert result.sample_count == 2\n+    assert result.sensor_count == 2\n+    assert result.mean_temperature_c == 22\n+    assert result.temperature_spread_c == 4\n+\n+\n+def test_empty_summary_has_no_alerts():\n+    result = summarize(\"west\", [])\n+    assert result.mean_temperature_c is None\n+    assert alert_reasons(result, 18, 30) == []\n+\n+\n+def test_range_excludes_end_boundary():\n+    window = Range(NOW, NOW + timedelta(hours=1))\n+    assert window.contains(NOW)\n+    assert not window.contains(NOW + timedelta(hours=1))\n+\n+\n+def test_sample_normalizes_offset_time():\n+    offset = timezone(timedelta(hours=2))\n+    recorded = datetime(2034, 7, 1, 2, 0, tzinfo=offset)\n+    reading = Sample(\"west\", \"a\", recorded, 20, 55, 750)\n+    assert reading.utc_time == NOW\n+\n+\n+def test_temperature_limits():\n+    for value in (-50, 80):\n+        assert sample(\"a\", 0, value).temperature_c == value\n+\n+\n+def test_report_json_and_csv():\n+    repo = MemoryRepository()\n+    service = ClimateService(repo, lambda: NOW)\n+    readings = [sample(\"a\", 1, 20), sample(\"b\", 2, 24)]\n+    service.ingest(\"west\", readings)\n+    report = service.build_report(\"west\", Range(NOW, NOW + timedelta(hours=1)), 18, 30)\n+    payload = json.loads(report_json(report))\n+    assert payload[\"summary\"][\"sample_count\"] == 2\n+    assert \"2034-07-01\" in samples_csv(readings)\n+\n+\n+def test_rejects_mixed_greenhouses():\n+    repo = MemoryRepository()\n+    service = ClimateService(repo, lambda: NOW)\n+    other = Sample(\"east\", \"a\", NOW, 20, 55, 750)\n+    try:\n+        service.ingest(\"west\", [other])\n+    except ValueError:\n+        pass\n+    else:\n+        raise AssertionError(\"expected mixed-greenhouse rejection\")\n+    assert repo.items == []",
+    "sha": "dec4250cad8b19ec2d1c361d014c1fe36564b1ce",
+    "status": "added"
+   },
+   {
+    "additions": 47,
+    "changes": 47,
+    "deletions": 0,
+    "filename": "docs/climate/reports.md",
+    "patch": "@@ -0,0 +1,47 @@\n+# Greenhouse climate reports\n+\n+Reports summarize timestamped temperature, humidity and CO2 readings.\n+Each reading belongs to one greenhouse and one sensor.\n+Sensor timestamps must carry a timezone and are normalized to UTC.\n+\n+## Sampling\n+\n+Temperature must be between -50 and 80 Celsius.\n+Humidity is expressed as a percentage from 0 to 100.\n+CO2 is expressed in parts per million from 0 to 100,000.\n+Duplicate sensor/timestamp samples are ignored on insert.\n+Report windows include their start and exclude their end.\n+A zero-length report window is rejected.\n+\n+## Report fields\n+\n+The report includes a count of readings and distinct sensors.\n+Temperature and humidity are arithmetic means over readings.\n+Peak CO2 is the highest observation in the window.\n+Temperature spread is maximum minus minimum.\n+Empty reports have null metrics rather than fabricated zeroes.\n+Report generation time is separate from the sampling window.\n+\n+## Alerts\n+\n+Operators choose a minimum and maximum temperature band.\n+The lower bound must be less than the upper bound.\n+Means below or above that band produce an alert reason.\n+A CO2 peak over 2,000 ppm produces a separate reason.\n+Empty reports have no alert reasons.\n+\n+## Exports\n+\n+JSON property names are stable for dashboard consumers.\n+CSV includes a header and one line per sensor reading.\n+The CSV writer applies standard field quoting.\n+Export consumers own any filesystem handles they open.\n+\n+## Operations\n+\n+The report route converts ISO timestamp strings to a range.\n+Invalid ranges and greenhouse IDs receive a 400 response.\n+Ingestion checks that all samples belong to the route greenhouse.\n+Database failures should surface to the caller for retry.\n+The repository draws connections from the configured pool.\n+Pool capacity is limited during peak upload hours.",
+    "sha": "11157043a3e6b334b4ac0316667ed81398aca27a",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "c8e8fe4c556ee9ef212707bf8e65ad28e06ab7f9"
+   },
+   "body": "Adds sensor validation, ingestion, reports, exports and a pooled repository for greenhouse dashboards.",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_climate_samples",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "c02aa2fbe02f23931d68f686bf595469b54f9163"
+   },
+   "number": 354,
+   "state": "open",
+   "title": "Add greenhouse climate summaries",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "c02aa2fbe02f23931d68f686bf595469b54f9163": {
+    "app/climate/export.py": "import csv\nimport json\nfrom dataclasses import asdict\nfrom io import StringIO\n\nfrom .models import Sample\nfrom .service import ClimateReport\n\n\ndef report_json(report: ClimateReport) -> str:\n    data = {\n        \"greenhouseId\": report.greenhouse_id,\n        \"window\": {\n            \"start\": report.window.start.isoformat(),\n            \"end\": report.window.end.isoformat(),\n        },\n        \"summary\": asdict(report.summary),\n        \"alerts\": list(report.alerts),\n        \"generatedAt\": report.generated_at.isoformat(),\n    }\n    return json.dumps(data, sort_keys=True) + \"\\n\"\n\n\ndef samples_csv(samples: list[Sample]) -> str:\n    output = StringIO(newline=\"\")\n    writer = csv.writer(output)\n    writer.writerow((\"greenhouse_id\", \"sensor_id\", \"recorded_at\",\n                     \"temperature_c\", \"humidity_percent\", \"co2_ppm\"))\n    for sample in samples:\n        writer.writerow((sample.greenhouse_id, sample.sensor_id,\n                         sample.utc_time.isoformat(), sample.temperature_c,\n                         sample.humidity_percent, sample.co2_ppm))\n    return output.getvalue()\n",
+    "app/climate/metrics.py": "from dataclasses import dataclass\nfrom statistics import fmean\n\nfrom .models import Sample\n\n\n@dataclass(frozen=True)\nclass Summary:\n    greenhouse_id: str\n    sample_count: int\n    sensor_count: int\n    mean_temperature_c: float | None\n    mean_humidity_percent: float | None\n    peak_co2_ppm: int | None\n    temperature_spread_c: float | None\n\n\ndef summarize(greenhouse_id: str, samples: list[Sample]) -> Summary:\n    if not samples:\n        return Summary(greenhouse_id, 0, 0, None, None, None, None)\n    temperatures = [sample.temperature_c for sample in samples]\n    humidity = [sample.humidity_percent for sample in samples]\n    return Summary(\n        greenhouse_id=greenhouse_id,\n        sample_count=len(samples),\n        sensor_count=len({sample.sensor_id for sample in samples}),\n        mean_temperature_c=fmean(temperatures),\n        mean_humidity_percent=fmean(humidity),\n        peak_co2_ppm=max(sample.co2_ppm for sample in samples),\n        temperature_spread_c=max(temperatures) - min(temperatures),\n    )\n\n\ndef alert_reasons(summary: Summary, minimum_c: float, maximum_c: float) -> list[str]:\n    reasons: list[str] = []\n    if summary.mean_temperature_c is None:\n        return reasons\n    if summary.mean_temperature_c < minimum_c:\n        reasons.append(\"mean temperature below range\")\n    if summary.mean_temperature_c > maximum_c:\n        reasons.append(\"mean temperature above range\")\n    if summary.peak_co2_ppm is not None and summary.peak_co2_ppm > 2_000:\n        reasons.append(\"high CO2 reading\")\n    return reasons\n",
+    "app/climate/models.py": "from dataclasses import dataclass\nfrom datetime import datetime, timezone\n\n\n@dataclass(frozen=True)\nclass Sample:\n    greenhouse_id: str\n    sensor_id: str\n    recorded_at: datetime\n    temperature_c: float\n    humidity_percent: float\n    co2_ppm: int\n\n    def __post_init__(self) -> None:\n        if not self.greenhouse_id or not self.sensor_id:\n            raise ValueError(\"sample identity is required\")\n        if self.recorded_at.tzinfo is None:\n            raise ValueError(\"sample timestamp requires a timezone\")\n        if not -50 <= self.temperature_c <= 80:\n            raise ValueError(\"temperature outside sensor range\")\n        if not 0 <= self.humidity_percent <= 100:\n            raise ValueError(\"humidity outside sensor range\")\n        if not 0 <= self.co2_ppm <= 100_000:\n            raise ValueError(\"CO2 outside sensor range\")\n\n    @property\n    def utc_time(self) -> datetime:\n        return self.recorded_at.astimezone(timezone.utc)\n\n\n@dataclass(frozen=True)\nclass Range:\n    start: datetime\n    end: datetime\n\n    def __post_init__(self) -> None:\n        if self.start.tzinfo is None or self.end.tzinfo is None:\n            raise ValueError(\"range must be timezone aware\")\n        if self.end <= self.start:\n            raise ValueError(\"range must have positive duration\")\n\n    def contains(self, instant: datetime) -> bool:\n        return self.start <= instant < self.end\n",
+    "app/climate/repository.py": "from collections.abc import Iterable\nfrom datetime import datetime\nfrom typing import Protocol\n\nfrom .models import Range, Sample\n\n\nclass Cursor(Protocol):\n    def __enter__(self): ...\n    def __exit__(self, exc_type, exc, traceback): ...\n    def execute(self, sql: str, params: tuple) -> None: ...\n    def executemany(self, sql: str, params: list[tuple]) -> None: ...\n    def fetchall(self) -> list[tuple]: ...\n\n\nclass Connection(Protocol):\n    def cursor(self) -> Cursor: ...\n\n\nclass Pool(Protocol):\n    def getconn(self) -> Connection: ...\n    def putconn(self, conn: Connection) -> None: ...\n    def connection(self): ...\n\n\nclass SampleRepository:\n    def __init__(self, pool: Pool):\n        self.pool = pool\n\n    def samples(self, greenhouse_id: str, window: Range) -> list[Sample]:\n        conn = self.pool.getconn()\n        with conn.cursor() as cursor:\n            cursor.execute(\n                \"SELECT greenhouse_id, sensor_id, recorded_at, temperature_c, \"\n                \"humidity_percent, co2_ppm FROM climate_samples \"\n                \"WHERE greenhouse_id = %s AND recorded_at >= %s AND recorded_at < %s \"\n                \"ORDER BY recorded_at, sensor_id\",\n                (greenhouse_id, window.start, window.end),\n            )\n            rows = cursor.fetchall()\n        self.pool.putconn(conn)\n        return [Sample(*row) for row in rows]\n\n    def insert_many(self, samples: Iterable[Sample]) -> int:\n        values = [\n            (s.greenhouse_id, s.sensor_id, s.utc_time,\n             s.temperature_c, s.humidity_percent, s.co2_ppm)\n            for s in samples\n        ]\n        if not values:\n            return 0\n        with self.pool.connection() as conn:\n            with conn.cursor() as cursor:\n                cursor.executemany(\n                    \"INSERT INTO climate_samples (greenhouse_id, sensor_id, \"\n                    \"recorded_at, temperature_c, humidity_percent, co2_ppm) \"\n                    \"VALUES (%s, %s, %s, %s, %s, %s) \"\n                    \"ON CONFLICT (greenhouse_id, sensor_id, recorded_at) DO NOTHING\",\n                    values,\n                )\n        return len(values)\n",
+    "app/climate/routes.py": "from datetime import datetime\n\nfrom .export import report_json\nfrom .models import Range\nfrom .service import ClimateService\n\n\ndef parse_range(start: str, end: str) -> Range:\n    return Range(datetime.fromisoformat(start), datetime.fromisoformat(end))\n\n\ndef report_endpoint(service: ClimateService, greenhouse_id: str,\n                    start: str, end: str) -> tuple[int, str]:\n    try:\n        window = parse_range(start, end)\n        report = service.build_report(greenhouse_id, window, 18.0, 30.0)\n    except ValueError as error:\n        return 400, str(error)\n    return 200, report_json(report)\n\n\ndef ingestion_endpoint(service: ClimateService, greenhouse_id: str,\n                       samples: list) -> tuple[int, str]:\n    try:\n        count = service.ingest(greenhouse_id, samples)\n    except ValueError as error:\n        return 400, str(error)\n    return 202, f\"accepted {count} samples\"\n",
+    "app/climate/service.py": "from dataclasses import dataclass\nfrom datetime import datetime\n\nfrom .metrics import Summary, alert_reasons, summarize\nfrom .models import Range, Sample\nfrom .repository import SampleRepository\n\n\n@dataclass(frozen=True)\nclass ClimateReport:\n    greenhouse_id: str\n    window: Range\n    summary: Summary\n    alerts: tuple[str, ...]\n    generated_at: datetime\n\n\nclass ClimateService:\n    def __init__(self, repository: SampleRepository, now):\n        self.repository = repository\n        self.now = now\n\n    def build_report(self, greenhouse_id: str, window: Range,\n                     minimum_c: float, maximum_c: float) -> ClimateReport:\n        if not greenhouse_id:\n            raise ValueError(\"greenhouse ID required\")\n        if minimum_c >= maximum_c:\n            raise ValueError(\"invalid temperature band\")\n        samples = self.repository.samples(greenhouse_id, window)\n        summary = summarize(greenhouse_id, samples)\n        alerts = tuple(alert_reasons(summary, minimum_c, maximum_c))\n        return ClimateReport(greenhouse_id, window, summary,\n                             alerts, self.now())\n\n    def ingest(self, greenhouse_id: str, samples: list[Sample]) -> int:\n        if any(sample.greenhouse_id != greenhouse_id for sample in samples):\n            raise ValueError(\"sample belongs to another greenhouse\")\n        return self.repository.insert_many(samples)\n",
+    "docs/climate/reports.md": "# Greenhouse climate reports\n\nReports summarize timestamped temperature, humidity and CO2 readings.\nEach reading belongs to one greenhouse and one sensor.\nSensor timestamps must carry a timezone and are normalized to UTC.\n\n## Sampling\n\nTemperature must be between -50 and 80 Celsius.\nHumidity is expressed as a percentage from 0 to 100.\nCO2 is expressed in parts per million from 0 to 100,000.\nDuplicate sensor/timestamp samples are ignored on insert.\nReport windows include their start and exclude their end.\nA zero-length report window is rejected.\n\n## Report fields\n\nThe report includes a count of readings and distinct sensors.\nTemperature and humidity are arithmetic means over readings.\nPeak CO2 is the highest observation in the window.\nTemperature spread is maximum minus minimum.\nEmpty reports have null metrics rather than fabricated zeroes.\nReport generation time is separate from the sampling window.\n\n## Alerts\n\nOperators choose a minimum and maximum temperature band.\nThe lower bound must be less than the upper bound.\nMeans below or above that band produce an alert reason.\nA CO2 peak over 2,000 ppm produces a separate reason.\nEmpty reports have no alert reasons.\n\n## Exports\n\nJSON property names are stable for dashboard consumers.\nCSV includes a header and one line per sensor reading.\nThe CSV writer applies standard field quoting.\nExport consumers own any filesystem handles they open.\n\n## Operations\n\nThe report route converts ISO timestamp strings to a range.\nInvalid ranges and greenhouse IDs receive a 400 response.\nIngestion checks that all samples belong to the route greenhouse.\nDatabase failures should surface to the caller for retry.\nThe repository draws connections from the configured pool.\nPool capacity is limited during peak upload hours.\n",
+    "scripts/migrations/063_climate_samples.sql": "CREATE TABLE climate_samples (\n    greenhouse_id text NOT NULL,\n    sensor_id text NOT NULL,\n    recorded_at timestamptz NOT NULL,\n    temperature_c double precision NOT NULL,\n    humidity_percent double precision NOT NULL,\n    co2_ppm integer NOT NULL,\n    PRIMARY KEY (greenhouse_id, sensor_id, recorded_at),\n    CONSTRAINT climate_greenhouse_required CHECK (length(greenhouse_id) > 0),\n    CONSTRAINT climate_sensor_required CHECK (length(sensor_id) > 0),\n    CONSTRAINT climate_temperature_range CHECK (temperature_c BETWEEN -50 AND 80),\n    CONSTRAINT climate_humidity_range CHECK (humidity_percent BETWEEN 0 AND 100),\n    CONSTRAINT climate_co2_range CHECK (co2_ppm BETWEEN 0 AND 100000)\n);\n\nCREATE INDEX climate_samples_window_idx\n    ON climate_samples (greenhouse_id, recorded_at, sensor_id);\n\nCOMMENT ON TABLE climate_samples IS\n    'Validated greenhouse sensor observations for dashboard reports';\nCOMMENT ON COLUMN climate_samples.recorded_at IS\n    'Timestamp supplied by sensor and normalized to UTC by ingestion';\nCOMMENT ON COLUMN climate_samples.temperature_c IS\n    'Temperature measured in degrees Celsius';\nCOMMENT ON COLUMN climate_samples.humidity_percent IS\n    'Relative humidity as a percent from zero to one hundred';\nCOMMENT ON COLUMN climate_samples.co2_ppm IS\n    'Carbon dioxide concentration in parts per million';\n",
+    "tests/climate/test_reports.py": "from datetime import datetime, timedelta, timezone\nimport json\n\nfrom app.climate.export import report_json, samples_csv\nfrom app.climate.metrics import alert_reasons, summarize\nfrom app.climate.models import Range, Sample\nfrom app.climate.service import ClimateService\n\n\nNOW = datetime(2034, 7, 1, tzinfo=timezone.utc)\n\n\ndef sample(sensor: str, minute: int, temperature: float) -> Sample:\n    return Sample(\"west\", sensor, NOW + timedelta(minutes=minute),\n                  temperature, 55.0, 750)\n\n\nclass MemoryRepository:\n    def __init__(self):\n        self.items = []\n\n    def samples(self, greenhouse_id, window):\n        return [item for item in self.items\n                if item.greenhouse_id == greenhouse_id and window.contains(item.utc_time)]\n\n    def insert_many(self, items):\n        self.items.extend(items)\n        return len(items)\n\n\ndef test_summary_means():\n    result = summarize(\"west\", [sample(\"a\", 1, 20), sample(\"b\", 2, 24)])\n    assert result.sample_count == 2\n    assert result.sensor_count == 2\n    assert result.mean_temperature_c == 22\n    assert result.temperature_spread_c == 4\n\n\ndef test_empty_summary_has_no_alerts():\n    result = summarize(\"west\", [])\n    assert result.mean_temperature_c is None\n    assert alert_reasons(result, 18, 30) == []\n\n\ndef test_range_excludes_end_boundary():\n    window = Range(NOW, NOW + timedelta(hours=1))\n    assert window.contains(NOW)\n    assert not window.contains(NOW + timedelta(hours=1))\n\n\ndef test_sample_normalizes_offset_time():\n    offset = timezone(timedelta(hours=2))\n    recorded = datetime(2034, 7, 1, 2, 0, tzinfo=offset)\n    reading = Sample(\"west\", \"a\", recorded, 20, 55, 750)\n    assert reading.utc_time == NOW\n\n\ndef test_temperature_limits():\n    for value in (-50, 80):\n        assert sample(\"a\", 0, value).temperature_c == value\n\n\ndef test_report_json_and_csv():\n    repo = MemoryRepository()\n    service = ClimateService(repo, lambda: NOW)\n    readings = [sample(\"a\", 1, 20), sample(\"b\", 2, 24)]\n    service.ingest(\"west\", readings)\n    report = service.build_report(\"west\", Range(NOW, NOW + timedelta(hours=1)), 18, 30)\n    payload = json.loads(report_json(report))\n    assert payload[\"summary\"][\"sample_count\"] == 2\n    assert \"2034-07-01\" in samples_csv(readings)\n\n\ndef test_rejects_mixed_greenhouses():\n    repo = MemoryRepository()\n    service = ClimateService(repo, lambda: NOW)\n    other = Sample(\"east\", \"a\", NOW, 20, 55, 750)\n    try:\n        service.ingest(\"west\", [other])\n    except ValueError:\n        pass\n    else:\n        raise AssertionError(\"expected mixed-greenhouse rejection\")\n    assert repo.items == []\n"
+   },
+   "c8e8fe4c556ee9ef212707bf8e65ad28e06ab7f9": {}
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "reliability"
+   ],
+   "category": "reliability",
+   "id": "climate-pool-return",
+   "lines": [
+    40,
+    41
+   ],
+   "path": "app/climate/repository.py",
+   "rationale": "If execute or fetchall raises, control exits before pool.putconn(conn); repeated database errors exhaust the finite connection pool and block future reports. Returning the connection belongs in finally.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"rows = cursor.fetchall()\", \"explanation\": \"If execute or fetchall raises, control exits before pool.putconn(conn); repeated database errors exhaust the finite connection pool and block future reports. Returning the connection belongs in finally.\", \"impact\": \"See explanation.\", \"line\": 40, \"path\": \"app/climate/repository.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Return the connection on query failure\"}], \"summary\": \"Mock review of x3_climate_samples.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "large",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "buried",
+  "error_handling",
+  "multi_file",
+  "resource_leak"
+ ],
+ "title": "Add greenhouse climate summaries"
+}
