@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-11-02)
+
+Less noise, same detection. Validated on a new hold-out benchmark (46 cases, 3 samples) with an
+independent blind judge: useful comments 68 % → 90 % (Claude Haiku 5.5) and 79 % → 96 % (Claude
+Sonnet 5.5), no labelled defect lost (`docs/benchmarks/2026-11-02-v3.md`). The review prompt version
+changes to `review-v2`.
 
 ### Changed
 

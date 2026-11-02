@@ -9,7 +9,7 @@ Gemini through the [LiteLLM](https://docs.litellm.ai/) SDK), posts findings on t
 lines, and — only when a person with write access asks — commits small, validated fixes to the PR
 branch.
 
-> Status: **v0.1.0.** See [What has been verified](#what-has-been-verified)
+> Status: **v0.2.0.** See [What has been verified](#what-has-been-verified)
 > and [`PROGRESS.md`](PROGRESS.md) for exactly what was tested and how.
 
 ## What it does
@@ -167,7 +167,10 @@ uv run python -m pullbeacon review --fixture tests/fixtures/pr_auth_bug.json --m
 uv run python -m pullbeacon eval --dataset evaluation/cases --mock-llm --output evaluation/results/mock.json
 ```
 
-No network or API key is needed for any of these. Architecture: [`docs/architecture.md`](docs/architecture.md),
+No network or API key is needed for any of these. For live local runs, copy `.env.example` to `.env`
+(git-ignored), fill in only the provider key you need and pass it explicitly to each command, e.g.
+`uv run --env-file .env python -m pullbeacon ...`. PullBeacon reads keys from the process environment
+only, so no machine-wide variable is required. Architecture: [`docs/architecture.md`](docs/architecture.md),
 decisions: [`docs/adr/`](docs/adr/), security: [`SECURITY.md`](SECURITY.md).
 
 ## What has been verified

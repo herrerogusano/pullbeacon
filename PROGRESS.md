@@ -253,7 +253,7 @@ apply_flow 86 %, commands 99 %, events 85 %, llm adapter 87 %.
 
 ## Human actions pending
 
-1. Done 2026-10-29: `ANTHROPIC_API_KEY` replaced with a key without expiry (repo secret + user env var); verified with a free `/v1/models` call. Rotate with `%TEMP%\pullbeacon-set-anthropic-key.ps1` or `gh secret set`.
+1. Done 2026-10-29: `ANTHROPIC_API_KEY` replaced with a key without expiry (repo secret + user env var); verified with a free `/v1/models` call. Since 2026-10-30 the local copy lives in a git-ignored `.env` (load with `uv run --env-file .env ...`) instead of a Windows user variable, so it no longer overrides other tools. Rotate the repo secret with `gh secret set` and edit `.env` locally.
 2. Done 2026-10-29: tag/release `v0.1.0` approved by the user.
 3. Optional: a second GitHub account or a fork to verify permission denial and fork skip remotely.
 4. Phase 09 (GitHub App) only on explicit request.

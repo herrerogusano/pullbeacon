@@ -3,9 +3,10 @@ version: 1
 automatic_review: true
 model:
   provider: anthropic
-  # Chosen from docs/benchmarks/2026-10-28-claude.md: same recall as Sonnet 5.5, ~13x cheaper.
+  # docs/benchmarks/2026-11-02-v3.md: same recall as Haiku 5.5, more useful and more consistent
+  # comments (96 % vs 90 % useful), no failures on large PRs; ~0.016 USD per review.
   # Live calls only happen when the repository variable PULLBEACON_LIVE is "true".
-  name: anthropic/claude-haiku-5-5
+  name: anthropic/claude-sonnet-5-5
 limits:
   max_changed_files: 30
   max_changed_lines: 1200
