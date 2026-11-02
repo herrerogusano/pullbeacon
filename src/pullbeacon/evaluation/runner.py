@@ -179,7 +179,13 @@ def _run_one(
             cost_usd=None if llm.unknown else round(llm.spent_usd, 6),
         )
         return error, llm.spent_usd
-    result = score_case(case, report, latency_s=time.perf_counter() - start, sample=sample)
+    result = score_case(
+        case,
+        report,
+        latency_s=time.perf_counter() - start,
+        sample=sample,
+        min_severity=config.policy.min_inline_severity,
+    )
     outcome = _apply_check(case, llm, report, config, fake) if sample == 0 else ApplyOutcome()
     spent = llm.spent_usd
     return (
@@ -235,7 +241,14 @@ def evaluate_model(
     else:
         with ThreadPoolExecutor(max_workers=workers) as pool:
             results = list(pool.map(job, jobs))
-    summary = summarize(results, cases, provider=provider, model=model, mode=mode)
+    summary = summarize(
+        results,
+        cases,
+        provider=provider,
+        model=model,
+        mode=mode,
+        min_inline_severity=config.policy.min_inline_severity.value,
+    )
     return summary, tuple(results), spent[0]
 
 

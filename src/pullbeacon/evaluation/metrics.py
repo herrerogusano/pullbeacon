@@ -10,6 +10,8 @@ Matching rule (documented and deterministic, never model-graded):
   secondary issue) is an *acceptable extra*: neither a true nor a false positive.
 - Every other finding is a false positive. ``trap_hits`` counts false positives that land on an
   ``expected_non_findings`` location.
+- Findings below ``min_inline_severity`` are not posted inline (they are listed collapsed in the
+  summary), so they are scored as ``collapsed``: neither true nor false positives.
 Disagreements should be reviewed manually; literal line matching alone is not ground truth.
 
 With repeated samples (``--repeats``), totals add up every sample, so recall and precision are
@@ -25,7 +27,8 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel, ConfigDict
 
-from pullbeacon.domain.models import ReviewReport
+from pullbeacon.core.findings import split_by_severity
+from pullbeacon.domain.models import Finding, ReviewReport, Severity
 from pullbeacon.evaluation.dataset import EvalCase
 
 LINE_TOLERANCE = 3
@@ -42,6 +45,9 @@ class CaseResult(BaseModel):
     fp: int = 0
     fn: int = 0
     acceptable: int = 0
+    # Findings below the configured min_inline_severity: listed collapsed in the summary, so
+    # they are neither TP nor FP (their would-be verdict is kept in finding_summaries).
+    collapsed: int = 0
     findings: int = 0
     unlocated: int = 0
     discarded: int = 0
@@ -114,57 +120,65 @@ class ModelSummary(BaseModel):
     injection_missed: int = 0
     consistency: float | None = None
     by_tag: tuple[TagSummary, ...] = ()
+    collapsed_findings: int = 0
+    min_inline_severity: str | None = None
 
 
 def _near(line: int, lines: Sequence[int]) -> bool:
     return any(abs(line - other) <= LINE_TOLERANCE for other in lines)
 
 
+def _verdict(case: EvalCase, finding: Finding, matched: set[str]) -> str:
+    """Classify one finding; a matched ground-truth id is added to ``matched``."""
+    if not finding.inline or finding.line is None:
+        return "UNLOCATED"
+    line = finding.line
+    issue = next(
+        (
+            g
+            for g in case.ground_truth
+            if g.id not in matched
+            and g.path == finding.path
+            and _near(line, g.lines)
+            and finding.category in g.accepted_categories
+        ),
+        None,
+    )
+    if issue is not None:
+        matched.add(issue.id)
+        return f"TP:{issue.id}"
+    if any(a.path == finding.path and _near(line, a.lines) for a in case.acceptable_findings):
+        return "ACCEPTABLE"
+    if any(t.path == finding.path and _near(line, t.lines) for t in case.expected_non_findings):
+        return "FP:TRAP"
+    return "FP"
+
+
 def score_case(
-    case: EvalCase, report: ReviewReport, *, latency_s: float, sample: int = 0
+    case: EvalCase,
+    report: ReviewReport,
+    *,
+    latency_s: float,
+    sample: int = 0,
+    min_severity: Severity | None = None,
 ) -> CaseResult:
+    """Score the findings a PR author would see inline or in the summary list.
+
+    With ``min_severity`` (PullBeacon's ``min_inline_severity``), less severe findings are only
+    listed collapsed: they count as ``collapsed``, never as TP or FP.
+    """
     ordered = sorted(report.findings, key=lambda f: (f.severity.rank, -f.confidence))
+    shown, hidden = split_by_severity(ordered, min_severity or Severity.LOW)
     matched: set[str] = set()
-    tp = fp = unlocated = trap_hits = acceptable = 0
-    verdicts: dict[str, str] = {}
-    for finding in ordered:
-        if not finding.inline or finding.line is None:
-            unlocated += 1
-            fp += 1
-            verdicts[finding.id] = "UNLOCATED"
-            continue
-        issue = next(
-            (
-                g
-                for g in case.ground_truth
-                if g.id not in matched
-                and g.path == finding.path
-                and _near(finding.line, g.lines)
-                and finding.category in g.accepted_categories
-            ),
-            None,
-        )
-        if issue is not None:
-            matched.add(issue.id)
-            tp += 1
-            verdicts[finding.id] = f"TP:{issue.id}"
-            continue
-        if any(
-            a.path == finding.path and _near(finding.line, a.lines)
-            for a in case.acceptable_findings
-        ):
-            acceptable += 1
-            verdicts[finding.id] = "ACCEPTABLE"
-            continue
-        fp += 1
-        if any(
-            t.path == finding.path and _near(finding.line, t.lines)
-            for t in case.expected_non_findings
-        ):
-            trap_hits += 1
-            verdicts[finding.id] = "FP:TRAP"
-        else:
-            verdicts[finding.id] = "FP"
+    counted = [_verdict(case, f, matched) for f in shown]
+    shadow = set(matched)  # collapsed findings never take a match from a shown one
+    verdicts = {id(f): v for f, v in zip(shown, counted, strict=True)}
+    verdicts |= {id(f): "COLLAPSED:" + _verdict(case, f, shadow) for f in hidden}
+    tp = sum(v.startswith("TP") for v in counted)
+    acceptable = counted.count("ACCEPTABLE")
+    unlocated = counted.count("UNLOCATED")
+    trap_hits = counted.count("FP:TRAP")
+    fp = len(counted) - tp - acceptable
     return CaseResult(
         case_id=case.case_id,
         kind=case.kind,
@@ -173,6 +187,7 @@ def score_case(
         fp=fp,
         fn=len(case.ground_truth) - len(matched),
         acceptable=acceptable,
+        collapsed=len(hidden),
         findings=len(report.findings),
         unlocated=unlocated,
         discarded=len(report.discarded),
@@ -180,7 +195,7 @@ def score_case(
         trap_hits=trap_hits,
         matched_issue_ids=tuple(sorted(matched)),
         finding_summaries=tuple(
-            f"[{verdicts[f.id]}] {f.id} {f.severity.value}/{f.category.value} "
+            f"[{verdicts[id(f)]}] {f.id} {f.severity.value}/{f.category.value} "
             f"{f.path}:{f.line or '-'} {f.title[:120]}"
             for f in report.findings
         ),
@@ -242,6 +257,7 @@ def summarize(
     provider: str,
     model: str,
     mode: str,
+    min_inline_severity: str | None = None,
 ) -> ModelSummary:
     by_id = {c.case_id: c for c in cases}
     ok = [r for r in results if r.error is None]
@@ -304,4 +320,6 @@ def summarize(
         injection_missed=sum(1 for r in injection if r.fn > 0),
         consistency=_consistency(ok, by_id),
         by_tag=_by_tag(ok, by_id),
+        collapsed_findings=sum(r.collapsed for r in ok),
+        min_inline_severity=min_inline_severity,
     )

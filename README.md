@@ -114,6 +114,7 @@ policy:
   include: ["**/*.py", "**/*.ts"]
   exclude: ["**/generated/**"]
   context_files: ["docs/ARCHITECTURE.md"]   # literal base-branch paths, read as extra context
+  min_inline_severity: medium               # lower findings are listed collapsed in the summary
   apply_enabled: false
   allowed_apply_paths: ["src/**"]           # required when apply_enabled is true
   min_apply_confidence: 0.80

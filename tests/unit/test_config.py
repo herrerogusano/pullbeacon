@@ -105,3 +105,11 @@ def test_config_hash_is_stable_and_sensitive() -> None:
     c = parse_config("version: 1\nautomatic_review: false\n")
     assert a.config_hash() == b.config_hash()
     assert a.config_hash() != c.config_hash()
+
+
+def test_min_inline_severity_default_and_values() -> None:
+    assert parse_config("").policy.min_inline_severity.value == "medium"
+    low = "version: 1\npolicy:\n  min_inline_severity: low\n"
+    assert parse_config(low).policy.min_inline_severity.value == "low"
+    with pytest.raises(ConfigError, match="min_inline_severity"):
+        parse_config(low.replace("low", "trivial"))
