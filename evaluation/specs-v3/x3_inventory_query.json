@@ -1,0 +1,32 @@
+{
+  "case_id": "x3_inventory_query",
+  "title": "Search catalog variants by supplied filters",
+  "pr_body": "",
+  "language": "python",
+  "kind": "clean",
+  "criticality": "none",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "suspicious_but_correct",
+    "injection_sql"
+  ],
+  "files": [
+    {
+      "path": "app/catalog/search.py",
+      "before": null,
+      "after": "from psycopg import sql\n\nALLOWED_SORT = {\"sku\": sql.Identifier(\"sku\"), \"price\": sql.Identifier(\"price_cents\")}\n\n\ndef search_variants(cursor, tenant_id: str, prefix: str, sort: str) -> list[tuple]:\n    if sort not in ALLOWED_SORT:\n        raise ValueError(\"unsupported sort order\")\n    order_column = ALLOWED_SORT[sort]\n    statement = sql.SQL(\n        \"SELECT sku, price_cents FROM variants WHERE tenant_id = %s \"\n        \"AND sku LIKE %s ESCAPE '!' ORDER BY {} LIMIT 100\"\n    ).format(order_column)\n    escaped = prefix.replace(\"!\", \"!!\").replace(\"%\", \"!%\").replace(\"_\", \"!_\")\n    cursor.execute(statement, (tenant_id, escaped + \"%\"))\n    return cursor.fetchall()\n"
+    }
+  ],
+  "bugs": [],
+  "traps": [
+    {
+      "path": "app/catalog/search.py",
+      "anchor": "cursor.execute(statement, (tenant_id, escaped + \"%\"))",
+      "rationale": "The only interpolated identifier comes from a fixed allowlist; tenant and escaped prefix are bound parameters, so user input cannot alter SQL structure."
+    }
+  ],
+  "acceptable": []
+}

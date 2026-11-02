@@ -1,0 +1,40 @@
+{
+  "case_id": "x3_customer_alias",
+  "title": "Validate customer aliases at signup",
+  "pr_body": "",
+  "language": "python",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "performance",
+    "security"
+  ],
+  "files": [
+    {
+      "path": "app/accounts/aliases.py",
+      "before": null,
+      "after": "import re\n\nALIAS = re.compile(r\"^([A-Za-z]+)+$\")\n\n\ndef accepted_alias(value: str) -> bool:\n    if len(value) > 256:\n        return False\n    return ALIAS.fullmatch(value) is not None\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "alias-backtracking",
+      "path": "app/accounts/aliases.py",
+      "anchor": "ALIAS = re.compile(r\"^([A-Za-z]+)+$\")",
+      "category": "performance",
+      "severity": "high",
+      "title": "Avoid nested repetition in alias validation",
+      "rationale": "A 256-character attacker-controlled alias ending in a nonletter forces exponentially many partitions of the nested + quantifiers before failing. The length cap does not make this practical to run safely.",
+      "accepted": [
+        "security",
+        "reliability"
+      ]
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

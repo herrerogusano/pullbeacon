@@ -1,0 +1,84 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_device_digest",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    10
+   ],
+   "path": "src/pairing/digest.go",
+   "rationale": "Both slices are fixed 32-byte SHA-256 digests and the standard-library comparison is timing safe; the code does not compare raw secret strings."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 11,
+    "changes": 11,
+    "deletions": 0,
+    "filename": "src/pairing/digest.go",
+    "patch": "@@ -0,0 +1,11 @@\n+package pairing\n+\n+import (\n+    \"crypto/sha256\"\n+    \"crypto/subtle\"\n+)\n+\n+func MatchesPairingCode(candidate string, expectedDigest [32]byte) bool {\n+    actual := sha256.Sum256([]byte(candidate))\n+    return subtle.ConstantTimeCompare(actual[:], expectedDigest[:]) == 1\n+}",
+    "sha": "f6231f4bf06e7e46b4e906d308cd2875c13ad30c",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "e515a4084d21e4dd22e77c379d2174914db25a37"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_device_digest",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "65054b45c710816db1b6ee76539c18aede64ef66"
+   },
+   "number": 448,
+   "state": "open",
+   "title": "Compare device pairing digests",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "65054b45c710816db1b6ee76539c18aede64ef66": {
+    "src/pairing/digest.go": "package pairing\n\nimport (\n    \"crypto/sha256\"\n    \"crypto/subtle\"\n)\n\nfunc MatchesPairingCode(candidate string, expectedDigest [32]byte) bool {\n    actual := sha256.Sum256([]byte(candidate))\n    return subtle.ConstantTimeCompare(actual[:], expectedDigest[:]) == 1\n}\n"
+   },
+   "e515a4084d21e4dd22e77c379d2174914db25a37": {}
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "go",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of x3_device_digest.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "crypto",
+  "suspicious_but_correct"
+ ],
+ "title": "Compare device pairing digests"
+}

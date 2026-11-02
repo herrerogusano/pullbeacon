@@ -1,7 +1,7 @@
 """Build benchmark v2 cases from readable specs (format: evaluation/SPEC_V2.md).
 
-    uv run python evaluation/build_cases_v2.py            # specs-v2 -> cases-v2
-    uv run python evaluation/build_cases_v2.py --oss      # also specs-v2-oss -> cases-v2-oss
+    uv run python evaluation/build_cases_v2.py            # specs-v2/v3 -> cases-v2/v3
+    uv run python evaluation/build_cases_v2.py --oss      # also the fetched *-oss spec dirs
     uv run python evaluation/build_cases_v2.py --check    # validate only, write nothing
 
 Every built case is validated with the harness's own loader (labels must land on commentable
@@ -32,6 +32,8 @@ from pullbeacon.evaluation.dataset import load_cases  # noqa: E402
 PAIRS = {
     "specs-v2": "cases-v2",
     "specs-v2-oss": "cases-v2-oss",
+    "specs-v3": "cases-v3",
+    "specs-v3-oss": "cases-v3-oss",
 }
 ALLOWED_ROOTS = (
     "app/",
@@ -251,7 +253,7 @@ def main() -> int:
     args = parser.parse_args()
     failed = False
     for spec_name, case_name in PAIRS.items():
-        if spec_name == "specs-v2-oss" and not args.oss:
+        if spec_name.endswith("-oss") and not args.oss:
             continue
         specs = ROOT / "evaluation" / spec_name
         if not specs.is_dir():

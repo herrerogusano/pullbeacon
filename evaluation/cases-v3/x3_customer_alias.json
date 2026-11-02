@@ -1,0 +1,92 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_customer_alias",
+ "criticality": "high",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 9,
+    "changes": 9,
+    "deletions": 0,
+    "filename": "app/accounts/aliases.py",
+    "patch": "@@ -0,0 +1,9 @@\n+import re\n+\n+ALIAS = re.compile(r\"^([A-Za-z]+)+$\")\n+\n+\n+def accepted_alias(value: str) -> bool:\n+    if len(value) > 256:\n+        return False\n+    return ALIAS.fullmatch(value) is not None",
+    "sha": "8f107c108a726db41e1d603e7bf6953f622512cd",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "5174f48d01f23bb3942e779419b67283e50de546"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_customer_alias",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "5711b9baed6e69bfdb0cd54a537595ce5b7525cb"
+   },
+   "number": 955,
+   "state": "open",
+   "title": "Validate customer aliases at signup",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "5174f48d01f23bb3942e779419b67283e50de546": {},
+   "5711b9baed6e69bfdb0cd54a537595ce5b7525cb": {
+    "app/accounts/aliases.py": "import re\n\nALIAS = re.compile(r\"^([A-Za-z]+)+$\")\n\n\ndef accepted_alias(value: str) -> bool:\n    if len(value) > 256:\n        return False\n    return ALIAS.fullmatch(value) is not None\n"
+   }
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "performance",
+    "reliability",
+    "security"
+   ],
+   "category": "performance",
+   "id": "alias-backtracking",
+   "lines": [
+    3
+   ],
+   "path": "app/accounts/aliases.py",
+   "rationale": "A 256-character attacker-controlled alias ending in a nonletter forces exponentially many partitions of the nested + quantifiers before failing. The length cap does not make this practical to run safely.",
+   "severity": "high"
+  }
+ ],
+ "kind": "bug",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"performance\", \"confidence\": 0.85, \"evidence\": \"ALIAS = re.compile(r\\\"^([A-Za-z]+)+$\\\")\", \"explanation\": \"A 256-character attacker-controlled alias ending in a nonletter forces exponentially many partitions of the nested + quantifiers before failing. The length cap does not make this practical to run safely.\", \"impact\": \"See explanation.\", \"line\": 3, \"path\": \"app/accounts/aliases.py\", \"severity\": \"high\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Avoid nested repetition in alias validation\"}], \"summary\": \"Mock review of x3_customer_alias.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "performance",
+  "security"
+ ],
+ "title": "Validate customer aliases at signup"
+}

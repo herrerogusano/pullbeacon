@@ -1,0 +1,93 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_deadline_fetch",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 8,
+    "changes": 8,
+    "deletions": 0,
+    "filename": "web/catalog/request.ts",
+    "patch": "@@ -0,0 +1,8 @@\n+export async function getCatalog(url: string, timeoutMs: number): Promise<unknown> {\n+  const controller = new AbortController();\n+  const timer = setTimeout(() => controller.abort(), timeoutMs);\n+  const response = await fetch(url, { signal: controller.signal });\n+  clearTimeout(timer);\n+  if (!response.ok) throw new Error(`catalog returned ${response.status}`);\n+  return response.json();\n+}",
+    "sha": "6bdbb2bb40d5a40e673e2252aab1f1f5743bc2b6",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "a55195970a1339c4cefe338e0b93d772de2341a5"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_deadline_fetch",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "7e292085723ece2144c5c433f2d8bd6f66db679f"
+   },
+   "number": 251,
+   "state": "open",
+   "title": "Add deadline to catalog requests",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "7e292085723ece2144c5c433f2d8bd6f66db679f": {
+    "web/catalog/request.ts": "export async function getCatalog(url: string, timeoutMs: number): Promise<unknown> {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), timeoutMs);\n  const response = await fetch(url, { signal: controller.signal });\n  clearTimeout(timer);\n  if (!response.ok) throw new Error(`catalog returned ${response.status}`);\n  return response.json();\n}\n"
+   },
+   "a55195970a1339c4cefe338e0b93d772de2341a5": {}
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "correctness",
+    "performance",
+    "reliability"
+   ],
+   "category": "reliability",
+   "id": "deadline-timer-rejection",
+   "lines": [
+    4
+   ],
+   "path": "web/catalog/request.ts",
+   "rationale": "Network failure or an aborted fetch rejects before clearTimeout, so each failed request retains its timer until the deadline, keeping the process active and accumulating timers under load. Use finally.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "typescript",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"reliability\", \"confidence\": 0.85, \"evidence\": \"const response = await fetch(url, { signal: controller.signal });\", \"explanation\": \"Network failure or an aborted fetch rejects before clearTimeout, so each failed request retains its timer until the deadline, keeping the process active and accumulating timers under load. Use finally.\", \"impact\": \"See explanation.\", \"line\": 4, \"path\": \"web/catalog/request.ts\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Clear the deadline on rejected fetches\"}], \"summary\": \"Mock review of x3_deadline_fetch.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "async",
+  "error_handling",
+  "resource_leak"
+ ],
+ "title": "Add deadline to catalog requests"
+}

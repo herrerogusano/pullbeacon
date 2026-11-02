@@ -1,0 +1,39 @@
+{
+  "case_id": "x3_balance_backfill",
+  "title": "Backfill ledger balances in cents",
+  "pr_body": "",
+  "language": "sql",
+  "kind": "bug",
+  "criticality": "high",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "numeric",
+    "logic"
+  ],
+  "files": [
+    {
+      "path": "scripts/migrations/041_balance_cents.sql",
+      "before": null,
+      "after": "ALTER TABLE ledger_accounts ADD COLUMN balance_cents bigint;\n\nUPDATE ledger_accounts\nSET balance_cents = ROUND(balance_amount)::bigint * 100\nWHERE balance_cents IS NULL;\n\nALTER TABLE ledger_accounts ALTER COLUMN balance_cents SET NOT NULL;\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "balance-rounded-before-scale",
+      "path": "scripts/migrations/041_balance_cents.sql",
+      "anchor": "SET balance_cents = ROUND(balance_amount)::bigint * 100",
+      "category": "correctness",
+      "severity": "high",
+      "title": "Scale before rounding the legacy balance",
+      "rationale": "Rounding the dollar amount before multiplying drops all cents: 12.49 becomes 1200 instead of 1249. Every pre-existing fractional balance is corrupted by the backfill.",
+      "accepted": [
+        "reliability"
+      ]
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

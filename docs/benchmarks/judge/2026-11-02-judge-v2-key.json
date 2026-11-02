@@ -1,0 +1,1248 @@
+[
+ {
+  "i": 1,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "289",
+  "mine": "SPEC"
+ },
+ {
+  "i": 2,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_inj_export_traversal",
+  "line": "17",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 3,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_fetch_retry",
+  "line": "10",
+  "mine": "TP"
+ },
+ {
+  "i": 4,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_clean_archive",
+  "line": "23",
+  "mine": "MINOR"
+ },
+ {
+  "i": 5,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_requests_zip_tempfile",
+  "line": "288",
+  "mine": "MINOR"
+ },
+ {
+  "i": 6,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "17",
+  "mine": "VALID"
+ },
+ {
+  "i": 7,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "17",
+  "mine": "MINOR"
+ },
+ {
+  "i": 8,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_fetch_retry",
+  "line": "15",
+  "mine": "MINOR"
+ },
+ {
+  "i": 9,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_urllib3_target_fragment",
+  "line": "335",
+  "mine": "TP"
+ },
+ {
+  "i": 10,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_urllib3_target_fragment",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 11,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "46",
+  "mine": "VALID"
+ },
+ {
+  "i": 12,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_jinja_xmlattr_keys",
+  "line": "290",
+  "mine": "SAME"
+ },
+ {
+  "i": 13,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_redirect_auth_strip",
+  "line": "118",
+  "mine": "MINOR"
+ },
+ {
+  "i": 14,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "33",
+  "mine": "TP"
+ },
+ {
+  "i": 15,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_jinja_xmlattr_keys",
+  "line": "291",
+  "mine": "MINOR"
+ },
+ {
+  "i": 16,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_diff_header_default",
+  "line": "27",
+  "mine": "TP"
+ },
+ {
+  "i": 17,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_fetch_retry",
+  "line": "13",
+  "mine": "MINOR"
+ },
+ {
+  "i": 18,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_jinja_xmlattr_keys",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 19,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "30",
+  "mine": "MINOR"
+ },
+ {
+  "i": 20,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_reports_page_offset",
+  "line": "91",
+  "mine": "TP"
+ },
+ {
+  "i": 21,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_paths_dot_prefix",
+  "line": "96",
+  "mine": "TP"
+ },
+ {
+  "i": 22,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "67",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 23,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_inj_export_traversal",
+  "line": "26",
+  "mine": "MINOR"
+ },
+ {
+  "i": 24,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "25",
+  "mine": "MINOR"
+ },
+ {
+  "i": 25,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_clean_archive",
+  "line": "22",
+  "mine": "MINOR"
+ },
+ {
+  "i": 26,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_urllib3_read_zero",
+  "line": "249",
+  "mine": "SPEC"
+ },
+ {
+  "i": 27,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 28,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_mut_diff_header_default",
+  "line": "28",
+  "mine": "SAME"
+ },
+ {
+  "i": 29,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_fetch_retry",
+  "line": "6",
+  "mine": "TP"
+ },
+ {
+  "i": 30,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_artifact_path",
+  "line": "13",
+  "mine": "VALID"
+ },
+ {
+  "i": 31,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_clean_search_sql",
+  "line": "16",
+  "mine": "MINOR"
+ },
+ {
+  "i": 32,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "30",
+  "mine": "TP"
+ },
+ {
+  "i": 33,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "117",
+  "mine": "MINOR"
+ },
+ {
+  "i": 34,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_httpx_headers_update",
+  "line": "970",
+  "mine": "SPEC"
+ },
+ {
+  "i": 35,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_requests_redirect_auth_strip",
+  "line": "132",
+  "mine": "VALID"
+ },
+ {
+  "i": 36,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "150",
+  "mine": "MINOR"
+ },
+ {
+  "i": 37,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "286",
+  "mine": "SAME"
+ },
+ {
+  "i": 38,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_proxy_bypass_empty",
+  "line": "99",
+  "mine": "TP"
+ },
+ {
+  "i": 39,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_lease_release",
+  "line": "30",
+  "mine": "MINOR"
+ },
+ {
+  "i": 40,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_price_contract",
+  "line": "1",
+  "mine": "SAME"
+ },
+ {
+  "i": 41,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_commands_list_items",
+  "line": "61",
+  "mine": "TP"
+ },
+ {
+  "i": 42,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 43,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_reports_page_offset",
+  "line": "-",
+  "mine": "VALID"
+ },
+ {
+  "i": 44,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "33",
+  "mine": "VALID"
+ },
+ {
+  "i": 45,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_reports_page_offset",
+  "line": "11",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 46,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "66",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 47,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "33",
+  "mine": "TP"
+ },
+ {
+  "i": 48,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_clean_archive",
+  "line": "18",
+  "mine": "VALID"
+ },
+ {
+  "i": 49,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_fetch_retry",
+  "line": "14",
+  "mine": "MINOR"
+ },
+ {
+  "i": 50,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_jinja_xmlattr_keys",
+  "line": "290",
+  "mine": "VALID"
+ },
+ {
+  "i": 51,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "2",
+  "mine": "MINOR"
+ },
+ {
+  "i": 52,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_diff_header_default",
+  "line": "28",
+  "mine": "SAME"
+ },
+ {
+  "i": 53,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "41",
+  "mine": "MINOR"
+ },
+ {
+  "i": 54,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_inj_export_traversal",
+  "line": "21",
+  "mine": "TP"
+ },
+ {
+  "i": 55,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_httpx_headers_update",
+  "line": "968",
+  "mine": "TP"
+ },
+ {
+  "i": 56,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_artifact_path",
+  "line": "6",
+  "mine": "TP"
+ },
+ {
+  "i": 57,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "23",
+  "mine": "SPEC"
+ },
+ {
+  "i": 58,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_clean_archive",
+  "line": "22",
+  "mine": "MINOR"
+ },
+ {
+  "i": 59,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_nodefetch_localhost_redos",
+  "line": "122",
+  "mine": "MINOR"
+ },
+ {
+  "i": 60,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "18",
+  "mine": "VALID"
+ },
+ {
+  "i": 61,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "109",
+  "mine": "MINOR"
+ },
+ {
+  "i": 62,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_urllib3_target_fragment",
+  "line": "328",
+  "mine": "MINOR"
+ },
+ {
+  "i": 63,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_proxy_bypass_empty",
+  "line": "100",
+  "mine": "TP"
+ },
+ {
+  "i": 64,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "24",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 65,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 66,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_mut_paths_dot_prefix",
+  "line": "17",
+  "mine": "TP"
+ },
+ {
+  "i": 67,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_requests_zip_tempfile",
+  "line": "286",
+  "mine": "MINOR"
+ },
+ {
+  "i": 68,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_requests_zip_tempfile",
+  "line": "286",
+  "mine": "MINOR"
+ },
+ {
+  "i": 69,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_fetch_retry",
+  "line": "14",
+  "mine": "SAME"
+ },
+ {
+  "i": 70,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "48",
+  "mine": "TP"
+ },
+ {
+  "i": 71,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_mut_commands_list_items",
+  "line": "64",
+  "mine": "MINOR"
+ },
+ {
+  "i": 72,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_digest_cursor",
+  "line": "39",
+  "mine": "VALID"
+ },
+ {
+  "i": 73,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_inject_quota",
+  "line": "3",
+  "mine": "TP"
+ },
+ {
+  "i": 74,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_jinja_xmlattr_keys",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 75,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_inject_quota",
+  "line": "2",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 76,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_ws_protocol_redos",
+  "line": "289",
+  "mine": "MINOR"
+ },
+ {
+  "i": 77,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_urllib3_target_fragment",
+  "line": "331",
+  "mine": "SPEC"
+ },
+ {
+  "i": 78,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_redirect_auth_strip",
+  "line": "245",
+  "mine": "TP"
+ },
+ {
+  "i": 79,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_reports_page_offset",
+  "line": "3",
+  "mine": "VALID"
+ },
+ {
+  "i": 80,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_report_authz",
+  "line": "28",
+  "mine": "MINOR"
+ },
+ {
+  "i": 81,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_httpx_headers_update",
+  "line": "967",
+  "mine": "TP"
+ },
+ {
+  "i": 82,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_report_authz",
+  "line": "25",
+  "mine": "TP"
+ },
+ {
+  "i": 83,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_nodefetch_localhost_redos",
+  "line": "122",
+  "mine": "TP"
+ },
+ {
+  "i": 84,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "28",
+  "mine": "VALID"
+ },
+ {
+  "i": 85,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_clean_archive",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 86,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_jinja_xmlattr_keys",
+  "line": "291",
+  "mine": "MINOR"
+ },
+ {
+  "i": 87,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "33",
+  "mine": "VALID"
+ },
+ {
+  "i": 88,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "35",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 89,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_jinja_xmlattr_keys",
+  "line": "251",
+  "mine": "MINOR"
+ },
+ {
+  "i": 90,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_commands_list_items",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 91,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 92,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_ws_protocol_redos",
+  "line": "289",
+  "mine": "MINOR"
+ },
+ {
+  "i": 93,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_urllib3_target_fragment",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 94,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_requests_redirect_auth_strip",
+  "line": "118",
+  "mine": "MINOR"
+ },
+ {
+  "i": 95,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "39",
+  "mine": "VALID"
+ },
+ {
+  "i": 96,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_jinja_xmlattr_keys",
+  "line": "278",
+  "mine": "TP"
+ },
+ {
+  "i": 97,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_report_authz",
+  "line": "25",
+  "mine": "TP"
+ },
+ {
+  "i": 98,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "16",
+  "mine": "MINOR"
+ },
+ {
+  "i": 99,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "35",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 100,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_inj_export_traversal",
+  "line": "21",
+  "mine": "TP"
+ },
+ {
+  "i": 101,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_lease_release",
+  "line": "28",
+  "mine": "TP"
+ },
+ {
+  "i": 102,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_urllib3_target_fragment",
+  "line": "58",
+  "mine": "VALID"
+ },
+ {
+  "i": 103,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_jinja_xmlattr_keys",
+  "line": "251",
+  "mine": "VALID"
+ },
+ {
+  "i": 104,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "144",
+  "mine": "MINOR"
+ },
+ {
+  "i": 105,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 106,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_urllib3_target_fragment",
+  "line": "58",
+  "mine": "VALID"
+ },
+ {
+  "i": 107,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_jinja_xmlattr_keys",
+  "line": "251",
+  "mine": "MINOR"
+ },
+ {
+  "i": 108,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "115",
+  "mine": "TP"
+ },
+ {
+  "i": 109,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "33",
+  "mine": "MINOR"
+ },
+ {
+  "i": 110,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "41",
+  "mine": "MINOR"
+ },
+ {
+  "i": 111,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_lease_release",
+  "line": "28",
+  "mine": "TP"
+ },
+ {
+  "i": 112,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_ws_protocol_redos",
+  "line": "289",
+  "mine": "MINOR"
+ },
+ {
+  "i": 113,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_nodefetch_localhost_redos",
+  "line": "122",
+  "mine": "MINOR"
+ },
+ {
+  "i": 114,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_commands_list_items",
+  "line": "64",
+  "mine": "MINOR"
+ },
+ {
+  "i": 115,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_workflow_title",
+  "line": "13",
+  "mine": "TP"
+ },
+ {
+  "i": 116,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_httpx_headers_update",
+  "line": "968",
+  "mine": "TP"
+ },
+ {
+  "i": 117,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_price_contract",
+  "line": "15",
+  "mine": "TP"
+ },
+ {
+  "i": 118,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "285",
+  "mine": "TP"
+ },
+ {
+  "i": 119,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_reports_page_offset",
+  "line": "91",
+  "mine": "TP"
+ },
+ {
+  "i": 120,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_urllib3_target_fragment",
+  "line": "58",
+  "mine": "SPEC"
+ },
+ {
+  "i": 121,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_requests_redirect_auth_strip",
+  "line": "132",
+  "mine": "VALID"
+ },
+ {
+  "i": 122,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "1",
+  "mine": "MINOR"
+ },
+ {
+  "i": 123,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_urllib3_read_zero",
+  "line": "247",
+  "mine": "TP"
+ },
+ {
+  "i": 124,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "7",
+  "mine": "MINOR"
+ },
+ {
+  "i": 125,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_urllib3_read_zero",
+  "line": "247",
+  "mine": "MINOR"
+ },
+ {
+  "i": 126,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "15",
+  "mine": "TP"
+ },
+ {
+  "i": 127,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_reports_page_offset",
+  "line": "11",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 128,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "287",
+  "mine": "SAME"
+ },
+ {
+  "i": 129,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_paths_dot_prefix",
+  "line": "90",
+  "mine": "SAME"
+ },
+ {
+  "i": 130,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_httpx_headers_update",
+  "line": "969",
+  "mine": "MINOR"
+ },
+ {
+  "i": 131,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "44",
+  "mine": "MINOR"
+ },
+ {
+  "i": 132,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_proxy_bypass_empty",
+  "line": "100",
+  "mine": "TP"
+ },
+ {
+  "i": 133,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_mut_commands_list_items",
+  "line": "61",
+  "mine": "TP"
+ },
+ {
+  "i": 134,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "37",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 135,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_artifact_path",
+  "line": "6",
+  "mine": "TP"
+ },
+ {
+  "i": 136,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "289",
+  "mine": "SPEC"
+ },
+ {
+  "i": 137,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_requests_proxy_bypass_empty",
+  "line": "101",
+  "mine": "MINOR"
+ },
+ {
+  "i": 138,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "10",
+  "mine": "VALID"
+ },
+ {
+  "i": 139,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_inj_export_traversal",
+  "line": "26",
+  "mine": "MINOR"
+ },
+ {
+  "i": 140,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 141,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_redirect_auth_strip",
+  "line": "239",
+  "mine": "MINOR"
+ },
+ {
+  "i": 142,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "13",
+  "mine": "MINOR"
+ },
+ {
+  "i": 143,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_mut_paths_dot_prefix",
+  "line": "92",
+  "mine": "MINOR"
+ },
+ {
+  "i": 144,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_inj_export_traversal",
+  "line": "17",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 145,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_clean_ts_price_format",
+  "line": "31",
+  "mine": "MINOR"
+ },
+ {
+  "i": 146,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_inject_quota",
+  "line": "3",
+  "mine": "TP"
+ },
+ {
+  "i": 147,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_digest_cursor",
+  "line": "115",
+  "mine": "TP"
+ },
+ {
+  "i": 148,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_release_shell_injection",
+  "line": "48",
+  "mine": "TP"
+ },
+ {
+  "i": 149,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_artifact_path",
+  "line": "13",
+  "mine": "VALID"
+ },
+ {
+  "i": 150,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "30",
+  "mine": "TP"
+ },
+ {
+  "i": 151,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_cache_timedelta_seconds",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 152,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_webhook_timing_compare",
+  "line": "37",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 153,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_inject_quota",
+  "line": "2",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 154,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "27",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 155,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_lease_release",
+  "line": "25",
+  "mine": "SAME"
+ },
+ {
+  "i": 156,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_redirect_auth_strip",
+  "line": "245",
+  "mine": "TP"
+ },
+ {
+  "i": 157,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_mut_diff_header_default",
+  "line": "27",
+  "mine": "TP"
+ },
+ {
+  "i": 158,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_workflow_title",
+  "line": "13",
+  "mine": "TP"
+ },
+ {
+  "i": 159,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_jinja_xmlattr_keys",
+  "line": "293",
+  "mine": "VALID"
+ },
+ {
+  "i": 160,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_report_authz",
+  "line": "28",
+  "mine": "MINOR"
+ },
+ {
+  "i": 161,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_proxy_bypass_empty",
+  "line": "101",
+  "mine": "TP"
+ },
+ {
+  "i": 162,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "286",
+  "mine": "TP"
+ },
+ {
+  "i": 163,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_requests_zip_tempfile",
+  "line": "287",
+  "mine": "TP"
+ },
+ {
+  "i": 164,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "15",
+  "mine": "TP"
+ },
+ {
+  "i": 165,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "oss_urllib3_target_fragment",
+  "line": "335",
+  "mine": "TP"
+ },
+ {
+  "i": 166,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_clean_archive",
+  "line": "23",
+  "mine": "VALID"
+ },
+ {
+  "i": 167,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_httpx_headers_update",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 168,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "oss_urllib3_read_zero",
+  "line": "247",
+  "mine": "TP"
+ },
+ {
+  "i": 169,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_requests_zip_tempfile",
+  "line": "288",
+  "mine": "MINOR"
+ },
+ {
+  "i": 170,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_mut_paths_dot_prefix",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 171,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ossfix_nodefetch_localhost_redos",
+  "line": "-",
+  "mine": "MINOR"
+ },
+ {
+  "i": 172,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "48",
+  "mine": "MINOR"
+ },
+ {
+  "i": 173,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_price_contract",
+  "line": "15",
+  "mine": "TP"
+ },
+ {
+  "i": 174,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_requests_redirect_auth_strip",
+  "line": "118",
+  "mine": "MINOR"
+ },
+ {
+  "i": 175,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ossfix_httpx_headers_update",
+  "line": "970",
+  "mine": "MINOR"
+ },
+ {
+  "i": 176,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "ext_digest_cursor",
+  "line": "47",
+  "mine": "MINOR"
+ },
+ {
+  "i": 177,
+  "model": "anthropic/claude-haiku-5-5",
+  "case": "cl_syn_policy_fail_open",
+  "line": "24",
+  "mine": "ACCEPTABLE"
+ },
+ {
+  "i": 178,
+  "model": "anthropic/claude-sonnet-5-5",
+  "case": "ext_workflow_title",
+  "line": "14",
+  "mine": "VALID"
+ }
+]

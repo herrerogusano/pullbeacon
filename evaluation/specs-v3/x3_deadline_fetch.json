@@ -1,0 +1,41 @@
+{
+  "case_id": "x3_deadline_fetch",
+  "title": "Add deadline to catalog requests",
+  "pr_body": "",
+  "language": "typescript",
+  "kind": "bug",
+  "criticality": "medium",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "async",
+    "resource_leak",
+    "error_handling"
+  ],
+  "files": [
+    {
+      "path": "web/catalog/request.ts",
+      "before": null,
+      "after": "export async function getCatalog(url: string, timeoutMs: number): Promise<unknown> {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), timeoutMs);\n  const response = await fetch(url, { signal: controller.signal });\n  clearTimeout(timer);\n  if (!response.ok) throw new Error(`catalog returned ${response.status}`);\n  return response.json();\n}\n"
+    }
+  ],
+  "bugs": [
+    {
+      "id": "deadline-timer-rejection",
+      "path": "web/catalog/request.ts",
+      "anchor": "const response = await fetch(url, { signal: controller.signal });",
+      "category": "reliability",
+      "severity": "medium",
+      "title": "Clear the deadline on rejected fetches",
+      "rationale": "Network failure or an aborted fetch rejects before clearTimeout, so each failed request retains its timer until the deadline, keeping the process active and accumulating timers under load. Use finally.",
+      "accepted": [
+        "correctness",
+        "performance"
+      ]
+    }
+  ],
+  "traps": [],
+  "acceptable": []
+}

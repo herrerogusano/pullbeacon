@@ -1,0 +1,91 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_sensor_dedupe",
+ "criticality": "medium",
+ "expected_non_findings": [],
+ "fixture": {
+  "files": [
+   {
+    "additions": 22,
+    "changes": 22,
+    "deletions": 0,
+    "filename": "src/sensors/ingest.go",
+    "patch": "@@ -0,0 +1,22 @@\n+package sensors\n+\n+type Reading struct {\n+    SensorID string\n+    Sequence int64\n+    Value float64\n+}\n+\n+func Unique(readings []Reading) []Reading {\n+    result := make([]Reading, 0, len(readings))\n+    for _, reading := range readings {\n+        seen := false\n+        for _, previous := range result {\n+            if previous.SensorID == reading.SensorID && previous.Sequence == reading.Sequence {\n+                seen = true\n+                break\n+            }\n+        }\n+        if !seen { result = append(result, reading) }\n+    }\n+    return result\n+}",
+    "sha": "1d55d5ee405366ef6e29e78c2c1a49ca3525d032",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "f4a08c4386d3d41975f97dd0b36387d915fe0eaa"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_sensor_dedupe",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "838032e114354ad75e22f379c653ebaa8ecca46d"
+   },
+   "number": 694,
+   "state": "open",
+   "title": "Deduplicate incoming sensor readings",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "838032e114354ad75e22f379c653ebaa8ecca46d": {
+    "src/sensors/ingest.go": "package sensors\n\ntype Reading struct {\n    SensorID string\n    Sequence int64\n    Value float64\n}\n\nfunc Unique(readings []Reading) []Reading {\n    result := make([]Reading, 0, len(readings))\n    for _, reading := range readings {\n        seen := false\n        for _, previous := range result {\n            if previous.SensorID == reading.SensorID && previous.Sequence == reading.Sequence {\n                seen = true\n                break\n            }\n        }\n        if !seen { result = append(result, reading) }\n    }\n    return result\n}\n"
+   },
+   "f4a08c4386d3d41975f97dd0b36387d915fe0eaa": {}
+  }
+ },
+ "ground_truth": [
+  {
+   "accepted_categories": [
+    "performance",
+    "reliability"
+   ],
+   "category": "performance",
+   "id": "reading-quadratic",
+   "lines": [
+    13
+   ],
+   "path": "src/sensors/ingest.go",
+   "rationale": "For an input batch of n distinct readings, every new reading scans all prior readings, making ingestion O(n\u00b2) on untrusted batch sizes. A map keyed by sensor and sequence keeps this linear.",
+   "severity": "medium"
+  }
+ ],
+ "kind": "bug",
+ "language": "go",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [{\"can_apply\": false, \"category\": \"performance\", \"confidence\": 0.85, \"evidence\": \"for _, previous := range result {\", \"explanation\": \"For an input batch of n distinct readings, every new reading scans all prior readings, making ingestion O(n\\u00b2) on untrusted batch sizes. A map keyed by sensor and sequence keeps this linear.\", \"impact\": \"See explanation.\", \"line\": 13, \"path\": \"src/sensors/ingest.go\", \"severity\": \"medium\", \"side\": \"RIGHT\", \"suggested_fix\": null, \"title\": \"Index readings by sensor and sequence\"}], \"summary\": \"Mock review of x3_sensor_dedupe.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "logic",
+  "performance"
+ ],
+ "title": "Deduplicate incoming sensor readings"
+}

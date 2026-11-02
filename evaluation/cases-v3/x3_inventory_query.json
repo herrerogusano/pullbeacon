@@ -1,0 +1,84 @@
+{
+ "acceptable_findings": [],
+ "author": "codex",
+ "case_id": "x3_inventory_query",
+ "criticality": "none",
+ "expected_non_findings": [
+  {
+   "lines": [
+    15
+   ],
+   "path": "app/catalog/search.py",
+   "rationale": "The only interpolated identifier comes from a fixed allowlist; tenant and escaped prefix are bound parameters, so user input cannot alter SQL structure."
+  }
+ ],
+ "fixture": {
+  "files": [
+   {
+    "additions": 16,
+    "changes": 16,
+    "deletions": 0,
+    "filename": "app/catalog/search.py",
+    "patch": "@@ -0,0 +1,16 @@\n+from psycopg import sql\n+\n+ALLOWED_SORT = {\"sku\": sql.Identifier(\"sku\"), \"price\": sql.Identifier(\"price_cents\")}\n+\n+\n+def search_variants(cursor, tenant_id: str, prefix: str, sort: str) -> list[tuple]:\n+    if sort not in ALLOWED_SORT:\n+        raise ValueError(\"unsupported sort order\")\n+    order_column = ALLOWED_SORT[sort]\n+    statement = sql.SQL(\n+        \"SELECT sku, price_cents FROM variants WHERE tenant_id = %s \"\n+        \"AND sku LIKE %s ESCAPE '!' ORDER BY {} LIMIT 100\"\n+    ).format(order_column)\n+    escaped = prefix.replace(\"!\", \"!!\").replace(\"%\", \"!%\").replace(\"_\", \"!_\")\n+    cursor.execute(statement, (tenant_id, escaped + \"%\"))\n+    return cursor.fetchall()",
+    "sha": "cb7a8b3943a4dbe3811b2796968097c5b0efb135",
+    "status": "added"
+   }
+  ],
+  "pull_request": {
+   "base": {
+    "ref": "main",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "bb21edec2a9de5d0d1114c7ff34e4243dee09329"
+   },
+   "body": "",
+   "draft": false,
+   "head": {
+    "ref": "eval/x3_inventory_query",
+    "repo": {
+     "full_name": "pullbeacon-eval/bench",
+     "name": "bench",
+     "owner": {
+      "login": "pullbeacon-eval"
+     }
+    },
+    "sha": "04d453b003abeb4353d5baf87c69424523dc20e8"
+   },
+   "number": 766,
+   "state": "open",
+   "title": "Search catalog variants by supplied filters",
+   "user": {
+    "login": "eval-author",
+    "type": "User"
+   }
+  },
+  "trees": {
+   "04d453b003abeb4353d5baf87c69424523dc20e8": {
+    "app/catalog/search.py": "from psycopg import sql\n\nALLOWED_SORT = {\"sku\": sql.Identifier(\"sku\"), \"price\": sql.Identifier(\"price_cents\")}\n\n\ndef search_variants(cursor, tenant_id: str, prefix: str, sort: str) -> list[tuple]:\n    if sort not in ALLOWED_SORT:\n        raise ValueError(\"unsupported sort order\")\n    order_column = ALLOWED_SORT[sort]\n    statement = sql.SQL(\n        \"SELECT sku, price_cents FROM variants WHERE tenant_id = %s \"\n        \"AND sku LIKE %s ESCAPE '!' ORDER BY {} LIMIT 100\"\n    ).format(order_column)\n    escaped = prefix.replace(\"!\", \"!!\").replace(\"%\", \"!%\").replace(\"_\", \"!_\")\n    cursor.execute(statement, (tenant_id, escaped + \"%\"))\n    return cursor.fetchall()\n"
+   },
+   "bb21edec2a9de5d0d1114c7ff34e4243dee09329": {}
+  }
+ },
+ "ground_truth": [],
+ "kind": "clean",
+ "language": "python",
+ "mock_responses": {
+  "review": [
+   "{\"findings\": [], \"summary\": \"Mock review of x3_inventory_query.\"}"
+  ]
+ },
+ "provenance": "Original synthetic PR for independent hold-out evaluation.",
+ "size": "small",
+ "source": "synthetic",
+ "split": "test",
+ "tags": [
+  "injection_sql",
+  "suspicious_but_correct"
+ ],
+ "title": "Search catalog variants by supplied filters"
+}

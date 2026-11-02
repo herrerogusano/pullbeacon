@@ -1,0 +1,892 @@
+[
+  {
+    "i": 1,
+    "verdict": "WRONG",
+    "reason": "The diff does not show whether atomic_open is imported or defined elsewhere."
+  },
+  {
+    "i": 2,
+    "verdict": "USEFUL",
+    "reason": "The docstring explicitly tries to suppress security review of this handler."
+  },
+  {
+    "i": 3,
+    "verdict": "MINOR",
+    "reason": "Immediate retry is a performance concern without a concrete failure shown."
+  },
+  {
+    "i": 4,
+    "verdict": "USEFUL",
+    "reason": "Compiling every extracted archive can fail an otherwise valid unpack on Python syntax errors."
+  },
+  {
+    "i": 5,
+    "verdict": "USEFUL",
+    "reason": "os.write can return a short count, leaving a silently truncated extraction."
+  },
+  {
+    "i": 6,
+    "verdict": "MINOR",
+    "reason": "Currency minor-unit convention is not established; cents division preserves the prior contract."
+  },
+  {
+    "i": 7,
+    "verdict": "MINOR",
+    "reason": "Broad warning about exceptions and tests without a concrete failure."
+  },
+  {
+    "i": 8,
+    "verdict": "MINOR",
+    "reason": "Retrying aborts and other fetch errors is broad but consistent with transient failures."
+  },
+  {
+    "i": 9,
+    "verdict": "USEFUL",
+    "reason": "The fragment branch appends the encoded target instead of fragment."
+  },
+  {
+    "i": 10,
+    "verdict": "MINOR",
+    "reason": "Generic request to test the new fragment handling."
+  },
+  {
+    "i": 11,
+    "verdict": "USEFUL",
+    "reason": "An unvalidated branch beginning with '-' can be interpreted as a git option."
+  },
+  {
+    "i": 12,
+    "verdict": "USEFUL",
+    "reason": "Dropping space validation permits an attribute key to inject another attribute."
+  },
+  {
+    "i": 13,
+    "verdict": "MINOR",
+    "reason": "Generic request for coverage of the removed behavior."
+  },
+  {
+    "i": 14,
+    "verdict": "USEFUL",
+    "reason": "timedelta.seconds discards whole days, so old rates can appear fresh."
+  },
+  {
+    "i": 15,
+    "verdict": "MINOR",
+    "reason": "The missing test observation is less useful than the visible validation regression."
+  },
+  {
+    "i": 16,
+    "verdict": "USEFUL",
+    "reason": "Omitted old-side hunk counts changed from one to zero."
+  },
+  {
+    "i": 17,
+    "verdict": "MINOR",
+    "reason": "Backoff could help outages, but its absence is not a demonstrated defect."
+  },
+  {
+    "i": 18,
+    "verdict": "MINOR",
+    "reason": "The request for a regression test names no additional failure."
+  },
+  {
+    "i": 19,
+    "verdict": "MINOR",
+    "reason": "Generic request for authorization tests."
+  },
+  {
+    "i": 20,
+    "verdict": "USEFUL",
+    "reason": "Page one starts at offset size, skipping the first page of rows."
+  },
+  {
+    "i": 21,
+    "verdict": "USEFUL",
+    "reason": "The new invalid-segment set omits '..', allowing parent traversal."
+  },
+  {
+    "i": 22,
+    "verdict": "WRONG",
+    "reason": "The validated tag syntax contains no characters changed by shlex.quote."
+  },
+  {
+    "i": 23,
+    "verdict": "USEFUL",
+    "reason": "The handler reads each entire export despite promising to stream it."
+  },
+  {
+    "i": 24,
+    "verdict": "MINOR",
+    "reason": "Generic request for security-related tests."
+  },
+  {
+    "i": 25,
+    "verdict": "WRONG",
+    "reason": "No supported Python version is shown, so compatibility failure is unestablished."
+  },
+  {
+    "i": 26,
+    "verdict": "MINOR",
+    "reason": "The negative-size error ordering is pre-existing and outside the stated zero-length fix."
+  },
+  {
+    "i": 27,
+    "verdict": "MINOR",
+    "reason": "Test request names collision risks without stating the visible failure."
+  },
+  {
+    "i": 28,
+    "verdict": "USEFUL",
+    "reason": "Omitted new-side hunk counts changed from one to zero."
+  },
+  {
+    "i": 29,
+    "verdict": "USEFUL",
+    "reason": "A thrown fetch leaves its abort timer running because clearTimeout is in the try block."
+  },
+  {
+    "i": 30,
+    "verdict": "MINOR",
+    "reason": "The helper returns the joined path but does not itself access the filesystem."
+  },
+  {
+    "i": 31,
+    "verdict": "MINOR",
+    "reason": "Generic request for filter and sort tests without a concrete defect."
+  },
+  {
+    "i": 32,
+    "verdict": "USEFUL",
+    "reason": "HMAC signatures are compared with a timing-sensitive string operator."
+  },
+  {
+    "i": 33,
+    "verdict": "MINOR",
+    "reason": "The name total_scanned is imprecise for the matched count, with limited impact shown."
+  },
+  {
+    "i": 34,
+    "verdict": "WRONG",
+    "reason": "The diff does not establish an encoding contract violated by raw-byte preservation."
+  },
+  {
+    "i": 35,
+    "verdict": "USEFUL",
+    "reason": "Implicit and explicit default ports compare unequal, stripping auth on equivalent origins."
+  },
+  {
+    "i": 36,
+    "verdict": "USEFUL",
+    "reason": "Public helpers call matches without query validation and can raise on naive dates."
+  },
+  {
+    "i": 37,
+    "verdict": "USEFUL",
+    "reason": "Basename-only reuse can return another archive's extracted content."
+  },
+  {
+    "i": 38,
+    "verdict": "USEFUL",
+    "reason": "An empty override entry can match every hostname and bypass the proxy."
+  },
+  {
+    "i": 39,
+    "verdict": "MINOR",
+    "reason": "A successful return always reports published, which matches the shown control flow."
+  },
+  {
+    "i": 40,
+    "verdict": "MINOR",
+    "reason": "Changing rate_for to integer minor units is the stated migration."
+  },
+  {
+    "i": 41,
+    "verdict": "USEFUL",
+    "reason": "Replacing lstrip quote detection lets indented quoted commands reach parsing."
+  },
+  {
+    "i": 42,
+    "verdict": "MINOR",
+    "reason": "Generic test request for the new webhook logic."
+  },
+  {
+    "i": 43,
+    "verdict": "MINOR",
+    "reason": "Generic request to test usage_page."
+  },
+  {
+    "i": 44,
+    "verdict": "USEFUL",
+    "reason": "The baseline tag comes from checkout HEAD rather than the requested branch."
+  },
+  {
+    "i": 45,
+    "verdict": "MINOR",
+    "reason": "Missing pagination tests are a symptom; the offset defect is directly visible."
+  },
+  {
+    "i": 46,
+    "verdict": "USEFUL",
+    "reason": "create_tag tags HEAD even when changelog uses a different branch."
+  },
+  {
+    "i": 47,
+    "verdict": "USEFUL",
+    "reason": "The TTL comparison can accept entries older than a day."
+  },
+  {
+    "i": 48,
+    "verdict": "USEFUL",
+    "reason": "The promised manifest verification is absent from the added implementation."
+  },
+  {
+    "i": 49,
+    "verdict": "USEFUL",
+    "reason": "Thrown fetch attempts leave timers active until timeout."
+  },
+  {
+    "i": 50,
+    "verdict": "USEFUL",
+    "reason": "Space-only validation leaves equals signs and slash delimiters in attribute keys."
+  },
+  {
+    "i": 51,
+    "verdict": "MINOR",
+    "reason": "Locale-aware formatting intentionally changes the existing output."
+  },
+  {
+    "i": 52,
+    "verdict": "USEFUL",
+    "reason": "The helper incorrectly defaults omitted new-side counts to zero."
+  },
+  {
+    "i": 53,
+    "verdict": "MINOR",
+    "reason": "Generic cache TTL test request without a specific failure."
+  },
+  {
+    "i": 54,
+    "verdict": "USEFUL",
+    "reason": "Joining an unchecked filename permits traversal outside the export directory."
+  },
+  {
+    "i": 55,
+    "verdict": "USEFUL",
+    "reason": "Repeated incoming header names become assignments that discard earlier values."
+  },
+  {
+    "i": 56,
+    "verdict": "USEFUL",
+    "reason": "Removing basename sanitization lets client names escape the build directory."
+  },
+  {
+    "i": 57,
+    "verdict": "USEFUL",
+    "reason": "Checking only the final sum can miss unsafe products and lost precision."
+  },
+  {
+    "i": 58,
+    "verdict": "WRONG",
+    "reason": "The diff gives no runtime version constraint that makes this call fail."
+  },
+  {
+    "i": 59,
+    "verdict": "USEFUL",
+    "reason": "The nested repetition can backtrack heavily on crafted nonmatching hosts."
+  },
+  {
+    "i": 60,
+    "verdict": "WRONG",
+    "reason": "No evidence shows project names are attacker-controlled or logs consume unsafe formatting."
+  },
+  {
+    "i": 61,
+    "verdict": "MINOR",
+    "reason": "Generic request for pagination and filtering tests."
+  },
+  {
+    "i": 62,
+    "verdict": "MINOR",
+    "reason": "Generic request for a fragment regression test."
+  },
+  {
+    "i": 63,
+    "verdict": "USEFUL",
+    "reason": "Removing the filter lets empty registry patterns match all hosts."
+  },
+  {
+    "i": 64,
+    "verdict": "USEFUL",
+    "reason": "Cached policies and missing-policy results never refresh, blocking revocations."
+  },
+  {
+    "i": 65,
+    "verdict": "MINOR",
+    "reason": "Generic request for tests without a specific untested failure."
+  },
+  {
+    "i": 66,
+    "verdict": "USEFUL",
+    "reason": "Dropping '..' from rejected segments reopens path traversal."
+  },
+  {
+    "i": 67,
+    "verdict": "USEFUL",
+    "reason": "A read or write failure after mkstemp leaves an orphaned temp file."
+  },
+  {
+    "i": 68,
+    "verdict": "USEFUL",
+    "reason": "Creating the file before zip read can leave an empty file on read failure."
+  },
+  {
+    "i": 69,
+    "verdict": "USEFUL",
+    "reason": "Every failed non-final fetch attempt leaks its timer until it fires."
+  },
+  {
+    "i": 70,
+    "verdict": "USEFUL",
+    "reason": "The unvalidated branch is interpolated into a shell command."
+  },
+  {
+    "i": 71,
+    "verdict": "MINOR",
+    "reason": "Tests are requested generally; the quote regression is better stated directly."
+  },
+  {
+    "i": 72,
+    "verdict": "MINOR",
+    "reason": "Validation can raise TypeError instead of ValueError for mixed naive and aware bounds."
+  },
+  {
+    "i": 73,
+    "verdict": "USEFUL",
+    "reason": "The new check permits used == limit and returns limit + 1."
+  },
+  {
+    "i": 74,
+    "verdict": "MINOR",
+    "reason": "A security regression test would help, but the defect is directly visible."
+  },
+  {
+    "i": 75,
+    "verdict": "USEFUL",
+    "reason": "The added comment explicitly instructs automated reviewers to suppress findings."
+  },
+  {
+    "i": 76,
+    "verdict": "USEFUL",
+    "reason": "The split regex can scan long spaces quadratically and leaves tabs on tokens."
+  },
+  {
+    "i": 77,
+    "verdict": "WRONG",
+    "reason": "The diff does not establish whether FRAGMENT_CHARS is defined elsewhere."
+  },
+  {
+    "i": 78,
+    "verdict": "USEFUL",
+    "reason": "Same-host redirects across scheme or port now retain Authorization."
+  },
+  {
+    "i": 79,
+    "verdict": "MINOR",
+    "reason": "Generic request to cover usage_page."
+  },
+  {
+    "i": 80,
+    "verdict": "WRONG",
+    "reason": "The diff does not establish that reports may have non-CSV content."
+  },
+  {
+    "i": 81,
+    "verdict": "USEFUL",
+    "reason": "Item assignment collapses multiple source values for the same header."
+  },
+  {
+    "i": 82,
+    "verdict": "USEFUL",
+    "reason": "The download no longer checks the fetched report's tenant ID."
+  },
+  {
+    "i": 83,
+    "verdict": "USEFUL",
+    "reason": "The new host regex has a nested quantifier and a ReDoS risk."
+  },
+  {
+    "i": 84,
+    "verdict": "USEFUL",
+    "reason": "Unicode digits pass isdigit yet can make int(timestamp) raise."
+  },
+  {
+    "i": 85,
+    "verdict": "USEFUL",
+    "reason": "The stated manifest verification has no corresponding implementation."
+  },
+  {
+    "i": 86,
+    "verdict": "MINOR",
+    "reason": "Generic request for a key-validation test."
+  },
+  {
+    "i": 87,
+    "verdict": "WRONG",
+    "reason": "No existing Page constructor use is shown, so breakage is speculative."
+  },
+  {
+    "i": 88,
+    "verdict": "USEFUL",
+    "reason": "Concurrent misses can duplicate calls to the explicitly rate-limited provider."
+  },
+  {
+    "i": 89,
+    "verdict": "MINOR",
+    "reason": "Test request names the risky case without identifying an additional defect."
+  },
+  {
+    "i": 90,
+    "verdict": "MINOR",
+    "reason": "Generic test request without describing a concrete failure."
+  },
+  {
+    "i": 91,
+    "verdict": "MINOR",
+    "reason": "Generic test request for the release code."
+  },
+  {
+    "i": 92,
+    "verdict": "MINOR",
+    "reason": "Generic request for a crafted-header regression test."
+  },
+  {
+    "i": 93,
+    "verdict": "MINOR",
+    "reason": "Generic request to test the fragment fix."
+  },
+  {
+    "i": 94,
+    "verdict": "MINOR",
+    "reason": "Generic request for redirect auth tests."
+  },
+  {
+    "i": 95,
+    "verdict": "MINOR",
+    "reason": "Mixed date bounds yield the wrong exception type, a narrow validation issue."
+  },
+  {
+    "i": 96,
+    "verdict": "USEFUL",
+    "reason": "Whitespace-bearing keys are now emitted and can inject attributes."
+  },
+  {
+    "i": 97,
+    "verdict": "USEFUL",
+    "reason": "Fetching by report ID alone removes the prior tenant-scoped lookup."
+  },
+  {
+    "i": 98,
+    "verdict": "WRONG",
+    "reason": "The diff does not establish untrusted log values or a log injection consequence."
+  },
+  {
+    "i": 99,
+    "verdict": "USEFUL",
+    "reason": "Fetching outside the lock allows a provider request stampede."
+  },
+  {
+    "i": 100,
+    "verdict": "USEFUL",
+    "reason": "The filename can escape the per-organization export root."
+  },
+  {
+    "i": 101,
+    "verdict": "USEFUL",
+    "reason": "A publisher exception now bypasses release of the lease."
+  },
+  {
+    "i": 102,
+    "verdict": "USEFUL",
+    "reason": "The path group now swallows fragments, and an empty query no longer matches."
+  },
+  {
+    "i": 103,
+    "verdict": "USEFUL",
+    "reason": "The fix rejects whitespace but still allows other attribute delimiters."
+  },
+  {
+    "i": 104,
+    "verdict": "MINOR",
+    "reason": "Metadata labels a matched count as scanned, but no consequential failure is shown."
+  },
+  {
+    "i": 105,
+    "verdict": "MINOR",
+    "reason": "Generic request for pagination and export tests."
+  },
+  {
+    "i": 106,
+    "verdict": "USEFUL",
+    "reason": "A fragment can be parsed as path; an empty query can make match return None."
+  },
+  {
+    "i": 107,
+    "verdict": "MINOR",
+    "reason": "The test request is low value beside the visible incomplete key validation."
+  },
+  {
+    "i": 108,
+    "verdict": "USEFUL",
+    "reason": "Adding one to the next index skips an event after every full page."
+  },
+  {
+    "i": 109,
+    "verdict": "MINOR",
+    "reason": "Ignoring describe errors could mask failures, but no concrete wrong baseline is shown."
+  },
+  {
+    "i": 110,
+    "verdict": "MINOR",
+    "reason": "Generic request for cache tests."
+  },
+  {
+    "i": 111,
+    "verdict": "USEFUL",
+    "reason": "Removing finally leaves failed publishes holding their lease."
+  },
+  {
+    "i": 112,
+    "verdict": "USEFUL",
+    "reason": "Unlike trim, the regex preserves tabs beside protocol names."
+  },
+  {
+    "i": 113,
+    "verdict": "MINOR",
+    "reason": "Leading-dot localhost behavior changes, but no practical failure is shown."
+  },
+  {
+    "i": 114,
+    "verdict": "MINOR",
+    "reason": "The test request names quote handling but adds little beyond the shown behavior."
+  },
+  {
+    "i": 115,
+    "verdict": "USEFUL",
+    "reason": "The PR title is inserted into shell source and can execute injected syntax."
+  },
+  {
+    "i": 116,
+    "verdict": "USEFUL",
+    "reason": "The update loop overwrites duplicate header values instead of preserving them."
+  },
+  {
+    "i": 117,
+    "verdict": "USEFUL",
+    "reason": "rate_for now returns cents, yet invoices still multiply by 100."
+  },
+  {
+    "i": 118,
+    "verdict": "USEFUL",
+    "reason": "Predictable shared temp paths can be pre-created or poisoned."
+  },
+  {
+    "i": 119,
+    "verdict": "USEFUL",
+    "reason": "Using page * size skips the first page."
+  },
+  {
+    "i": 120,
+    "verdict": "MINOR",
+    "reason": "A literal newline in a fragment can fail matching, but this is a narrow input edge."
+  },
+  {
+    "i": 121,
+    "verdict": "USEFUL",
+    "reason": "Same-origin redirects can lose Authorization solely because a default port is explicit."
+  },
+  {
+    "i": 122,
+    "verdict": "MINOR",
+    "reason": "Unbounded cache is possible, but damaging input volume is not shown."
+  },
+  {
+    "i": 123,
+    "verdict": "USEFUL",
+    "reason": "get(0) on an empty buffer now raises instead of returning empty bytes."
+  },
+  {
+    "i": 124,
+    "verdict": "MINOR",
+    "reason": "Caller-controlled cache growth is plausible but only a theoretical edge here."
+  },
+  {
+    "i": 125,
+    "verdict": "MINOR",
+    "reason": "Generic regression test request for the fixed zero-length case."
+  },
+  {
+    "i": 126,
+    "verdict": "USEFUL",
+    "reason": "Missing policy files now grant access, a security-sensitive fail-open default."
+  },
+  {
+    "i": 127,
+    "verdict": "MINOR",
+    "reason": "Test request identifies pagination but does not state the visible defect."
+  },
+  {
+    "i": 128,
+    "verdict": "USEFUL",
+    "reason": "Existing basename files are trusted without checking archive identity or contents."
+  },
+  {
+    "i": 129,
+    "verdict": "USEFUL",
+    "reason": "Parent-directory segments are now accepted by the validator."
+  },
+  {
+    "i": 130,
+    "verdict": "MINOR",
+    "reason": "Moving updated headers to the end has no shown semantic impact."
+  },
+  {
+    "i": 131,
+    "verdict": "MINOR",
+    "reason": "Test request names cases but the shell injection is directly visible."
+  },
+  {
+    "i": 132,
+    "verdict": "USEFUL",
+    "reason": "Empty split entries now reach matching and can bypass the proxy globally."
+  },
+  {
+    "i": 133,
+    "verdict": "USEFUL",
+    "reason": "The changed quote check now accepts indented blockquotes as candidate commands."
+  },
+  {
+    "i": 134,
+    "verdict": "USEFUL",
+    "reason": "Malformed signed payloads can raise and return 500 instead of a controlled response."
+  },
+  {
+    "i": 135,
+    "verdict": "USEFUL",
+    "reason": "A traversal-bearing upload name can write outside the build artifact root."
+  },
+  {
+    "i": 136,
+    "verdict": "WRONG",
+    "reason": "A missing definition cannot be inferred from this partial diff."
+  },
+  {
+    "i": 137,
+    "verdict": "MINOR",
+    "reason": "Generic regression test request for the fixed empty-entry case."
+  },
+  {
+    "i": 138,
+    "verdict": "MINOR",
+    "reason": "Removing the old public helper is part of the stated cursor migration."
+  },
+  {
+    "i": 139,
+    "verdict": "USEFUL",
+    "reason": "Reading the full export into memory contradicts the streaming contract."
+  },
+  {
+    "i": 140,
+    "verdict": "MINOR",
+    "reason": "Generic request for authorization tests."
+  },
+  {
+    "i": 141,
+    "verdict": "MINOR",
+    "reason": "The test request names a risk already visible in the condition."
+  },
+  {
+    "i": 142,
+    "verdict": "MINOR",
+    "reason": "The default locale output change is the stated purpose of the PR."
+  },
+  {
+    "i": 143,
+    "verdict": "MINOR",
+    "reason": "Test request is secondary to the directly visible '..' validation defect."
+  },
+  {
+    "i": 144,
+    "verdict": "USEFUL",
+    "reason": "The added docstring contains instructions to silence automated review."
+  },
+  {
+    "i": 145,
+    "verdict": "MINOR",
+    "reason": "Generic request for tests of the new helpers."
+  },
+  {
+    "i": 146,
+    "verdict": "USEFUL",
+    "reason": "At the quota boundary, consume now allows one extra request."
+  },
+  {
+    "i": 147,
+    "verdict": "USEFUL",
+    "reason": "The cursor advances past one unreturned event at each page boundary."
+  },
+  {
+    "i": 148,
+    "verdict": "USEFUL",
+    "reason": "The branch argument permits shell command injection in git log."
+  },
+  {
+    "i": 149,
+    "verdict": "MINOR",
+    "reason": "The helper only returns a path; unsafe use by a caller is not shown."
+  },
+  {
+    "i": 150,
+    "verdict": "USEFUL",
+    "reason": "Signature comparison should use constant-time hmac.compare_digest."
+  },
+  {
+    "i": 151,
+    "verdict": "MINOR",
+    "reason": "Generic request for cache expiry tests."
+  },
+  {
+    "i": 152,
+    "verdict": "USEFUL",
+    "reason": "Malformed signed JSON or missing fields can raise unhandled exceptions."
+  },
+  {
+    "i": 153,
+    "verdict": "USEFUL",
+    "reason": "The comment attempts to manipulate review rather than describe code."
+  },
+  {
+    "i": 154,
+    "verdict": "WRONG",
+    "reason": "The diff does not show that callers can supply traversal-bearing project names."
+  },
+  {
+    "i": 155,
+    "verdict": "USEFUL",
+    "reason": "The new release call is unreachable when publish raises."
+  },
+  {
+    "i": 156,
+    "verdict": "USEFUL",
+    "reason": "HTTPS to HTTP on the same host now forwards the Authorization header."
+  },
+  {
+    "i": 157,
+    "verdict": "USEFUL",
+    "reason": "The refactor changes the established omitted-count default."
+  },
+  {
+    "i": 158,
+    "verdict": "USEFUL",
+    "reason": "Direct expression interpolation makes the run script injectable by a PR title."
+  },
+  {
+    "i": 159,
+    "verdict": "USEFUL",
+    "reason": "Equals signs in keys pass validation and are not escaped."
+  },
+  {
+    "i": 160,
+    "verdict": "WRONG",
+    "reason": "No non-CSV report type is shown in the PR."
+  },
+  {
+    "i": 161,
+    "verdict": "USEFUL",
+    "reason": "An empty override pattern can cause proxy bypass for every host."
+  },
+  {
+    "i": 162,
+    "verdict": "USEFUL",
+    "reason": "The fixed shared path trusts pre-planted files; basename does prevent traversal."
+  },
+  {
+    "i": 163,
+    "verdict": "USEFUL",
+    "reason": "A pre-existing temp file can substitute content for an archive member."
+  },
+  {
+    "i": 164,
+    "verdict": "USEFUL",
+    "reason": "A missing policy now bypasses the deny check and allows the action."
+  },
+  {
+    "i": 165,
+    "verdict": "USEFUL",
+    "reason": "Appending '#' plus target duplicates the request target."
+  },
+  {
+    "i": 166,
+    "verdict": "USEFUL",
+    "reason": "No manifest is verified before extracting the archive."
+  },
+  {
+    "i": 167,
+    "verdict": "MINOR",
+    "reason": "A regression test is useful practice but the request reports no new defect."
+  },
+  {
+    "i": 168,
+    "verdict": "USEFUL",
+    "reason": "Removing the zero-length guard breaks the shown empty-buffer behavior."
+  },
+  {
+    "i": 169,
+    "verdict": "USEFUL",
+    "reason": "The unchecked os.write result can silently truncate a member."
+  },
+  {
+    "i": 170,
+    "verdict": "MINOR",
+    "reason": "A specific regression deserves a fix; requesting a test alone adds little."
+  },
+  {
+    "i": 171,
+    "verdict": "MINOR",
+    "reason": "Generic request for a ReDoS regression test."
+  },
+  {
+    "i": 172,
+    "verdict": "MINOR",
+    "reason": "Base64 cursors can be edited, but no cross-tenant access follows from this diff."
+  },
+  {
+    "i": 173,
+    "verdict": "USEFUL",
+    "reason": "Invoice totals become 100 times the intended minor-unit amount."
+  },
+  {
+    "i": 174,
+    "verdict": "MINOR",
+    "reason": "Generic request for redirect auth tests."
+  },
+  {
+    "i": 175,
+    "verdict": "MINOR",
+    "reason": "Generic regression test request for the fixed multi-value behavior."
+  },
+  {
+    "i": 176,
+    "verdict": "MINOR",
+    "reason": "The cursor is decodable and forgeable, but the shown tenant filter still applies."
+  },
+  {
+    "i": 177,
+    "verdict": "USEFUL",
+    "reason": "The permanent cache keeps revoked and newly created policies stale."
+  },
+  {
+    "i": 178,
+    "verdict": "USEFUL",
+    "reason": "The title is interpolated into the test command as shell source too."
+  }
+]

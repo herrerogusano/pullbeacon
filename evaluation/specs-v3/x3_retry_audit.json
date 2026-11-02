@@ -1,0 +1,32 @@
+{
+  "case_id": "x3_retry_audit",
+  "title": "Preserve audit context on retry failures",
+  "pr_body": "",
+  "language": "python",
+  "kind": "clean",
+  "criticality": "none",
+  "split": "test",
+  "author": "codex",
+  "source": "synthetic",
+  "provenance": "Original synthetic PR for independent hold-out evaluation.",
+  "tags": [
+    "suspicious_but_correct",
+    "error_handling"
+  ],
+  "files": [
+    {
+      "path": "app/audit/retry.py",
+      "before": null,
+      "after": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef run_with_audit(operation, audit):\n    try:\n        result = operation()\n    except Exception:\n        logger.exception(\"operation failed before audit completion\")\n        try:\n            audit.record_failure()\n        except Exception:\n            logger.exception(\"failure audit could not be recorded\")\n        raise\n    audit.record_success()\n    return result\n"
+    }
+  ],
+  "bugs": [],
+  "traps": [
+    {
+      "path": "app/audit/retry.py",
+      "anchor": "logger.exception(\"operation failed before audit completion\")",
+      "rationale": "The broad catch records failure and immediately re-raises the original exception; it neither hides the failure nor returns success."
+    }
+  ],
+  "acceptable": []
+}
