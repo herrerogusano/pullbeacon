@@ -321,6 +321,90 @@ def test_file_list_counts_against_the_context_budget() -> None:
         assert len(diff) + len(listed) <= 4000
 
 
+def test_large_new_file_is_split_and_every_line_is_sent() -> None:
+    report, requests = _multi_file_run([_file("big.py", 200)], "{max_context_chars: 3000}")
+    assert len(requests) > 1
+    assert not report.truncated
+    assert report.reviewed_files == ("big.py",)
+    assert report.skipped_files == ()
+    sent = "\n".join(request.user for request in requests)
+    for number in range(1, 201):
+        assert f"| R{number} + line {number} of big.py" in sent
+    assert f"FILE big.py [added] (part 1 of {len(requests)})" in requests[0].user
+    assert f"big.py (part 2 of {len(requests)} shown to you)" in _listed(requests[1])
+
+
+def test_each_part_fits_the_budget_and_parts_overlap() -> None:
+    _, requests = _multi_file_run([_file("big.py", 200)], "{max_context_chars: 3000}")
+    first, second = (r.user[r.user.index("<<<UNTRUSTED DATA DIFF") :] for r in requests[:2])
+    assert all(len(r.user[r.user.index("<<<UNTRUSTED DATA DIFF") :]) <= 3100 for r in requests)
+    shared = set(first.splitlines()) & set(second.splitlines())
+    assert 1 <= len([line for line in shared if line.startswith("| R")]) <= 10
+
+
+def test_finding_in_a_later_part_is_validated_against_the_whole_file() -> None:
+    data = fixture("pr_clean.json")
+    data["files"] = [_file("big.py", 200)]
+    _, snapshot = snapshot_from_fixture(data)
+    config = parse_config("version: 1\nlimits: {max_context_chars: 3000}\n")
+    clean = json.dumps({"summary": "part", "findings": []})
+    finding = {
+        "severity": "high",
+        "category": "correctness",
+        "title": "Bug near the end",
+        "explanation": "Wrong.",
+        "impact": "i",
+        "evidence": "line 190 of big.py",
+        "path": "big.py",
+        "line": 190,
+        "side": "RIGHT",
+        "suggested_fix": None,
+        "confidence": 0.9,
+        "can_apply": False,
+    }
+    # The same finding from two parts that share the line is reported once.
+    with_finding = json.dumps({"summary": "part", "findings": [finding]})
+    scope = select_scope(snapshot, config)
+    calls = len(plan_batches(scope.diffs, max_chars=3000, max_batches=4)[0])
+    answers = [clean] * (calls - 2) + [with_finding, with_finding]
+    llm = FakeLLMClient(responses={"review": answers})
+    report = ReviewEngine(llm, config).review(snapshot, scope, mode="local")
+    (found,) = report.findings
+    assert found.line == 190
+    assert found.inline
+
+
+def test_parts_beyond_the_batch_limit_mark_the_review_partial() -> None:
+    report, requests = _multi_file_run(
+        [_file("big.py", 400)], "{max_context_chars: 3000, max_batches: 2}"
+    )
+    assert len(requests) == 2
+    assert report.truncated
+    assert report.reviewed_files == ("big.py",)
+    assert [s.path for s in report.skipped_files] == ["big.py"]
+    assert "shown to you; some parts not reviewed" in _listed(requests[0])
+
+
+def test_a_single_line_too_long_for_any_batch_is_skipped_not_sent() -> None:
+    long_line = "x" * 5000
+    file = _file("min.js", 1)
+    file["patch"] = f"@@ -0,0 +1,2 @@\n+short line\n+{long_line}"
+    report, requests = _multi_file_run([file], "{max_context_chars: 3000}")
+    assert report.truncated
+    assert all(long_line not in request.user for request in requests)
+    assert "short line" in requests[0].user
+
+
+def test_other_files_of_a_split_file_batch_see_it_as_elsewhere() -> None:
+    files = [_file("a_small.py", 3), _file("big.py", 200), _file("z_small.py", 3)]
+    _, requests = _multi_file_run(files, "{max_context_chars: 3000, max_batches: 10}")
+    only_first = requests[0]
+    assert "a_small.py (shown to you)" in _listed(only_first)
+    last = requests[-1]
+    assert "z_small.py (shown to you)" in _listed(last)
+    assert "a_small.py (in another part of this review)" in _listed(last)
+
+
 def test_llm_errors_propagate() -> None:
     llm = FakeLLMClient(errors=[LLMError("provider unavailable")])
     with pytest.raises(LLMError, match="unavailable"):
@@ -334,6 +418,7 @@ def test_batches_are_bounded_and_deterministic() -> None:
     batches, skipped = plan_batches(scope.diffs, max_chars=400, max_batches=2)
     assert len(batches) <= 2
     flat = [d.path for b in batches for d in b] + [s.path for s in skipped]
-    assert sorted(flat) == sorted(scope.reviewed_paths)
+    # A split file can be in several batches, or in a batch and in the skipped list.
+    assert set(flat) == set(scope.reviewed_paths)
     again, _ = plan_batches(scope.diffs, max_chars=400, max_batches=2)
     assert [[d.path for d in b] for b in batches] == [[d.path for d in b] for b in again]

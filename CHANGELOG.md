@@ -4,6 +4,12 @@
 
 ### Changed
 
+- **A file too large for one batch is split, not skipped.** It was left out entirely, which meant
+  the largest change of a pull request could get no review at all (real case: a 1,753-line new file
+  on LegalDesk). It is now split by line into parts that share 10 lines, each reviewed in a batch
+  with its real line numbers. Parts that do not fit in `limits.max_batches` are reported: the file
+  appears as reviewed and as skipped, and the review is marked partial. This can make such pull
+  requests cost more, up to `limits.max_batches` and `limits.max_estimated_cost_usd`.
 - **Each batch knows the rest of the pull request.** A large pull request is reviewed in batches,
   and a batch saw only its own diff, so it reported code and tests from other batches as missing
   (real cases: the only HIGH in 51 findings on LegalDesk was one of these, in a partial review).
