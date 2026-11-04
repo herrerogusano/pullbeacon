@@ -4,6 +4,13 @@
 
 ### Changed
 
+- **Each batch knows the rest of the pull request.** A large pull request is reviewed in batches,
+  and a batch saw only its own diff, so it reported code and tests from other batches as missing
+  (real cases: the only HIGH in 51 findings on LegalDesk was one of these, in a partial review).
+  When a batch does not see the whole pull request, the request now lists its files and says which
+  are shown, in another part or not reviewed, and why. The list counts against
+  `limits.max_context_chars`. Review prompt version `review-v3`: never report a listed file as
+  missing, no claims about the pull request as a whole, and no remarks on Markdown table layout.
 - **A finding id now means one finding for the whole pull request.** It used to restart at
   `PB-001` on every review, so `PB-001` in a commit message or a reply could mean different things
   (real case: two different `PB-001` on one pull request). A finding seen before keeps its id, and a

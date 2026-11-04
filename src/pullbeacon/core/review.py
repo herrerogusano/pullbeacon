@@ -32,6 +32,8 @@ from pullbeacon.prompts import REVIEW_PROMPT_VERSION, REVIEW_SCHEMA, REVIEW_SYST
 
 MAX_PR_TEXT_CHARS = 2000
 MAX_SUMMARY_CHARS = 1500
+MAX_FILE_LIST_ENTRIES = 300
+FILE_LIST_ENTRY_OVERHEAD = 60  # state text and separators, for the size reserved before batching
 
 log = get_logger("review")
 
@@ -90,12 +92,49 @@ def plan_batches(
     return [b.diffs for b in batches], skipped
 
 
+def file_list_text(
+    batch: Sequence[FileDiff], scope: ReviewScope, skipped: Sequence[SkippedFile]
+) -> str | None:
+    """What this batch must know about the rest of the pull request, or ``None`` if nothing.
+
+    Without it a batch cannot tell "not in this pull request" from "not in my part of it", and
+    reports code and tests from other batches as missing.
+    """
+    here = {d.path for d in batch}
+    not_reviewed = {s.path: s.reason for s in (*scope.skipped, *skipped)}
+    elsewhere = {d.path for d in scope.diffs} - here - set(not_reviewed)
+    if not elsewhere and not not_reviewed:
+        return None
+    entries = [(path, "shown to you") for path in sorted(here)]
+    entries += [(path, "in another part of this review") for path in sorted(elsewhere)]
+    entries += [
+        (path, f"not reviewed: {reason.replace('_', ' ')}")
+        for path, reason in sorted(not_reviewed.items())
+    ]
+    lines = [
+        f"{' '.join(path.splitlines())} ({state})"
+        for path, state in entries[:MAX_FILE_LIST_ENTRIES]
+    ]
+    if len(entries) > MAX_FILE_LIST_ENTRIES:
+        lines.append(f"... and {len(entries) - MAX_FILE_LIST_ENTRIES} more files")
+    return "\n".join(lines)
+
+
+def _file_list_reserve(scope: ReviewScope) -> int:
+    """Upper bound of the file list size, taken from the budget before batches are planned."""
+    paths = [d.path for d in scope.diffs] + [s.path for s in scope.skipped]
+    if len(paths) < 2:
+        return 0
+    return sum(len(path) + FILE_LIST_ENTRY_OVERHEAD for path in paths[:MAX_FILE_LIST_ENTRIES])
+
+
 def build_review_request(
     snapshot: PullRequestSnapshot,
     diffs: Sequence[FileDiff],
     context_files: Sequence[ContextFile],
     *,
     max_output_tokens: int,
+    file_list: str | None = None,
 ) -> LLMRequest:
     pr_text = f"Title: {snapshot.title[:200]}\n\n{snapshot.body[:MAX_PR_TEXT_CHARS]}"
     parts = [
@@ -106,6 +145,9 @@ def build_review_request(
     for ctx in context_files:
         parts.append(f"Reference file from the base branch: {ctx.path}")
         parts.append(untrusted_block("CONTEXT_FILE", ctx.text))
+    if file_list is not None:
+        parts.append("Files changed by this pull request (untrusted names):")
+        parts.append(untrusted_block("FILE_LIST", file_list))
     parts.append("Diff to review:")
     parts.append(untrusted_block("DIFF", render_for_llm(diffs)))
     parts.append(
@@ -207,7 +249,9 @@ class ReviewEngine:
         context_chars = sum(len(c.text) for c in context_files)
         batches, skipped = plan_batches(
             scope.diffs,
-            max_chars=max(limits.max_context_chars - context_chars, 1000),
+            max_chars=max(
+                limits.max_context_chars - context_chars - _file_list_reserve(scope), 1000
+            ),
             max_batches=limits.max_batches,
         )
         skipped_all = list(scope.skipped) + skipped
@@ -221,7 +265,11 @@ class ReviewEngine:
 
         for index, batch in enumerate(batches):
             request = build_review_request(
-                snapshot, batch, context_files, max_output_tokens=limits.max_output_tokens
+                snapshot,
+                batch,
+                context_files,
+                max_output_tokens=limits.max_output_tokens,
+                file_list=file_list_text(batch, scope, skipped),
             )
             try:
                 data, call_usage = call_json(self.llm, request, guard)
