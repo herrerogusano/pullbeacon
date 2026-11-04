@@ -23,6 +23,8 @@ branch.
 | `@pullbeacon apply PB-001` | Commits the fix for one finding |
 | `@pullbeacon` | Help |
 
+A finding keeps its id across the reviews of a pull request, and ids are not reused.
+
 Commands must start a line. Quoted text, code blocks and HTML comments are ignored.
 `@pullbeacon` is plain text read by the workflow — **it is not a GitHub user** and GitHub will not
 autocomplete it.

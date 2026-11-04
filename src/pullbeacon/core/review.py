@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
 from pydantic import ValidationError
@@ -201,6 +201,7 @@ class ReviewEngine:
         mode: ReviewMode,
         context_files: Sequence[ContextFile] = (),
         context_warnings: Sequence[str] = (),
+        known_ids: Mapping[str, str] | None = None,
     ) -> ReviewReport:
         limits = self.config.limits
         context_chars = sum(len(c.text) for c in context_files)
@@ -254,7 +255,7 @@ class ReviewEngine:
             total_files=scope.total_files,
         )
         outcome = validate_findings(
-            raw_findings, reviewed_scope, max_inline=limits.max_inline_comments
+            raw_findings, reviewed_scope, max_inline=limits.max_inline_comments, known_ids=known_ids
         )
         if outcome.dropped:
             warnings.append(

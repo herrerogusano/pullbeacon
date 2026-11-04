@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **A finding id now means one finding for the whole pull request.** It used to restart at
+  `PB-001` on every review, so `PB-001` in a commit message or a reply could mean different things
+  (real case: two different `PB-001` on one pull request). A finding seen before keeps its id, and a
+  new one continues after the highest id in use. Identity is the existing fingerprint (path, side,
+  commented line, category), so a finding whose line changes counts as new.
+
 ## 0.2.1 (2026-11-04)
 
 ### Fixed

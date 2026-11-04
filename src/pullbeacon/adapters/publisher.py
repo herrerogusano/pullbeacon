@@ -76,6 +76,22 @@ def latest_review_for_head(reviews: list[TrustedReview], head_sha: str) -> Trust
     return current[-1] if current else None
 
 
+def known_finding_ids(reviews: list[TrustedReview]) -> dict[str, str]:
+    """Fingerprint -> id across a pull request's reviews, oldest first.
+
+    Reviews from before stable ids restarted at PB-001, so one id can appear on several
+    fingerprints. The first finding keeps it; the others get a new id if they come back.
+    """
+    by_fingerprint: dict[str, str] = {}
+    taken: set[str] = set()
+    for review in reviews:
+        for finding in review.marker.findings:
+            if finding.fp not in by_fingerprint and finding.id not in taken:
+                by_fingerprint[finding.fp] = finding.id
+                taken.add(finding.id)
+    return by_fingerprint
+
+
 def automatic_review_exists(
     reviews: list[TrustedReview], head_sha: str, config_hash: str, prompt_version: str
 ) -> bool:

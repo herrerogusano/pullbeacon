@@ -9,7 +9,7 @@ non-inline with a recorded reason; nothing is ever attributed to a guessed line.
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -93,7 +93,16 @@ def validate_findings(
     scope: ReviewScope,
     *,
     max_inline: int,
+    known_ids: Mapping[str, str] | None = None,
 ) -> ValidationOutcome:
+    """Validate raw findings and number them.
+
+    ``known_ids`` maps fingerprints to the ids earlier reviews of the same pull request gave them.
+    Those findings keep their id, and new ones continue after the highest id in use, so an id
+    means one finding for the whole pull request.
+    """
+    known = dict(known_ids or {})
+    next_number = 1 + max((int(fid.removeprefix("PB-")) for fid in known.values()), default=0)
     dropped: list[str] = []
     candidates: dict[str, Finding] = {}
 
@@ -189,8 +198,12 @@ def validate_findings(
     )[:MAX_FINDINGS]
     numbered: list[Finding] = []
     inline_count = 0
-    for number, finding in enumerate(ordered, start=1):
-        update: dict[str, Any] = {"id": f"PB-{number:03d}"}
+    for finding in ordered:
+        finding_id = known.get(finding.fingerprint)
+        if finding_id is None:
+            finding_id = f"PB-{next_number:03d}"
+            next_number += 1
+        update: dict[str, Any] = {"id": finding_id}
         if finding.inline:
             if inline_count >= max_inline:
                 update.update(inline=False, can_apply=False)
