@@ -8,6 +8,7 @@ A patch offset is *not* a line number; everything here is computed from hunk hea
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import re
 from collections.abc import Iterable, Iterator
@@ -54,6 +55,7 @@ class FileDiff:
     hunks: tuple[Hunk, ...]
     crlf: bool = False
     part: tuple[int, int] | None = None  # (n, total) when this is a slice of a larger file diff
+    rebuilt: bool = False  # not GitHub's patch: its lines cannot take inline comments
     _right: dict[int, DiffLine] = field(default_factory=dict, repr=False, compare=False)
     _left: dict[int, DiffLine] = field(default_factory=dict, repr=False, compare=False)
 
@@ -156,10 +158,23 @@ def parse_patch(patch: str) -> tuple[tuple[Hunk, ...], bool]:
 
 
 def build_file_diff(
-    path: str, status: str, patch: str, previous_path: str | None = None
+    path: str, status: str, patch: str, previous_path: str | None = None, *, rebuilt: bool = False
 ) -> FileDiff:
     hunks, crlf = parse_patch(patch)
-    return FileDiff(path=path, status=status, previous_path=previous_path, hunks=hunks, crlf=crlf)
+    return FileDiff(
+        path=path,
+        status=status,
+        previous_path=previous_path,
+        hunks=hunks,
+        crlf=crlf,
+        rebuilt=rebuilt,
+    )
+
+
+def diff_from_contents(old: str, new: str) -> str:
+    """A patch in GitHub's format (hunks only, no file header) between two versions of a file."""
+    lines = difflib.unified_diff(old.splitlines(), new.splitlines(), lineterm="", n=3)
+    return "\n".join(list(lines)[2:])
 
 
 def _render_line(line: DiffLine) -> str:
@@ -238,6 +253,7 @@ def split_file_diff(diff: FileDiff, *, max_chars: int, overlap_lines: int) -> li
             hunks=_slice_hunks(diff, chunk),
             crlf=diff.crlf,
             part=(number, len(chunks)),
+            rebuilt=diff.rebuilt,
         )
         for number, chunk in enumerate(chunks, start=1)
     ]

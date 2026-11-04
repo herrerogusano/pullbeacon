@@ -3,10 +3,13 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from pullbeacon.config import parse_config
 from pullbeacon.core.diff import render_for_llm
-from pullbeacon.core.scope import SkipReason, select_scope
+from pullbeacon.core.scope import SkipReason, rebuild_missing_patches, select_scope
 from pullbeacon.domain.models import ChangedFile, PullRequestSnapshot
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -77,6 +80,102 @@ def test_skip_reasons() -> None:
         "src/empty.py": SkipReason.UNCHANGED,
         "src/../../etc/passwd": SkipReason.UNSAFE_PATH,
     }
+
+
+class _Contents:
+    """Just what ``rebuild_missing_patches`` reads, with a record of what it asked for."""
+
+    def __init__(self, files: dict[tuple[str, str], bytes]) -> None:
+        self.files = files
+        self.read: list[tuple[str, str]] = []
+
+    def get_file_content(
+        self, owner: str, repo: str, path: str, ref_sha: str, *, max_bytes: int
+    ) -> bytes | None:
+        self.read.append((path, ref_sha))
+        data = self.files.get((path, ref_sha))
+        return data if data is not None and len(data) <= max_bytes else None
+
+
+BASE, HEAD = "a" * 40, "b" * 40
+
+
+def _rebuilt(file: ChangedFile, contents: _Contents, config: str = "version: 1\n") -> ChangedFile:
+    parsed = parse_config(config)
+    client: Any = contents
+    return rebuild_missing_patches(client, snapshot([file]), parsed).files[0]
+
+
+def test_new_file_without_a_patch_is_rebuilt_with_real_line_numbers() -> None:
+    contents = _Contents({("src/big.py", HEAD): b"one\ntwo\nthree\n"})
+    file = _rebuilt(changed("src/big.py", patch=None, status="added"), contents)
+    assert file.patch_rebuilt
+    (diff,) = select_scope(snapshot([file]), parse_config("version: 1\n")).diffs
+    assert diff.rebuilt
+    assert [(ln.new_line, ln.text) for ln in diff.lines()] == [
+        (1, "one"),
+        (2, "two"),
+        (3, "three"),
+    ]
+    assert contents.read == [("src/big.py", HEAD)]
+
+
+def test_modified_file_without_a_patch_is_diffed_against_the_base() -> None:
+    old = "".join(f"line {n}\n" for n in range(1, 21))
+    new = old.replace("line 10\n", "line ten\n")
+    contents = _Contents({("a.py", BASE): old.encode(), ("a.py", HEAD): new.encode()})
+    file = _rebuilt(changed("a.py", patch=None), contents)
+    (diff,) = select_scope(snapshot([file]), parse_config("version: 1\n")).diffs
+    added = [ln for ln in diff.lines() if ln.kind == "add"]
+    assert [(ln.new_line, ln.text) for ln in added] == [(10, "line ten")]
+    deleted = [ln for ln in diff.lines() if ln.kind == "del"]
+    assert [(ln.old_line, ln.text) for ln in deleted] == [(10, "line 10")]
+
+
+def test_renamed_file_without_a_patch_reads_the_old_path_at_the_base() -> None:
+    contents = _Contents({("old.py", BASE): b"a\n", ("new.py", HEAD): b"b\n"})
+    file = _rebuilt(
+        changed("new.py", patch=None, status="renamed", previous_path="old.py"), contents
+    )
+    assert file.patch_rebuilt
+    assert ("old.py", BASE) in contents.read
+
+
+@pytest.mark.parametrize(
+    ("file", "config"),
+    [
+        (changed("config/.env", patch=None), "version: 1\n"),
+        (changed("poetry.lock", patch=None), "version: 1\n"),
+        (changed("img/a.png", patch=None), "version: 1\n"),
+        (changed("web/a.ts", patch=None), "version: 1\npolicy: {include: ['**/*.py']}\n"),
+        (changed("gone.py", patch=None, status="removed"), "version: 1\n"),
+        (
+            changed("huge.py", patch=None, changes=9000),
+            "version: 1\nlimits: {max_changed_lines: 10}\n",
+        ),
+    ],
+)
+def test_files_that_would_not_be_reviewed_are_never_read(file: ChangedFile, config: str) -> None:
+    contents = _Contents({(file.path, HEAD): b"secret\n", (file.path, BASE): b"secret\n"})
+    rebuilt = _rebuilt(file, contents, config)
+    assert contents.read == []
+    assert rebuilt.patch is None
+
+
+@pytest.mark.parametrize(
+    ("data", "config"),
+    [
+        (b"binary\0data\n", "version: 1\n"),
+        (b"\xff\xfe not utf-8", "version: 1\n"),
+        (b"x" * 2000, "version: 1\nlimits: {max_file_bytes: 1024}\n"),
+    ],
+)
+def test_content_that_cannot_be_read_as_text_stays_skipped(data: bytes, config: str) -> None:
+    file = changed("src/a.py", patch=None, status="added")
+    rebuilt = _rebuilt(file, _Contents({("src/a.py", HEAD): data}), config)
+    assert rebuilt.patch is None
+    scope = select_scope(snapshot([rebuilt]), parse_config(config))
+    assert reasons(scope.skipped) == {"src/a.py": SkipReason.NO_PATCH}
 
 
 def test_include_policy() -> None:

@@ -39,7 +39,24 @@ def setup(
     apply_job: bool = False,
 ) -> tuple[FakeGitHub, Services, FakeLLMClient, dict[str, Any]]:
     """FakeGitHub + Services wired like production, config committed on the base branch."""
-    data = load_fixture(name)
+    return setup_from(
+        load_fixture(name),
+        config=config,
+        llm=llm,
+        config_in_repo=config_in_repo,
+        apply_job=apply_job,
+    )
+
+
+def setup_from(
+    data: dict[str, Any],
+    *,
+    config: str | PullBeaconConfig | None = APPLY_CONFIG,
+    llm: FakeLLMClient | None = None,
+    config_in_repo: bool = True,
+    apply_job: bool = False,
+) -> tuple[FakeGitHub, Services, FakeLLMClient, dict[str, Any]]:
+    """``setup`` for a fixture the test has already changed."""
     if config_in_repo and isinstance(config, str):
         base_sha = data["pull_request"]["base"]["sha"]
         data.setdefault("trees", {}).setdefault(base_sha, {})[".pullbeacon.yml"] = config

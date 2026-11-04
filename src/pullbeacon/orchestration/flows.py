@@ -32,7 +32,7 @@ from pullbeacon.config import (
 from pullbeacon.core.context import fetch_context_files
 from pullbeacon.core.explain import explain
 from pullbeacon.core.review import ReviewEngine
-from pullbeacon.core.scope import select_scope
+from pullbeacon.core.scope import rebuild_missing_patches, select_scope
 from pullbeacon.domain.errors import ConfigError, UnsupportedPullRequest
 from pullbeacon.domain.models import (
     PullRequestSnapshot,
@@ -150,6 +150,7 @@ def run_review(
     llm = services.llm_factory(config)
     if llm is None:
         raise ConfigError("no model configured: add 'model' to .pullbeacon.yml on the base branch")
+    snapshot = rebuild_missing_patches(client, snapshot, config)
     scope = select_scope(snapshot, config)
     context, context_warnings = fetch_context_files(
         client, snapshot, config, budget=config.limits.max_context_chars // 4

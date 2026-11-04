@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+from typing import Any
 
 import pytest
 
@@ -12,7 +13,7 @@ from pullbeacon.core.render import sanitize
 from pullbeacon.domain.errors import GitHubAPIError, StaleHeadError, UnsupportedPullRequest
 from pullbeacon.domain.models import RunStatus
 from pullbeacon.orchestration.flows import run_explain, run_review
-from tests.helpers import setup
+from tests.helpers import APPLY_CONFIG, load_fixture, setup, setup_from
 
 PR = 21
 
@@ -222,6 +223,42 @@ def test_ids_from_before_stable_numbering_never_stand_for_two_findings() -> None
     stored["body"] = stored["body"].rsplit("<!--", 1)[0] + encode_marker(renumbered)
     run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:3")
     assert _reviewed_ids(review_posts(fake)[-1].body) == ["PB-002"]
+
+
+def _without_patch(data: dict[str, Any]) -> None:
+    for file in data["files"]:
+        del file["patch"]
+
+
+def _setup_without_patch(**kw: Any) -> Any:
+    data = load_fixture("pr_auth_bug.json")
+    _without_patch(data)
+    return setup_from(data, **kw)
+
+
+def test_file_without_a_patch_is_reviewed_and_reported_in_the_summary() -> None:
+    fake, services, llm, _ = _setup_without_patch()
+    run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:1")
+    assert "FILE src/api/users.py [modified]" in llm.requests[0].user
+    assert "delete_account" in llm.requests[0].user
+    (post,) = review_posts(fake)
+    # GitHub has no diff for this file, so it would reject an inline comment.
+    assert "comments" not in post.body
+    marker = decode_marker(post.body["body"])
+    assert marker is not None
+    (finding,) = marker.findings
+    assert finding.inline is False
+    assert finding.line == 13
+    assert "src/api/users.py:13" in post.body["body"]
+
+
+def test_file_without_a_patch_outside_the_policy_is_not_read() -> None:
+    fake, services, llm, _ = _setup_without_patch(
+        config=APPLY_CONFIG + "  exclude: ['src/**']\n",
+    )
+    run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:1")
+    assert not [c for c in fake.calls if "/contents/src/" in c.path]
+    assert "delete_account" not in (llm.requests[0].user if llm.requests else "")
 
 
 def test_dry_run_publishes_nothing() -> None:

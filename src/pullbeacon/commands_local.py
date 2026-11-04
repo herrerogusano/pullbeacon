@@ -13,7 +13,7 @@ from pullbeacon.cli_output import emit_json
 from pullbeacon.config import PullBeaconConfig, default_config, load_config_file
 from pullbeacon.core.context import fetch_context_files
 from pullbeacon.core.review import ReviewEngine
-from pullbeacon.core.scope import ReviewScope, select_scope
+from pullbeacon.core.scope import ReviewScope, rebuild_missing_patches, select_scope
 from pullbeacon.domain.errors import ConfigError
 from pullbeacon.domain.models import PullRequestSnapshot
 from pullbeacon.testing.fake_github import FakeGitHub
@@ -133,6 +133,8 @@ def review(args: argparse.Namespace) -> int:
     config = load_config_arg(args.config)
     fixture = load_fixture(args.fixture)
     fake, snapshot = snapshot_from_fixture(fixture)
+    with GitHubClient(None, transport=fake.transport(), max_retries=0) as client:
+        snapshot = rebuild_missing_patches(client, snapshot, config)
     scope = select_scope(snapshot, config)
     if not (getattr(args, "mock_llm", False) or getattr(args, "provider", None)):
         # Scope-only dry run: shows exactly what would be sent, without any LLM.
