@@ -230,10 +230,12 @@ def call_json(
                 max_output_tokens=request.max_output_tokens,
                 output_tokens=response.usage.output_tokens,
             )
-            raise LLMOutputTruncated(_truncated_message(request))
+            raise LLMOutputTruncated(_truncated_message(request), usage=usage)
         if response.finish_reason == "content_filter":
             log_event(log, "llm_content_filtered", purpose=request.purpose, attempt=attempt + 1)
-            raise LLMResponseError("the provider stopped the answer (content filter or refusal)")
+            raise LLMResponseError(
+                "the provider stopped the answer (content filter or refusal)", usage=usage
+            )
         was_empty = not response.text.strip()
         try:
             return parse_json_object(response.text), usage
@@ -256,8 +258,12 @@ def call_json(
                 schema_name=request.schema_name,
             )
     if was_empty:
-        raise LLMResponseError("model returned an empty response after one correction attempt")
-    raise LLMResponseError("model did not return valid JSON after one correction attempt")
+        raise LLMResponseError(
+            "model returned an empty response after one correction attempt", usage=usage
+        )
+    raise LLMResponseError(
+        "model did not return valid JSON after one correction attempt", usage=usage
+    )
 
 
 def merge_summaries(
@@ -296,7 +302,7 @@ def merge_summaries(
         data, usage = call_json(llm, request, guard)
     except (LLMError, BudgetExceeded) as exc:
         log_event(log, "summary_merge_failed", error=type(exc).__name__)
-        return joined, Usage()
+        return joined, exc.usage if isinstance(exc, LLMResponseError) and exc.usage else Usage()
     merged = data.get("summary")
     if not isinstance(merged, str) or not merged.strip():
         log_event(log, "summary_merge_failed", error="no summary in the answer")

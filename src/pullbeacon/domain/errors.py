@@ -6,6 +6,11 @@ Callers pass short, human-readable reasons; the redaction filter is a second lin
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pullbeacon.domain.models import Usage
+
 
 class PullBeaconError(Exception):
     """Base error. ``code`` is a stable machine-readable identifier."""
@@ -60,9 +65,16 @@ class LLMError(PullBeaconError):
 
 
 class LLMResponseError(LLMError):
-    """The model answered, but not with something PullBeacon can trust."""
+    """The model answered, but not with something PullBeacon can trust.
+
+    ``usage`` is what the attempts cost: they were paid for even though the answer is not used.
+    """
 
     code = "llm_invalid_response"
+
+    def __init__(self, message: str, *, usage: Usage | None = None) -> None:
+        super().__init__(message)
+        self.usage = usage
 
 
 class LLMOutputTruncated(LLMResponseError):

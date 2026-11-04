@@ -450,6 +450,9 @@ def test_a_useless_summary_answer_keeps_the_joined_summaries(answer: str) -> Non
     )
     report = _two_batch_review(llm)
     assert report.summary == "Part one. Part two."
+    # Two review calls plus what the summary call paid for, even when it was not used.
+    expected = {"not json": 4}.get(answer, 3)
+    assert report.usage.llm_calls == expected
 
 
 def test_a_failed_summary_call_does_not_fail_the_review() -> None:
