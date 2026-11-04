@@ -269,7 +269,7 @@ def _multi_file_run(files: list[dict[str, Any]], limits: str) -> tuple[Any, list
     llm = FakeLLMClient(responses={"review": answers})
     scope = select_scope(snapshot, config)
     report = ReviewEngine(llm, config).review(snapshot, scope, mode="local")
-    return report, llm.requests
+    return report, [r for r in llm.requests if r.purpose == "review"]
 
 
 def _listed(request: LLMRequest) -> str:
@@ -403,6 +403,71 @@ def test_other_files_of_a_split_file_batch_see_it_as_elsewhere() -> None:
     last = requests[-1]
     assert "z_small.py (shown to you)" in _listed(last)
     assert "a_small.py (in another part of this review)" in _listed(last)
+
+
+def _two_batch_review(llm: FakeLLMClient, limits: str = "{max_context_chars: 1900}") -> Any:
+    data = fixture("pr_clean.json")
+    data["files"] = [_file("src/app.py", 40), _file("tests/test_app.py", 40)]
+    _, snapshot = snapshot_from_fixture(data)
+    config = parse_config(f"version: 1\nlimits: {limits}\n")
+    return ReviewEngine(llm, config).review(snapshot, select_scope(snapshot, config), mode="local")
+
+
+def _parts(*summaries: str) -> list[str]:
+    return [json.dumps({"summary": summary, "findings": []}) for summary in summaries]
+
+
+def test_several_batches_produce_one_summary() -> None:
+    llm = FakeLLMClient(
+        responses={
+            "review": _parts("Production code is not in this diff.", "Adds the app."),
+            "summary": [json.dumps({"summary": "Adds the app and its tests. No findings."})],
+        }
+    )
+    report = _two_batch_review(llm)
+    assert report.summary == "Adds the app and its tests. No findings."
+    assert report.usage.llm_calls == 3
+    request = llm.requests[-1]
+    assert request.purpose == "summary"
+    assert "Production code is not in this diff." in request.user
+    assert request.user.count("<<<UNTRUSTED DATA PART_SUMMARY") == 2
+    assert "<<<UNTRUSTED DATA FINDINGS" in request.user
+    assert "Production code" not in request.system
+
+
+def test_one_batch_makes_no_summary_call() -> None:
+    report, llm = run("pr_clean.json")
+    assert [r.purpose for r in llm.requests] == ["review"]
+    assert report.summary
+
+
+@pytest.mark.parametrize(
+    "answer", ["not json", json.dumps({"summary": "  "}), json.dumps({"other": 1})]
+)
+def test_a_useless_summary_answer_keeps_the_joined_summaries(answer: str) -> None:
+    llm = FakeLLMClient(
+        responses={"review": _parts("Part one.", "Part two."), "summary": [answer, answer]}
+    )
+    report = _two_batch_review(llm)
+    assert report.summary == "Part one. Part two."
+
+
+def test_a_failed_summary_call_does_not_fail_the_review() -> None:
+    llm = FakeLLMClient(responses={"review": _parts("Part one.", "Part two.")})
+    report = _two_batch_review(llm)
+    assert report.summary == "Part one. Part two."
+    assert report.usage.llm_calls == 2
+
+
+def test_summary_call_respects_the_budget() -> None:
+    # Two review calls fit in the budget, a third call of any size does not.
+    llm = FakeLLMClient(
+        responses={"review": _parts("Part one.", "Part two."), "summary": ["unused"]},
+        estimated_cost=0.3,
+    )
+    report = _two_batch_review(llm, "{max_context_chars: 1900, max_estimated_cost_usd: 0.65}")
+    assert [r.purpose for r in llm.requests] == ["review", "review"]
+    assert report.summary == "Part one. Part two."
 
 
 def test_llm_errors_propagate() -> None:
