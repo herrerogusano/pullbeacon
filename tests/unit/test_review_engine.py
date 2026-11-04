@@ -9,9 +9,14 @@ import pytest
 from pullbeacon.adapters.llm import FakeLLMClient, LLMRequest
 from pullbeacon.commands_local import snapshot_from_fixture
 from pullbeacon.config import PullBeaconConfig, parse_config
-from pullbeacon.core.review import CostGuard, ReviewEngine, plan_batches
+from pullbeacon.core.review import CostGuard, ReviewEngine, call_json, plan_batches
 from pullbeacon.core.scope import select_scope
-from pullbeacon.domain.errors import BudgetExceeded, LLMError, LLMResponseError
+from pullbeacon.domain.errors import (
+    BudgetExceeded,
+    LLMError,
+    LLMOutputTruncated,
+    LLMResponseError,
+)
 from pullbeacon.domain.models import canonical_json
 from pullbeacon.prompts import REVIEW_PROMPT_VERSION
 
@@ -76,6 +81,91 @@ def test_invalid_json_twice_fails_without_report() -> None:
     with pytest.raises(LLMResponseError):
         run("pr_clean.json", llm)
     assert len(llm.requests) == 2
+
+
+GOOD = json.dumps({"summary": "ok", "findings": []})
+CUT_OFF = '{"summary": "ok", "findings": [{"title": "unterminated'
+
+
+def test_truncated_output_is_a_clear_error_and_is_not_retried() -> None:
+    llm = FakeLLMClient(responses={"review": [CUT_OFF, GOOD]}, finish_reasons=["length"])
+    with pytest.raises(LLMOutputTruncated) as info:
+        run("pr_clean.json", llm)
+    assert len(llm.requests) == 1  # the "invalid JSON" retry would hit the same limit
+    assert info.value.code == "llm_output_truncated"
+    message = info.value.message
+    assert "output limit (4096 tokens)" in message
+    assert "limits.max_output_tokens" in message
+    assert "limits.max_context_chars" in message
+    assert isinstance(info.value, LLMResponseError)  # still an LLMError for existing handlers
+
+
+def test_truncated_output_is_never_parsed_even_if_it_looks_complete() -> None:
+    llm = FakeLLMClient(responses={"review": [GOOD]}, finish_reasons=["length"])
+    with pytest.raises(LLMOutputTruncated):
+        run("pr_clean.json", llm)
+    assert len(llm.requests) == 1
+
+
+def test_truncated_empty_answer_is_reported_as_truncation_not_as_empty() -> None:
+    # Reasoning/tool-call tokens can use the whole budget and leave no text at all.
+    llm = FakeLLMClient(responses={"review": [""]}, finish_reasons=["length"])
+    with pytest.raises(LLMOutputTruncated):
+        run("pr_clean.json", llm)
+    assert len(llm.requests) == 1
+
+
+def test_truncation_on_the_correction_attempt_is_still_truncation() -> None:
+    # The observed failure: attempt 1 unusable, attempt 2 cut off at the limit.
+    llm = FakeLLMClient(
+        responses={"review": ["{broken", CUT_OFF]}, finish_reasons=["stop", "length"]
+    )
+    with pytest.raises(LLMOutputTruncated):
+        run("pr_clean.json", llm)
+    assert len(llm.requests) == 2
+
+
+def test_truncated_call_still_counts_against_the_budget() -> None:
+    llm = FakeLLMClient(responses={"review": [CUT_OFF]}, finish_reasons=["length"])
+    llm.estimated_cost = 0.25
+    guard = CostGuard(1.0)
+    request = LLMRequest(purpose="review", system="s", user="u", max_output_tokens=512)
+    with pytest.raises(LLMOutputTruncated):
+        call_json(llm, request, guard)
+    assert guard.spent_usd == pytest.approx(0.25)
+
+
+def test_truncation_message_for_non_review_purposes_only_mentions_the_output_limit() -> None:
+    llm = FakeLLMClient(responses={"apply": [CUT_OFF]}, finish_reasons=["length"])
+    request = LLMRequest(purpose="apply", system="s", user="u", max_output_tokens=2048)
+    with pytest.raises(LLMOutputTruncated) as info:
+        call_json(llm, request, CostGuard(1.0))
+    assert "limits.max_output_tokens" in info.value.message
+    assert "max_context_chars" not in info.value.message
+
+
+def test_empty_answer_gets_one_retry_and_recovers() -> None:
+    llm = FakeLLMClient(responses={"review": ["  ", GOOD]})
+    report, llm = run("pr_clean.json", llm)
+    assert report.findings == ()
+    assert len(llm.requests) == 2
+    assert "previous answer was empty" in llm.requests[1].user
+    assert report.usage.llm_calls == 2
+
+
+def test_empty_answer_twice_fails_with_a_specific_message() -> None:
+    llm = FakeLLMClient(responses={"review": ["", ""]})
+    with pytest.raises(LLMResponseError, match="empty response after one correction") as info:
+        run("pr_clean.json", llm)
+    assert not isinstance(info.value, LLMOutputTruncated)
+    assert len(llm.requests) == 2
+
+
+def test_content_filter_is_not_retried() -> None:
+    llm = FakeLLMClient(responses={"review": ["", GOOD]}, finish_reasons=["content_filter"])
+    with pytest.raises(LLMResponseError, match="content filter or refusal"):
+        run("pr_clean.json", llm)
+    assert len(llm.requests) == 1
 
 
 def test_code_fenced_json_is_accepted() -> None:

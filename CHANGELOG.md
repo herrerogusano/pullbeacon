@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Answers cut off by the output token limit are now detected and reported as such.** A large
+  pull request with `max_output_tokens: 4096` could produce a truncated JSON answer; PullBeacon
+  logged `llm_invalid_json`, spent a second call with the same budget, and then failed with the
+  misleading `model returned an empty response`. It now reads the provider's `finish_reason`
+  (`length` for OpenAI, Anthropic `max_tokens` and Gemini `MAX_TOKENS` through LiteLLM), never
+  parses or retries a truncated answer, and fails with the new error code `llm_output_truncated`
+  and a message telling you to raise `limits.max_output_tokens` or lower
+  `limits.max_context_chars` (also posted as a reply to `@pullbeacon` commands and shown in the
+  job summary). See the new README section.
+- An empty answer that is not a truncation now gets the same single correction retry as malformed
+  JSON (it used to fail immediately), and a `content_filter` stop fails with its own message
+  without a retry.
+- The cost of an empty or cut-off answer now counts against the per-run budget and the benchmark
+  budget (it used to be lost because the adapter raised before returning the usage).
+
+### Changed
+
+- `LLMResponse` has a new `finish_reason` field and `LiteLLMClient.complete` no longer raises for
+  an empty answer: `call_json` decides. Internal API only.
+
 ## 0.2.0 (2026-11-02)
 
 Less noise, same detection. Validated on a new hold-out benchmark (46 cases, 3 samples) with an

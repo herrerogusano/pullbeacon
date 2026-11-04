@@ -80,3 +80,9 @@ LiteLLM's Python SDK is used directly (no proxy, no database). Structured output
 `response_format: json_schema` when LiteLLM reports support, falling back to JSON text with the
 same validation. Provider-specific differences (parameter support, schema handling) are absorbed by
 `drop_params=True` and the fallback; costs come from the bundled LiteLLM cost map.
+
+Every call returns the provider's `finish_reason`, normalised to the OpenAI vocabulary by
+LiteLLM (`length` covers Anthropic `max_tokens` and Gemini `MAX_TOKENS`). `core.review.call_json`
+checks it before parsing: `length` raises `LLMOutputTruncated` (`llm_output_truncated`) without a
+retry, `content_filter` fails without a retry, and an empty or malformed answer gets one
+correction retry. The response of every paid call, even an unusable one, reaches the cost guard.

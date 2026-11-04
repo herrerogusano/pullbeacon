@@ -42,9 +42,42 @@ class LLMRequest:
 
 @dataclass(frozen=True)
 class LLMResponse:
+    """A completed provider call.
+
+    ``finish_reason`` is normalised to the OpenAI vocabulary: ``stop``, ``length`` (output token
+    limit reached), ``content_filter`` or whatever else the provider reported. ``text`` may be
+    empty or cut off: callers decide what to do with it (see ``core.review.call_json``). The
+    response is returned even then so that its usage still counts against the budget.
+    """
+
     text: str
     usage: Usage
     model: str
+    finish_reason: str | None = None
+
+    @property
+    def truncated(self) -> bool:
+        return self.finish_reason == "length"
+
+
+_FINISH_REASON_ALIASES = {
+    # LiteLLM already maps these (Anthropic ``max_tokens``, Gemini ``MAX_TOKENS``, ...) to the
+    # OpenAI names; the aliases keep a provider value that slips through from being mistaken
+    # for a normal stop.
+    "max_tokens": "length",
+    "max_output_tokens": "length",
+    "end_turn": "stop",
+    "stop_sequence": "stop",
+    "refusal": "content_filter",
+    "content_filtered": "content_filter",
+}
+
+
+def normalize_finish_reason(raw: object) -> str | None:
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    value = raw.strip().lower()
+    return _FINISH_REASON_ALIASES.get(value, value)
 
 
 class LLMClient(Protocol):
@@ -78,6 +111,8 @@ class FakeLLMClient:
     simulated: bool = True
     requests: list[LLMRequest] = field(default_factory=list)
     errors: list[Exception] = field(default_factory=list)
+    # Queued finish reasons, one per call (default ``stop``): lets tests simulate truncation.
+    finish_reasons: list[str] = field(default_factory=list)
 
     def complete(self, request: LLMRequest) -> LLMResponse:
         self.requests.append(request)
@@ -97,7 +132,10 @@ class FakeLLMClient:
             cost_usd=self.estimated_cost or 0.0,
             cost_source="simulated",
         )
-        return LLMResponse(text=text, usage=usage, model=self.model)
+        finish = self.finish_reasons.pop(0) if self.finish_reasons else "stop"
+        return LLMResponse(
+            text=text, usage=usage, model=self.model, finish_reason=normalize_finish_reason(finish)
+        )
 
     def estimate_max_cost(self, request: LLMRequest) -> float | None:
         return self.estimated_cost
@@ -212,11 +250,14 @@ class LiteLLMClient:
 
     def _to_response(self, response: Any) -> LLMResponse:
         try:
-            text = response.choices[0].message.content
+            choice = response.choices[0]
+            content = choice.message.content
         except (AttributeError, IndexError, KeyError, TypeError):
-            text = None
-        if not isinstance(text, str) or not text.strip():
-            raise LLMError("model returned an empty response")
+            raise LLMError("model returned a response without any choice") from None
+        # An empty or cut-off answer is not an error here: it was paid for, so it is returned with
+        # its usage and its finish reason, and the caller decides (truncated, retry, fail).
+        text = content if isinstance(content, str) else ""
+        finish_reason = normalize_finish_reason(getattr(choice, "finish_reason", None))
         usage_obj = getattr(response, "usage", None)
         input_tokens = getattr(usage_obj, "prompt_tokens", None)
         output_tokens = getattr(usage_obj, "completion_tokens", None)
@@ -237,6 +278,7 @@ class LiteLLMClient:
                 cost_source="litellm" if cost is not None else "unknown",
             ),
             model=self.model,
+            finish_reason=finish_reason,
         )
 
     def _classify(self, exc: Exception) -> str:

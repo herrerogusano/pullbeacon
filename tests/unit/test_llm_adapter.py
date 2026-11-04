@@ -101,9 +101,80 @@ def test_bad_request_is_not_retried() -> None:
     assert len(recorder.calls) == 1
 
 
-def test_empty_response_is_an_error() -> None:
-    with pytest.raises(LLMError, match="empty"):
-        client(Recorder(ok_response("  "))).complete(REQUEST)
+def litellm_response(finish_reason: str, text: str | None) -> Any:
+    """A real LiteLLM ModelResponse, so its own finish_reason normalisation is exercised."""
+    return litellm.ModelResponse(
+        choices=[
+            litellm.Choices(finish_reason=finish_reason, message=litellm.Message(content=text))
+        ],
+        usage=litellm.Usage(prompt_tokens=10, completion_tokens=100, total_tokens=110),
+    )
+
+
+def test_empty_response_is_returned_with_its_usage_not_raised() -> None:
+    # The call was paid for: the caller (call_json) decides whether to retry or fail.
+    response = client(Recorder(ok_response("  "))).complete(REQUEST)
+    assert response.text.strip() == ""
+    assert response.finish_reason is None
+    assert response.usage.llm_calls == 1
+    assert not response.truncated
+
+
+def test_response_without_choices_is_an_error() -> None:
+    with pytest.raises(LLMError, match="without any choice"):
+        client(Recorder(SimpleNamespace(choices=[]))).complete(REQUEST)
+
+
+@pytest.mark.parametrize(
+    ("provider_value", "label"),
+    [
+        ("length", "OpenAI"),
+        ("max_tokens", "Anthropic stop_reason"),
+        ("MAX_TOKENS", "Gemini finishReason"),
+    ],
+)
+def test_truncation_is_detected_for_every_provider_vocabulary(
+    provider_value: str, label: str
+) -> None:
+    partial = '{"summary": "x", "findings": [{"title": "cut'
+    response = client(Recorder(litellm_response(provider_value, partial))).complete(REQUEST)
+    assert response.finish_reason == "length", label
+    assert response.truncated
+    assert response.text == partial
+    assert response.usage.output_tokens == 100
+
+
+def test_truncation_is_detected_even_when_the_text_is_empty() -> None:
+    # e.g. thinking tokens or a cut-off tool call used the whole budget: no text, still "length".
+    response = client(Recorder(litellm_response("max_tokens", None))).complete(REQUEST)
+    assert response.truncated
+    assert response.text == ""
+
+
+@pytest.mark.parametrize(
+    ("provider_value", "expected"),
+    [
+        ("stop", "stop"),
+        ("end_turn", "stop"),
+        ("STOP", "stop"),
+        ("tool_use", "tool_calls"),
+        ("refusal", "content_filter"),
+        ("SAFETY", "content_filter"),
+    ],
+)
+def test_normal_and_filtered_finish_reasons(provider_value: str, expected: str) -> None:
+    response = client(Recorder(litellm_response(provider_value, "{}"))).complete(REQUEST)
+    assert response.finish_reason == expected
+    assert not response.truncated
+
+
+def test_unmapped_provider_values_are_normalised_defensively() -> None:
+    # A raw provider value that bypassed LiteLLM's mapping must still count as truncation.
+    raw = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="{"), finish_reason="max_tokens")],
+        usage=SimpleNamespace(prompt_tokens=1, completion_tokens=2),
+    )
+    assert client(Recorder(raw)).complete(REQUEST).truncated
 
 
 def test_unknown_model_has_unknown_cost() -> None:

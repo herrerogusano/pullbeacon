@@ -14,7 +14,12 @@ from pullbeacon.core.context import ContextFile
 from pullbeacon.core.diff import FileDiff, render_for_llm
 from pullbeacon.core.findings import validate_findings
 from pullbeacon.core.scope import ReviewScope, SkipReason
-from pullbeacon.domain.errors import BudgetExceeded, LLMError, LLMResponseError
+from pullbeacon.domain.errors import (
+    BudgetExceeded,
+    LLMError,
+    LLMOutputTruncated,
+    LLMResponseError,
+)
 from pullbeacon.domain.models import (
     PullRequestSnapshot,
     ReviewMode,
@@ -117,32 +122,69 @@ def build_review_request(
     )
 
 
+def _truncated_message(request: LLMRequest) -> str:
+    advice = "raise limits.max_output_tokens"
+    if request.purpose == "review":
+        advice += " or lower limits.max_context_chars so each batch (and its answer) is smaller"
+    return (
+        f"the model's answer was cut off at the output limit ({request.max_output_tokens} tokens), "
+        f"so it is incomplete and was not used; {advice} in .pullbeacon.yml."
+    )
+
+
 def call_json(
     llm: LLMClient, request: LLMRequest, guard: CostGuard
 ) -> tuple[dict[str, object], Usage]:
-    """One call plus at most one correction retry for malformed JSON (budget permitting)."""
+    """One call plus at most one correction retry for an empty or malformed answer.
+
+    An answer cut off by the output token limit is never parsed and never retried: the retry
+    would have the same budget and hit the same limit, paying for it twice.
+    """
     usage = Usage()
     attempt_request = request
+    was_empty = False
     for attempt in range(2):
         estimate = llm.estimate_max_cost(attempt_request)
         guard.check(estimate)
         response: LLMResponse = llm.complete(attempt_request)
         guard.record(response.usage, estimate)
         usage = usage.plus(response.usage)
+        if response.truncated:
+            log_event(
+                log,
+                "llm_output_truncated",
+                purpose=request.purpose,
+                attempt=attempt + 1,
+                max_output_tokens=request.max_output_tokens,
+                output_tokens=response.usage.output_tokens,
+            )
+            raise LLMOutputTruncated(_truncated_message(request))
+        if response.finish_reason == "content_filter":
+            log_event(log, "llm_content_filtered", purpose=request.purpose, attempt=attempt + 1)
+            raise LLMResponseError("the provider stopped the answer (content filter or refusal)")
+        was_empty = not response.text.strip()
         try:
             return parse_json_object(response.text), usage
         except (ValueError, json.JSONDecodeError):
-            log_event(log, "llm_invalid_json", purpose=request.purpose, attempt=attempt + 1)
+            event = "llm_empty_response" if was_empty else "llm_invalid_json"
+            log_event(log, event, purpose=request.purpose, attempt=attempt + 1)
+            problem = (
+                "Your previous answer was empty."
+                if was_empty
+                else "Your previous answer was not a valid JSON object."
+            )
             attempt_request = LLMRequest(
                 purpose=request.purpose,
                 system=request.system,
                 user=request.user
-                + "\n\nYour previous answer was not a valid JSON object. Answer again with only "
-                "the JSON object, no prose and no code fences.",
+                + f"\n\n{problem} Answer again with only the JSON object, no prose and no code "
+                "fences.",
                 max_output_tokens=request.max_output_tokens,
                 json_schema=request.json_schema,
                 schema_name=request.schema_name,
             )
+    if was_empty:
+        raise LLMResponseError("model returned an empty response after one correction attempt")
     raise LLMResponseError("model did not return valid JSON after one correction attempt")
 
 

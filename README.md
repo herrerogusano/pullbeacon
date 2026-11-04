@@ -128,11 +128,28 @@ rejected with a readable error. Some paths are **never** sent to the model (`.en
 certificates, credentials) or edited by `apply` (`.github/**`, `.pullbeacon.yml`, `action.yml`,
 `CODEOWNERS`, `.gitmodules`), regardless of configuration.
 
+### If a review fails with `llm_output_truncated`
+
+The model's JSON answer is as long as the number of findings it reports, and it was cut off at
+`limits.max_output_tokens` (4096 by default). A cut-off answer is incomplete, so PullBeacon does
+not parse it, does not retry (the retry would hit the same limit and be billed again) and does not
+publish a partial review. The failure shows the code, the limit that was hit and what to change in
+the job summary (and in a reply when the run was started by a `@pullbeacon` comment). Fix it in
+`.pullbeacon.yml` on the base branch:
+
+- raise `limits.max_output_tokens` (up to 32000; a pull request of about 3,700 changed lines
+  needed more than 4096 and worked with 12000), and/or
+- lower `limits.max_context_chars` so each batch is smaller and produces fewer findings (up to
+  `limits.max_batches` batches are reviewed; files that do not fit are skipped and listed).
+
+Providers that count reasoning tokens against the output limit can also hit it with an empty
+answer; it is reported the same way.
+
 ## Cost and privacy
 
 - PullBeacon has no servers; you pay GitHub Actions minutes (per your plan) and your LLM
   provider per token. One review is one LLM call per batch (usually one), plus at most one retry for
-  malformed JSON and two for transient errors.
+  an empty or malformed answer and two for transient errors.
 - The per-run budget uses the LiteLLM price table pinned in the lockfile to estimate the worst case
   *before* each call. Real billing may differ; set limits in your provider console too. Unknown
   prices are reported as "cost unknown".
