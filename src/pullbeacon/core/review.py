@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from pullbeacon.adapters.llm import LLMClient, LLMRequest, LLMResponse, parse_json_object
 from pullbeacon.config import PullBeaconConfig
 from pullbeacon.core.context import ContextFile
-from pullbeacon.core.diff import FileDiff, render_for_llm
+from pullbeacon.core.diff import FileDiff, render_for_llm, split_file_diff
 from pullbeacon.core.findings import validate_findings
 from pullbeacon.core.scope import ReviewScope, SkipReason
 from pullbeacon.domain.errors import (
@@ -33,6 +33,7 @@ from pullbeacon.prompts import REVIEW_PROMPT_VERSION, REVIEW_SCHEMA, REVIEW_SYST
 MAX_PR_TEXT_CHARS = 2000
 MAX_SUMMARY_CHARS = 1500
 MAX_FILE_LIST_ENTRIES = 300
+SPLIT_OVERLAP_LINES = 10
 FILE_LIST_ENTRY_OVERHEAD = 60  # state text and separators, for the size reserved before batching
 
 log = get_logger("review")
@@ -74,43 +75,65 @@ class _Batch:
 def plan_batches(
     diffs: Sequence[FileDiff], *, max_chars: int, max_batches: int
 ) -> tuple[list[list[FileDiff]], list[SkippedFile]]:
-    """Greedy, order-preserving batching by rendered size."""
+    """Greedy, order-preserving batching by rendered size.
+
+    A file too large for one batch is split into parts. If some parts still do not fit, the file
+    is both reviewed (the parts that fit) and listed as skipped.
+    """
     batches: list[_Batch] = []
     skipped: list[SkippedFile] = []
-    for diff in diffs:
-        size = len(render_for_llm([diff]))
-        if size > max_chars:
-            skipped.append(SkippedFile(path=diff.path, reason=SkipReason.MAX_CONTEXT))
-            continue
-        if not batches or batches[-1].chars + size > max_chars:
-            if len(batches) >= max_batches:
-                skipped.append(SkippedFile(path=diff.path, reason=SkipReason.MAX_CONTEXT))
+    for whole in diffs:
+        parts = split_file_diff(whole, max_chars=max_chars, overlap_lines=SPLIT_OVERLAP_LINES)
+        lost = False
+        for diff in parts:
+            size = len(render_for_llm([diff]))
+            if size > max_chars:
+                lost = True
                 continue
-            batches.append(_Batch())
-        batches[-1].diffs.append(diff)
-        batches[-1].chars += size
+            if not batches or batches[-1].chars + size > max_chars:
+                if len(batches) >= max_batches:
+                    lost = True
+                    continue
+                batches.append(_Batch())
+            batches[-1].diffs.append(diff)
+            batches[-1].chars += size
+        if lost:
+            skipped.append(SkippedFile(path=whole.path, reason=SkipReason.MAX_CONTEXT))
     return [b.diffs for b in batches], skipped
 
 
 def file_list_text(
-    batch: Sequence[FileDiff], scope: ReviewScope, skipped: Sequence[SkippedFile]
+    batch: Sequence[FileDiff],
+    scope: ReviewScope,
+    skipped: Sequence[SkippedFile],
+    planned: Sequence[Sequence[FileDiff]] = (),
 ) -> str | None:
     """What this batch must know about the rest of the pull request, or ``None`` if nothing.
 
     Without it a batch cannot tell "not in this pull request" from "not in my part of it", and
     reports code and tests from other batches as missing.
     """
-    here = {d.path for d in batch}
+    here = {d.path: d.part for d in batch}
+    in_a_batch = {d.path for b in planned for d in b}
     not_reviewed = {s.path: s.reason for s in (*scope.skipped, *skipped)}
-    elsewhere = {d.path for d in scope.diffs} - here - set(not_reviewed)
-    if not elsewhere and not not_reviewed:
+    elsewhere = ({d.path for d in scope.diffs} | in_a_batch) - set(here) - set(not_reviewed)
+    if not elsewhere and not not_reviewed and not any(here.values()):
         return None
-    entries = [(path, "shown to you") for path in sorted(here)]
+    entries = []
+    for path, part in sorted(here.items()):
+        state = f"part {part[0]} of {part[1]} shown to you" if part else "shown to you"
+        if path in not_reviewed:
+            state += "; some parts not reviewed"
+        entries.append((path, state))
     entries += [(path, "in another part of this review") for path in sorted(elsewhere)]
-    entries += [
-        (path, f"not reviewed: {reason.replace('_', ' ')}")
-        for path, reason in sorted(not_reviewed.items())
-    ]
+    for path, reason in sorted(not_reviewed.items()):
+        if path in here:
+            continue
+        if path in in_a_batch:
+            state = "in another part of this review; some parts not reviewed"
+        else:
+            state = f"not reviewed: {reason.replace('_', ' ')}"
+        entries.append((path, state))
     lines = [
         f"{' '.join(path.splitlines())} ({state})"
         for path, state in entries[:MAX_FILE_LIST_ENTRIES]
@@ -123,8 +146,6 @@ def file_list_text(
 def _file_list_reserve(scope: ReviewScope) -> int:
     """Upper bound of the file list size, taken from the budget before batches are planned."""
     paths = [d.path for d in scope.diffs] + [s.path for s in scope.skipped]
-    if len(paths) < 2:
-        return 0
     return sum(len(path) + FILE_LIST_ENTRY_OVERHEAD for path in paths[:MAX_FILE_LIST_ENTRIES])
 
 
@@ -269,7 +290,7 @@ class ReviewEngine:
                 batch,
                 context_files,
                 max_output_tokens=limits.max_output_tokens,
-                file_list=file_list_text(batch, scope, skipped),
+                file_list=file_list_text(batch, scope, skipped, batches),
             )
             try:
                 data, call_usage = call_json(self.llm, request, guard)

@@ -4,10 +4,12 @@ import pytest
 
 from pullbeacon.core.diff import (
     DiffParseError,
+    FileDiff,
     build_file_diff,
     fingerprint,
     parse_patch,
     render_for_llm,
+    split_file_diff,
 )
 from pullbeacon.domain.models import Side
 
@@ -117,3 +119,41 @@ def test_fingerprint_is_stable_and_whitespace_insensitive() -> None:
     assert a == b
     assert a != c
     assert len(a) == 16
+
+
+def _diff_of(*hunks: str) -> FileDiff:
+    return build_file_diff("f.py", "modified", "\n".join(hunks))
+
+
+def test_split_keeps_real_coordinates_across_hunks() -> None:
+    first = "@@ -1,2 +1,3 @@\n ctx1\n+added two\n ctx3"
+    body = "\n".join(f"+new {n}" for n in range(1, 61))
+    second = f"@@ -10,0 +11,60 @@\n{body}"
+    diff = _diff_of(first, second)
+    parts = split_file_diff(diff, max_chars=500, overlap_lines=2)
+    assert len(parts) > 1
+    assert [p.part for p in parts] == [(n, len(parts)) for n in range(1, len(parts) + 1)]
+    seen: dict[int, str] = {}
+    for part in parts:
+        assert len(render_for_llm([part])) <= 500
+        for line in part.lines():
+            if line.new_line is not None:
+                seen[line.new_line] = line.text
+    assert seen == {ln.new_line: ln.text for ln in diff.lines() if ln.new_line is not None}
+    assert seen[11] == "new 1"
+    assert seen[70] == "new 60"
+
+
+def test_split_handles_deleted_lines_and_advances() -> None:
+    body = "\n".join(f"-gone {n}" for n in range(1, 81))
+    diff = _diff_of(f"@@ -1,80 +0,0 @@\n{body}")
+    parts = split_file_diff(diff, max_chars=400, overlap_lines=5)
+    olds = [ln.old_line for part in parts for ln in part.lines()]
+    assert set(olds) == set(range(1, 81))
+    assert len(parts) < 80
+    assert "FILE f.py [modified] (part 1 of" in render_for_llm([parts[0]])
+
+
+def test_a_diff_that_fits_is_returned_whole() -> None:
+    diff = _diff_of("@@ -1 +1 @@\n-a\n+b")
+    assert split_file_diff(diff, max_chars=1000, overlap_lines=2) == [diff]
