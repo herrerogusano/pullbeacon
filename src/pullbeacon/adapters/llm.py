@@ -19,7 +19,7 @@ from pullbeacon.domain.errors import ConfigError, LLMError
 from pullbeacon.domain.models import Usage
 from pullbeacon.logging_utils import get_logger, log_event
 
-Purpose = Literal["review", "explain", "apply"]
+Purpose = Literal["review", "summary", "explain", "apply"]
 MAX_TRANSIENT_RETRIES = 2
 CHARS_PER_TOKEN_ESTIMATE = 3.5
 

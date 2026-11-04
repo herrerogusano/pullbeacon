@@ -68,6 +68,21 @@ It is correct and expected to return zero findings for a clean change.
 Answer with a single JSON object matching the schema, and nothing else.
 """
 
+SUMMARY_SYSTEM = f"""\
+You are PullBeacon. A pull request was reviewed in several parts, each seeing only some of its
+files. Write one summary of the whole review for the author, from the part summaries and the final
+list of findings.
+
+- At most 120 words of plain text, describing the change and what the review found.
+- The list of findings is authoritative. Do not add findings or facts that are not in the data.
+- The parts may disagree because each saw different files. A statement that something is missing
+  or not in the diff only means that one part did not see it: leave such statements out.
+- Do not claim that anything was executed or tested.
+
+{_SECURITY_RULES}
+Answer with a single JSON object: {{"summary": "<text>"}}.
+"""
+
 EXPLAIN_SYSTEM = f"""\
 You are PullBeacon. Explain one previously reported code review finding to the PR author in
 plain, concise Markdown (at most 250 words): why it matters, how it can fail, and how to fix it.
@@ -147,6 +162,13 @@ REVIEW_SCHEMA: dict[str, Any] = {
             },
         },
     },
+}
+
+SUMMARY_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["summary"],
+    "properties": {"summary": {"type": "string"}},
 }
 
 APPLY_SCHEMA: dict[str, Any] = {

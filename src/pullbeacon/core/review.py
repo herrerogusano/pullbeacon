@@ -21,6 +21,7 @@ from pullbeacon.domain.errors import (
     LLMResponseError,
 )
 from pullbeacon.domain.models import (
+    Finding,
     PullRequestSnapshot,
     ReviewMode,
     ReviewReport,
@@ -28,10 +29,18 @@ from pullbeacon.domain.models import (
     Usage,
 )
 from pullbeacon.logging_utils import get_logger, log_event
-from pullbeacon.prompts import REVIEW_PROMPT_VERSION, REVIEW_SCHEMA, REVIEW_SYSTEM, untrusted_block
+from pullbeacon.prompts import (
+    REVIEW_PROMPT_VERSION,
+    REVIEW_SCHEMA,
+    REVIEW_SYSTEM,
+    SUMMARY_SCHEMA,
+    SUMMARY_SYSTEM,
+    untrusted_block,
+)
 
 MAX_PR_TEXT_CHARS = 2000
 MAX_SUMMARY_CHARS = 1500
+SUMMARY_MAX_OUTPUT_TOKENS = 512
 MAX_FILE_LIST_ENTRIES = 300
 SPLIT_OVERLAP_LINES = 10
 FILE_LIST_ENTRY_OVERHEAD = 60  # state text and separators, for the size reserved before batching
@@ -221,10 +230,12 @@ def call_json(
                 max_output_tokens=request.max_output_tokens,
                 output_tokens=response.usage.output_tokens,
             )
-            raise LLMOutputTruncated(_truncated_message(request))
+            raise LLMOutputTruncated(_truncated_message(request), usage=usage)
         if response.finish_reason == "content_filter":
             log_event(log, "llm_content_filtered", purpose=request.purpose, attempt=attempt + 1)
-            raise LLMResponseError("the provider stopped the answer (content filter or refusal)")
+            raise LLMResponseError(
+                "the provider stopped the answer (content filter or refusal)", usage=usage
+            )
         was_empty = not response.text.strip()
         try:
             return parse_json_object(response.text), usage
@@ -247,8 +258,56 @@ def call_json(
                 schema_name=request.schema_name,
             )
     if was_empty:
-        raise LLMResponseError("model returned an empty response after one correction attempt")
-    raise LLMResponseError("model did not return valid JSON after one correction attempt")
+        raise LLMResponseError(
+            "model returned an empty response after one correction attempt", usage=usage
+        )
+    raise LLMResponseError(
+        "model did not return valid JSON after one correction attempt", usage=usage
+    )
+
+
+def merge_summaries(
+    llm: LLMClient,
+    guard: CostGuard,
+    summaries: Sequence[str],
+    findings: Sequence[Finding],
+) -> tuple[str, Usage]:
+    """One summary for a review made of several parts, without their contradictions.
+
+    The review is already done and its findings are valid, so this never fails it: whatever goes
+    wrong here, the part summaries are joined as they are.
+    """
+    listed = "\n".join(
+        f"- {f.severity.value} {f.category.value} in {f.path or 'general'}: {f.title}"
+        for f in findings
+    )
+    user = "\n\n".join(
+        [
+            "Findings of the review:",
+            untrusted_block("FINDINGS", listed or "none"),
+            "Part summaries:",
+            *(untrusted_block("PART_SUMMARY", summary) for summary in summaries),
+        ]
+    )
+    request = LLMRequest(
+        purpose="summary",
+        system=SUMMARY_SYSTEM,
+        user=user,
+        max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
+        json_schema=SUMMARY_SCHEMA,
+        schema_name="pullbeacon_summary",
+    )
+    joined = " ".join(summaries)
+    try:
+        data, usage = call_json(llm, request, guard)
+    except (LLMError, BudgetExceeded) as exc:
+        log_event(log, "summary_merge_failed", error=type(exc).__name__)
+        return joined, exc.usage if isinstance(exc, LLMResponseError) and exc.usage else Usage()
+    merged = data.get("summary")
+    if not isinstance(merged, str) or not merged.strip():
+        log_event(log, "summary_merge_failed", error="no summary in the answer")
+        return joined, usage
+    return merged.strip(), usage
 
 
 class ReviewEngine:
@@ -333,7 +392,12 @@ class ReviewEngine:
             for reason in outcome.dropped:
                 log_event(log, "finding_dropped", reason=reason)
 
-        summary_text = " ".join(summaries)[:MAX_SUMMARY_CHARS]
+        if len(summaries) > 1:
+            merged, summary_usage = merge_summaries(self.llm, guard, summaries, outcome.findings)
+            usage = usage.plus(summary_usage)
+        else:
+            merged = " ".join(summaries)
+        summary_text = merged[:MAX_SUMMARY_CHARS]
         if not batches:
             summary_text = "No reviewable changes within the configured scope."
         try:

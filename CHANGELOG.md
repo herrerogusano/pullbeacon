@@ -4,6 +4,11 @@
 
 ### Changed
 
+- **One summary for the whole review.** Summaries of the batches were pasted together, so a review
+  could say "the production code is not in this diff" and then describe it. When a review has
+  several batches, a short extra model call (at most 512 output tokens) now writes one summary from
+  them and the validated findings. If that call fails, the review is still published with the
+  summaries joined as before.
 - **A file too large for one batch is split, not skipped.** It was left out entirely, which meant
   the largest change of a pull request could get no review at all (real case: a 1,753-line new file
   on LegalDesk). It is now split by line into parts that share 10 lines, each reviewed in a batch
