@@ -9,9 +9,14 @@
   several batches, a short extra model call (at most 512 output tokens) now writes one summary from
   them and the validated findings. If that call fails, the review is still published with the
   summaries joined as before.
+- **Files GitHub returns without a patch are reviewed.** GitHub omits the patch of large files, and
+  they were skipped (real case: the 1,753-line runner of LegalDesk#77). PullBeacon now reads both
+  versions at the exact commits and builds the diff, if policy would review the file, it is
+  within `limits.max_file_bytes` and it is not deleted. GitHub cannot take comments on such a file,
+  so its findings are listed in the summary with their line, not posted inline.
 - **A file too large for one batch is split, not skipped.** It was left out entirely, which meant
-  the largest change of a pull request could get no review at all (real case: a 1,753-line new file
-  on LegalDesk). It is now split by line into parts that share 10 lines, each reviewed in a batch
+  the largest change of a pull request could get no review at all (real case: a test file of
+  LegalDesk#77). It is now split by line into parts that share 10 lines, each reviewed in a batch
   with its real line numbers. Parts that do not fit in `limits.max_batches` are reported: the file
   appears as reviewed and as skipped, and the review is marked partial. This can make such pull
   requests cost more, up to `limits.max_batches` and `limits.max_estimated_cost_usd`.

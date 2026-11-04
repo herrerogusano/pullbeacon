@@ -170,8 +170,10 @@ answer; it is reported the same way.
   `@pullbeacon review` to re-review.
 - `apply` does not create, delete or rename files, does not touch symlinks, submodules, binaries,
   protected branches, or files with a BOM.
-- Diff-only review: no repository-wide analysis, no tests are executed. Files without a patch
-  (binary or very large) are skipped and listed.
+- Diff-only review: no repository-wide analysis, no tests are executed. Files GitHub returns without
+  a patch (very large ones) are read at the exact commits of the pull request and their findings are
+  listed in the summary, because GitHub cannot take inline comments on them. Binary files, and those
+  over `limits.max_file_bytes`, are skipped and listed.
 - GitHub lists at most 3000 files per PR; larger PRs are reported as partial.
 - No dashboard, no database: state lives in PullBeacon's own review comments.
 

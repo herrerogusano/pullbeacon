@@ -146,6 +146,9 @@ def validate_findings(
                 inline, line = False, None
             else:
                 anchor = diff_line.text
+                # GitHub has no diff for this file, so it would reject the comment. The line is
+                # real and stays in the summary.
+                inline = not diff.rebuilt
 
         can_apply = (
             raw.can_apply
@@ -165,7 +168,7 @@ def validate_findings(
                 impact=raw.impact.strip()[:2000],
                 evidence=_strip_coordinates(raw.evidence)[:2000],
                 path=path,
-                line=line if inline else None,
+                line=line,
                 side=side if inline else None,
                 suggested_fix=(raw.suggested_fix or "").strip()[:4000] or None,
                 confidence=raw.confidence,

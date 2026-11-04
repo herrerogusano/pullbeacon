@@ -68,6 +68,7 @@ class ChangedFile(_Frozen):
     status: FileStatus
     previous_path: str | None = None
     patch: str | None = None
+    patch_rebuilt: bool = False  # built from file contents: GitHub cannot take comments on it
     additions: int = Field(ge=0)
     deletions: int = Field(ge=0)
     changes: int = Field(ge=0)
