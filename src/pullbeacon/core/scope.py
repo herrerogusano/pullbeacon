@@ -15,7 +15,13 @@ from pullbeacon.core.paths import (
     matches_any,
     normalize_repo_path,
 )
+from pullbeacon.domain.errors import GitHubAPIError
 from pullbeacon.domain.models import ChangedFile, FileStatus, PullRequestSnapshot, SkippedFile
+from pullbeacon.logging_utils import get_logger, log_event
+
+log = get_logger("scope")
+
+MAX_REBUILT_FILES = 20
 
 
 class SkipReason:
@@ -73,7 +79,12 @@ def _policy_skip(file: ChangedFile, config: PullBeaconConfig) -> str | None:
 def _text_at(
     client: GitHubClient, snapshot: PullRequestSnapshot, path: str, sha: str, max_bytes: int
 ) -> str | None:
-    raw = client.get_file_content(snapshot.owner, snapshot.repo, path, sha, max_bytes=max_bytes)
+    try:
+        raw = client.get_file_content(snapshot.owner, snapshot.repo, path, sha, max_bytes=max_bytes)
+    except GitHubAPIError as exc:
+        # The file stays skipped and listed; it is no reason to lose the rest of the review.
+        log_event(log, "patch_rebuild_read_failed", status=exc.status)
+        return None
     if raw is None or b"\0" in raw:
         return None
     try:
@@ -90,18 +101,28 @@ def rebuild_missing_patches(
     Otherwise the largest change of a pull request is the one that gets no review. Only files that
     policy would review are read, as data, at the exact commits of the pull request. Deleted files
     are left out: reading them costs more than a review of removed code is worth.
+
+    Reads are bounded here because they happen before the scope limits: at most
+    ``MAX_REBUILT_FILES`` files, and only while their changes fit ``limits.max_changed_lines``.
+    A rename or mode change has no changes and nothing to read.
     """
     limits = config.limits
     files = []
+    budget_files = MAX_REBUILT_FILES
+    budget_lines = limits.max_changed_lines
     for file in snapshot.files:
         if (
             file.patch is not None
             or file.status in {FileStatus.UNCHANGED, FileStatus.REMOVED}
-            or file.changes > limits.max_changed_lines
+            or file.changes == 0
+            or file.changes > budget_lines
+            or budget_files == 0
             or _policy_skip(file, config) is not None
         ):
             files.append(file)
             continue
+        budget_files -= 1
+        budget_lines -= file.changes
         new = _text_at(client, snapshot, file.path, snapshot.head_sha, limits.max_file_bytes)
         old: str | None = ""
         if file.status is not FileStatus.ADDED:

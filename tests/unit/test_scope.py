@@ -3,14 +3,20 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 from pullbeacon.config import parse_config
 from pullbeacon.core.diff import render_for_llm
-from pullbeacon.core.scope import SkipReason, rebuild_missing_patches, select_scope
-from pullbeacon.domain.models import ChangedFile, PullRequestSnapshot
+from pullbeacon.core.scope import (
+    MAX_REBUILT_FILES,
+    SkipReason,
+    rebuild_missing_patches,
+    select_scope,
+)
+from pullbeacon.domain.errors import GitHubAPIError
+from pullbeacon.domain.models import ChangedFile, PullRequestSnapshot, Side
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 
@@ -130,6 +136,56 @@ def test_modified_file_without_a_patch_is_diffed_against_the_base() -> None:
     assert [(ln.new_line, ln.text) for ln in added] == [(10, "line ten")]
     deleted = [ln for ln in diff.lines() if ln.kind == "del"]
     assert [(ln.old_line, ln.text) for ln in deleted] == [(10, "line 10")]
+
+
+def test_rebuilt_line_numbers_count_lines_as_git_does() -> None:
+    # A form feed and U+2028 are one line each for git, but not for str.splitlines.
+    new = "first\fstill first\nsecond\u2028still second\nthird\n"
+    contents = _Contents({("a.py", HEAD): new.encode()})
+    file = _rebuilt(changed("a.py", patch=None, status="added"), contents)
+    (diff,) = select_scope(snapshot([file]), parse_config("version: 1\n")).diffs
+    assert [ln.new_line for ln in diff.lines()] == [1, 2, 3]
+    assert diff.line_at(3, Side.RIGHT).text == "third"  # type: ignore[union-attr]
+
+
+def test_rebuilding_stops_at_the_file_limit() -> None:
+    names = [f"src/f{n:03d}.py" for n in range(MAX_REBUILT_FILES + 3)]
+    contents = _Contents({(name, HEAD): b"x\n" for name in names})
+    files = [changed(name, patch=None, status="added") for name in names]
+    rebuilt = rebuild_missing_patches(
+        cast(Any, contents), snapshot(files), parse_config("version: 1\n")
+    ).files
+    assert sum(f.patch_rebuilt for f in rebuilt) == MAX_REBUILT_FILES
+    assert len(contents.read) == MAX_REBUILT_FILES
+
+
+def test_rebuilding_stops_when_changes_exceed_the_line_limit() -> None:
+    contents = _Contents({("a.py", HEAD): b"x\n", ("b.py", HEAD): b"y\n"})
+    files = [
+        changed("a.py", patch=None, status="added", changes=8),
+        changed("b.py", patch=None, status="added", changes=8),
+    ]
+    config = parse_config("version: 1\nlimits: {max_changed_lines: 10}\n")
+    rebuilt = rebuild_missing_patches(cast(Any, contents), snapshot(files), config).files
+    assert [f.patch_rebuilt for f in rebuilt] == [True, False]
+
+
+def test_a_rename_without_changes_is_not_read() -> None:
+    contents = _Contents({})
+    file = changed("new.py", patch=None, status="renamed", previous_path="old.py", changes=0)
+    assert _rebuilt(file, contents).patch is None
+    assert contents.read == []
+
+
+def test_a_failed_read_leaves_the_file_skipped_and_the_rest_reviewed() -> None:
+    class Failing(_Contents):
+        def get_file_content(
+            self, owner: str, repo: str, path: str, ref_sha: str, *, max_bytes: int
+        ) -> bytes | None:
+            raise GitHubAPIError("server error", status=502)
+
+    file = changed("a.py", patch=None, status="added")
+    assert _rebuilt(file, Failing({})).patch is None
 
 
 def test_renamed_file_without_a_patch_reads_the_old_path_at_the_base() -> None:
