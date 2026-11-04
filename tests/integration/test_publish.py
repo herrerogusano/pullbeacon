@@ -7,7 +7,7 @@ import pytest
 
 from pullbeacon.adapters.github import fetch_snapshot
 from pullbeacon.adapters.publisher import latest_review_for_head, trusted_reviews
-from pullbeacon.core.markers import decode_marker
+from pullbeacon.core.markers import decode_marker, encode_marker
 from pullbeacon.core.render import sanitize
 from pullbeacon.domain.errors import GitHubAPIError, StaleHeadError, UnsupportedPullRequest
 from pullbeacon.domain.models import RunStatus
@@ -159,6 +159,69 @@ def test_fork_pr_is_rejected_before_llm() -> None:
         run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:1")
     assert llm.requests == []
     assert fake.writes() == []
+
+
+def _reviewed_ids(body: dict[str, str]) -> list[str]:
+    marker = decode_marker(body["body"])
+    assert marker is not None
+    return [f.id for f in marker.findings]
+
+
+def _other_finding() -> str:
+    return json.dumps(
+        {
+            "summary": "s",
+            "findings": [
+                {
+                    "severity": "medium",
+                    "category": "correctness",
+                    "title": "Another problem",
+                    "explanation": "A different problem on another line.",
+                    "impact": "i",
+                    "evidence": "db.users.delete(user_id)",
+                    "path": "src/api/users.py",
+                    "line": 14,
+                    "side": "RIGHT",
+                    "suggested_fix": None,
+                    "confidence": 0.6,
+                    "can_apply": False,
+                }
+            ],
+        }
+    )
+
+
+def test_ids_identify_one_finding_across_reviews_of_a_pr() -> None:
+    fake, services, llm, data = setup()
+    same = data["llm_responses"]["review"][0]
+    assert isinstance(llm.responses, dict)
+    llm.responses["review"] = [same, _other_finding(), same]
+    for comment in (1, 2, 3):
+        run_review(services, "acme", "shop", PR, mode="manual", trigger=f"comment:{comment}")
+    first, other, repeated = review_posts(fake)
+    assert _reviewed_ids(first.body) == ["PB-001"]
+    # A different finding does not reuse the number, and the first one keeps its number.
+    assert _reviewed_ids(other.body) == ["PB-002"]
+    assert _reviewed_ids(repeated.body) == ["PB-001"]
+
+
+def test_ids_from_before_stable_numbering_never_stand_for_two_findings() -> None:
+    fake, services, llm, data = setup()
+    same = data["llm_responses"]["review"][0]
+    assert isinstance(llm.responses, dict)
+    llm.responses["review"] = [same, _other_finding(), _other_finding()]
+    run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:1")
+    run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:2")
+    # Rewrite the second review as v0.2 would have numbered it: PB-001 again, another finding.
+    stored = fake.reviews[PR][1]
+    marker = decode_marker(stored["body"])
+    assert marker is not None
+    renumbered = marker.model_copy(
+        update={"findings": (marker.findings[0].model_copy(update={"id": "PB-001"}),)}
+    )
+    stored["body"] = stored["body"].rsplit("<!--", 1)[0] + encode_marker(renumbered)
+    run_review(services, "acme", "shop", PR, mode="manual", trigger="comment:3")
+    assert _reviewed_ids(review_posts(fake)[-1].body) == ["PB-002"]
 
 
 def test_dry_run_publishes_nothing() -> None:

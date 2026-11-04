@@ -15,6 +15,7 @@ from pullbeacon.adapters.publisher import (
     DEFAULT_BOT_LOGIN,
     ReviewPublisher,
     automatic_review_exists,
+    known_finding_ids,
     latest_review_for_head,
     post_reply,
     trigger_already_replied,
@@ -154,7 +155,12 @@ def run_review(
         client, snapshot, config, budget=config.limits.max_context_chars // 4
     )
     report = ReviewEngine(llm, config).review(
-        snapshot, scope, mode=mode, context_files=context, context_warnings=context_warnings
+        snapshot,
+        scope,
+        mode=mode,
+        context_files=context,
+        context_warnings=context_warnings,
+        known_ids=known_finding_ids(reviews),
     )
     log_event(
         log,

@@ -138,6 +138,21 @@ def test_ordering_ids_and_inline_cap() -> None:
     assert [f.inline for f in outcome.findings] == [True, True, False]
 
 
+def test_known_finding_keeps_its_id_and_new_ones_continue_after_the_highest() -> None:
+    first = validate_findings([raw(severity="high")], scope(), max_inline=5)
+    (known,) = first.findings
+    items = [
+        raw(severity="critical", evidence="db.users.delete(user_id)", line=4),
+        raw(severity="high"),
+    ]
+    second = validate_findings(
+        items, scope(), max_inline=5, known_ids={known.fingerprint: "PB-007"}
+    )
+    # Sorted by severity, so the id order does not follow the list order.
+    assert [f.id for f in second.findings] == ["PB-008", "PB-007"]
+    assert second.findings[1].fingerprint == known.fingerprint
+
+
 def test_fingerprint_ignores_model_wording_and_order() -> None:
     a = validate_findings(
         [raw(), raw(severity="low", evidence="db.users.delete(user_id)", line=4)],
