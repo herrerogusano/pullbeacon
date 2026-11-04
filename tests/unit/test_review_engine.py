@@ -248,6 +248,79 @@ def test_budget_stops_later_batches_and_reports_partial() -> None:
     assert any("Stopped early" in w for w in report.warnings)
 
 
+def _file(path: str, lines: int = 3) -> dict[str, Any]:
+    body = "\n".join(f"+line {n} of {path}" for n in range(1, lines + 1))
+    return {
+        "filename": path,
+        "status": "added",
+        "additions": lines,
+        "deletions": 0,
+        "changes": lines,
+        "patch": f"@@ -0,0 +1,{lines} @@\n{body}",
+    }
+
+
+def _multi_file_run(files: list[dict[str, Any]], limits: str) -> tuple[Any, list[LLMRequest]]:
+    data = fixture("pr_clean.json")
+    data["files"] = files
+    _, snapshot = snapshot_from_fixture(data)
+    config = parse_config(f"version: 1\nlimits: {limits}\n")
+    answers = [json.dumps({"summary": "part", "findings": []})] * 20
+    llm = FakeLLMClient(responses={"review": answers})
+    scope = select_scope(snapshot, config)
+    report = ReviewEngine(llm, config).review(snapshot, scope, mode="local")
+    return report, llm.requests
+
+
+def _listed(request: LLMRequest) -> str:
+    start = request.user.index("<<<UNTRUSTED DATA FILE_LIST")
+    return request.user[start : request.user.index("<<<END UNTRUSTED DATA FILE_LIST")]
+
+
+def test_each_batch_knows_the_files_of_the_other_batches() -> None:
+    files = [_file("src/app.py", 40), _file("tests/test_app.py", 40)]
+    _, requests = _multi_file_run(files, "{max_context_chars: 1900, max_batches: 4}")
+    first, second = requests
+    assert "src/app.py (shown to you)" in _listed(first)
+    assert "tests/test_app.py (in another part of this review)" in _listed(first)
+    assert "src/app.py (in another part of this review)" in _listed(second)
+    assert "tests/test_app.py (shown to you)" in _listed(second)
+    assert "line 1 of tests/test_app.py" not in first.user
+
+
+def test_files_outside_the_policy_are_listed_with_their_reason() -> None:
+    files = [_file("src/app.py"), _file("assets/logo.png")]
+    _, requests = _multi_file_run(files, "{max_context_chars: 80000}")
+    (request,) = requests
+    assert "src/app.py (shown to you)" in _listed(request)
+    assert "assets/logo.png (not reviewed: " in _listed(request)
+    assert "line 1 of assets/logo.png" not in request.user
+
+
+def test_file_skipped_by_the_batch_limit_is_listed_as_not_reviewed() -> None:
+    files = [_file("a.py", 40), _file("b.py", 40), _file("c.py", 40)]
+    report, requests = _multi_file_run(files, "{max_context_chars: 1900, max_batches: 2}")
+    assert report.truncated
+    assert "c.py (not reviewed: limit max context chars)" in _listed(requests[0])
+
+
+def test_no_file_list_when_the_batch_sees_the_whole_pull_request() -> None:
+    _, requests = _multi_file_run([_file("a.py"), _file("b.py")], "{max_context_chars: 80000}")
+    (request,) = requests
+    assert "FILE_LIST" not in request.user
+
+
+def test_file_list_counts_against_the_context_budget() -> None:
+    files = [_file(f"pkg/module_{n:02d}.py", 10) for n in range(20)]
+    report, requests = _multi_file_run(files, "{max_context_chars: 4000, max_batches: 20}")
+    assert len(requests) > 1
+    assert not report.truncated
+    for request in requests:
+        diff = request.user[request.user.index("<<<UNTRUSTED DATA DIFF") :]
+        listed = _listed(request)
+        assert len(diff) + len(listed) <= 4000
+
+
 def test_llm_errors_propagate() -> None:
     llm = FakeLLMClient(errors=[LLMError("provider unavailable")])
     with pytest.raises(LLMError, match="unavailable"):
