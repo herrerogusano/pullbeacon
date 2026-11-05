@@ -71,6 +71,12 @@ Tools for analysing runs (offline, no calls):
 - `evaluation/fetch_oss_cases.py --manifest evaluation/oss_manifest_v3.json --out
   evaluation/specs-v3-oss` then `evaluation/build_cases_v2.py --oss` rebuilds the v3 OSS cases.
 
+- `evaluation/fetch_pr_fixture.py REPO NUMBER --head SHA --out F` builds a local fixture from a real
+  pull request of a public repository, for `pullbeacon review --fixture F --provider live`. Real use
+  shows what small benchmark cases cannot, such as batching on large pull requests.
+- `evaluation/context_lookup_experiment.py` is the experiment behind
+  `docs/benchmarks/2026-11-05-v03.md`: reviewing with files outside the diff. Not part of the product.
+
 Each run writes `.json` (full metadata: date, PullBeacon version and commit, prompt versions,
 dataset and config hashes, temperature, cost source), `.md` and `.csv`.
 
