@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Fixed
+
+- `pullbeacon review --fixture` and other JSON commands no longer fail after the paid calls when
+  the answer has a character the console cannot encode (real case: `≈` on a Windows console). JSON
+  on stdout is now ASCII-only, with other characters escaped.
+
 ### Changed
 
 - **One summary for the whole review.** Summaries of the batches were pasted together, so a review
