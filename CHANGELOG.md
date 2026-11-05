@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-11-05)
+
+Fixes what 47 real reviews of a public project showed and the benchmarks had not: large pull
+requests. Checked by reproducing real pull requests: the false claims about missing files are gone.
+On the v3 hold-out set, Claude Sonnet 5.5 recall goes from 95.1 % to 96.3 %. **Claude Haiku 5.5 does
+not meet the criterion set beforehand:** strict recall goes from 91.4 % to 84.0 %. By hand, 12 of its
+13 misses are the right defect reported a few lines away and 1 is a real miss, and it comments a bit
+more on clean pull requests (0.18 to 0.26). The share of useful comments was not measured on this
+version. Report: `docs/benchmarks/2026-11-05-v03.md`. The review prompt version changes to
+`review-v3`.
 
 ### Fixed
 
