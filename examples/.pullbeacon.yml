@@ -18,7 +18,7 @@ limits:
   max_changed_lines: 1500
   max_context_chars: 120000
   max_file_bytes: 200000
-  max_output_tokens: 4096
+  max_output_tokens: 8192
   # Preventive per-run estimate, not an accounting cap. Use provider billing limits too.
   max_estimated_cost_usd: 1.00
   max_inline_comments: 15

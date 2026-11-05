@@ -108,7 +108,7 @@ limits:
   max_changed_lines: 1500
   max_context_chars: 120000       # per batch, including context files
   max_file_bytes: 200000
-  max_output_tokens: 4096
+  max_output_tokens: 8192
   max_estimated_cost_usd: 1.00    # preventive per-run estimate, not an accounting cap
   max_inline_comments: 15         # the rest are listed in the summary
   max_batches: 4
@@ -133,14 +133,14 @@ certificates, credentials) or edited by `apply` (`.github/**`, `.pullbeacon.yml`
 ### If a review fails with `llm_output_truncated`
 
 The model's JSON answer is as long as the number of findings it reports, and it was cut off at
-`limits.max_output_tokens` (4096 by default). A cut-off answer is incomplete, so PullBeacon does
-not parse it, does not retry (the retry would hit the same limit and be billed again) and does not
-publish a partial review. The failure shows the code, the limit that was hit and what to change in
+`limits.max_output_tokens` (8192 by default). A cut-off answer is incomplete, so PullBeacon does
+not parse it, does not retry (the retry is billed and can be cut off again) and does not publish a
+partial review. The failure shows the code, the limit that was hit and what to change in
 the job summary (and in a reply when the run was started by a `@pullbeacon` comment). Fix it in
 `.pullbeacon.yml` on the base branch:
 
 - raise `limits.max_output_tokens` (up to 32000; a pull request of about 3,700 changed lines
-  needed more than 4096 and worked with 12000), and/or
+  worked with 12000), and/or
 - lower `limits.max_context_chars` so each batch is smaller and produces fewer findings (up to
   `limits.max_batches` batches are reviewed; files that do not fit are skipped and listed).
 

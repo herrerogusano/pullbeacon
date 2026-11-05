@@ -64,7 +64,7 @@ class LimitsConfig(_Strict):
     max_changed_lines: int = Field(default=1500, ge=1, le=20000)
     max_context_chars: int = Field(default=120_000, ge=1000, le=1_000_000)
     max_file_bytes: int = Field(default=200_000, ge=1000, le=1_000_000)
-    max_output_tokens: int = Field(default=4096, ge=256, le=32000)
+    max_output_tokens: int = Field(default=8192, ge=256, le=32000)
     max_estimated_cost_usd: float = Field(default=1.0, gt=0, le=50)
     max_inline_comments: int = Field(default=15, ge=0, le=50)
     max_batches: int = Field(default=4, ge=1, le=20)
