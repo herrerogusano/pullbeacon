@@ -34,7 +34,7 @@ from pullbeacon.testing.fake_github import FakeGitHub
 
 EVAL_CONFIG = """
 version: 1
-limits: {max_output_tokens: 4096, max_estimated_cost_usd: 0.5}
+limits: {max_output_tokens: 8192, max_estimated_cost_usd: 0.5}
 policy:
   apply_enabled: true
   allowed_apply_paths: ["app/**", "web/**", "tests/**"]

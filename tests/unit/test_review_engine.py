@@ -94,7 +94,7 @@ def test_truncated_output_is_a_clear_error_and_is_not_retried() -> None:
     assert len(llm.requests) == 1  # the "invalid JSON" retry would hit the same limit
     assert info.value.code == "llm_output_truncated"
     message = info.value.message
-    assert "output limit (4096 tokens)" in message
+    assert "output limit (8192 tokens)" in message
     assert "limits.max_output_tokens" in message
     assert "limits.max_context_chars" in message
     assert isinstance(info.value, LLMResponseError)  # still an LLMError for existing handlers

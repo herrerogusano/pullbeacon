@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- **`limits.max_output_tokens` now defaults to 8192 (was 4096).** Since 0.2.1 a cut-off answer fails
+  the review instead of being retried, and at 4096 that made 4 of 18 Claude Haiku 5.5 reviews of
+  400-line pull requests fail on the benchmark. Before 0.2.1 the retry rescued most of those, so
+  0.2.1 was a regression for that case. The limit only costs money when it is used.
 - `pullbeacon review --fixture` and other JSON commands no longer fail after the paid calls when
   the answer has a character the console cannot encode (real case: `≈` on a Windows console). JSON
   on stdout is now ASCII-only, with other characters escaped.
