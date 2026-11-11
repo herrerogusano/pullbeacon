@@ -113,6 +113,12 @@ def test_error_diagnosis_ignores_text_that_is_not_an_error_type() -> None:
     assert diagnosis_suffix({"error_class": "ValueError"}) == ""
 
 
+def test_error_type_in_echoed_content_outside_the_error_object_is_ignored() -> None:
+    echoed = 'AnthropicException - upstream said {"type": "fake_error"} in a diff line'
+    diagnosis = error_diagnosis(litellm.RateLimitError(echoed, llm_provider="x", model="m"))
+    assert "provider_error_type" not in diagnosis
+
+
 def test_auth_error_is_not_retried_and_hides_details() -> None:
     error = litellm.AuthenticationError(f"bad key {KEY}", llm_provider="anthropic", model="m")
     recorder = Recorder(error)

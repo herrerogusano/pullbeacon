@@ -27,8 +27,12 @@ CHARS_PER_TOKEN_ESTIMATE = 3.5
 log = get_logger("llm")
 
 # Only an identifier such as "rate_limit_error" is taken from the provider's error text; the rest of
-# that text can echo request content and is never logged or shown.
-_PROVIDER_ERROR_TYPE = re.compile(r"""["']type["']\s*:\s*["']([a-z_]{1,40}_error)["']""")
+# that text can echo request content and is never logged or shown. The match is anchored to the
+# provider's `"error": {"type": ...}` object, so a bare `"type": "x_error"` in echoed content is
+# ignored, and only the first such object counts (the provider's own comes first).
+_PROVIDER_ERROR_TYPE = re.compile(
+    r"""["']error["']\s*:\s*\{\s*["']type["']\s*:\s*["']([a-z_]{1,40}_error)["']"""
+)
 
 
 def error_diagnosis(exc: Exception) -> dict[str, Any]:
