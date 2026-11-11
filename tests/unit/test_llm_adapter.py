@@ -6,7 +6,13 @@ from typing import Any
 import litellm
 import pytest
 
-from pullbeacon.adapters.llm import LiteLLMClient, LLMRequest, parse_json_object
+from pullbeacon.adapters.llm import (
+    LiteLLMClient,
+    LLMRequest,
+    diagnosis_suffix,
+    error_diagnosis,
+    parse_json_object,
+)
 from pullbeacon.config import ModelConfig
 from pullbeacon.credentials import Secret
 from pullbeacon.domain.errors import ConfigError, CredentialError, LLMError
@@ -83,6 +89,28 @@ def test_transient_errors_retry_at_most_twice(error: Exception) -> None:
     with pytest.raises(LLMError, match="after retries"):
         client(failing).complete(REQUEST)
     assert len(failing.calls) == 3
+
+
+def test_failure_reports_status_and_provider_error_type_without_the_message() -> None:
+    body = (
+        '{"type":"error","error":{"type":"rate_limit_error",'
+        '"message":"echoed diff line: private_marker_42"}}'
+    )
+    error = litellm.RateLimitError(
+        f"AnthropicException - {body}", llm_provider="anthropic", model="m"
+    )
+    failing = Recorder(error, error, error)
+    with pytest.raises(LLMError) as info:
+        client(failing).complete(REQUEST)
+    message = str(info.value)
+    assert message.endswith("after retries (HTTP 429, rate_limit_error)")
+    assert "private_marker_42" not in message
+
+
+def test_error_diagnosis_ignores_text_that_is_not_an_error_type() -> None:
+    diagnosis = error_diagnosis(litellm.InternalServerError("boom", llm_provider="x", model="m"))
+    assert diagnosis == {"error_class": "InternalServerError", "status_code": 500}
+    assert diagnosis_suffix({"error_class": "ValueError"}) == ""
 
 
 def test_auth_error_is_not_retried_and_hides_details() -> None:

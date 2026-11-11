@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -24,6 +25,29 @@ MAX_TRANSIENT_RETRIES = 2
 CHARS_PER_TOKEN_ESTIMATE = 3.5
 
 log = get_logger("llm")
+
+# Only an identifier such as "rate_limit_error" is taken from the provider's error text; the rest of
+# that text can echo request content and is never logged or shown.
+_PROVIDER_ERROR_TYPE = re.compile(r"""["']type["']\s*:\s*["']([a-z_]{1,40}_error)["']""")
+
+
+def error_diagnosis(exc: Exception) -> dict[str, Any]:
+    """Safe facts about a provider error: exception class, HTTP status and provider error type."""
+    diagnosis: dict[str, Any] = {"error_class": type(exc).__name__}
+    status = getattr(exc, "status_code", None)
+    if isinstance(status, int):
+        diagnosis["status_code"] = status
+    match = _PROVIDER_ERROR_TYPE.search(str(exc))
+    if match:
+        diagnosis["provider_error_type"] = match.group(1)
+    return diagnosis
+
+
+def diagnosis_suffix(diagnosis: Mapping[str, Any]) -> str:
+    parts = [f"HTTP {diagnosis['status_code']}"] if "status_code" in diagnosis else []
+    if "provider_error_type" in diagnosis:
+        parts.append(str(diagnosis["provider_error_type"]))
+    return f" ({', '.join(parts)})" if parts else ""
 
 
 @dataclass(frozen=True)
@@ -213,13 +237,17 @@ class LiteLLMClient:
                     log_event(log, "llm_schema_fallback", model=self.model)
                     use_schema = False
                     continue
+                diagnosis = error_diagnosis(exc)
                 if kind == "transient" and attempt < MAX_TRANSIENT_RETRIES:
                     attempt += 1
                     wait = 2.0 * attempt
-                    log_event(log, "llm_retry", model=self.model, attempt=attempt, wait=wait)
+                    log_event(
+                        log, "llm_retry", model=self.model, attempt=attempt, wait=wait, **diagnosis
+                    )
                     self._sleep(wait)
                     continue
-                raise LLMError(self._message(kind, exc)) from None
+                log_event(log, "llm_failed", model=self.model, kind=kind, **diagnosis)
+                raise LLMError(self._message(kind, exc) + diagnosis_suffix(diagnosis)) from None
             return self._to_response(response)
 
     def _arguments(self, request: LLMRequest, *, use_schema: bool) -> dict[str, Any]:
